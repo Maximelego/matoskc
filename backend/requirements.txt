@@ -1,4 +1,2 @@
-fastapi===0.141.1
 uvicorn[standard]===0.52.4
-tortoise-orm===1.1.8
-
+fastapi[standard]===0.141.1
