@@ -20,9 +20,7 @@ services:
         volumes:
             - ./backend:/app
 
-        command: sh -c "./main.sh"
-        environment:
-            DATABASE_URL: postgresql://app:app@database:5432/app
+        command: sh -c "sh main.sh"
         depends_on:
             database:
                 condition: service_healthy
