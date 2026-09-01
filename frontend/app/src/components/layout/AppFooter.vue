@@ -1,15 +1,24 @@
-<script setup lang=ts>
-
-</script>
-
 <template>
-    <div class="footer">
-        footer
-    </div>
+  <footer class="app-footer">
+    <slot>
+      <p class="app-footer__text">
+        Application de suivi du matériel
+      </p>
+    </slot>
+  </footer>
 </template>
 
-<style lang=scss>
-.header {
-    width: 100%;
+<style scoped lang="scss">
+.app-footer {
+  padding: 1rem;
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+
+  &__text {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    text-align: center;
+  }
 }
 </style>

@@ -1,15 +1,16 @@
-<script setup lang=ts>
-
-</script>
-
 <template>
-    <div class="body">
-        Body        
-    </div>
+  <main class="app-body">
+    <slot />
+  </main>
 </template>
 
-<style lang=scss>
-.header {
-    width: 100%;
+<style scoped lang="scss">
+.app-body {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1rem;
+  color: var(--color-text);
+  background-color: var(--color-background);
 }
 </style>

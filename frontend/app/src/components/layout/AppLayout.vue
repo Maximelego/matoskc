@@ -1,16 +1,14 @@
 <script setup lang=ts>
+import AppBody from './AppBody.vue';
+import AppFooter from './AppFooter.vue';
+import AppHeader from './AppHeader.vue';
 </script>
 
 <template>
     <div class="app-layout">
-        <header>
-       </header>
-
-        <body>
-        </body>
-
-        <footer>
-        </footer>
+        <AppHeader title="hello"/>
+        <AppBody/>
+        <AppFooter/>
     </div>
 </template>
 
