@@ -1,0 +1,88 @@
+@use "theme.scss";
+@use "fonts.scss";
+
+html {
+  font-family: var(--font-family-sans);
+  font-size: 100%;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-block-start: 0;
+}
+
+h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-compact);
+}
+
+h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-compact);
+}
+
+h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-compact);
+}
+
+label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+small,
+.help-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.material-reference,
+.serial-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+}
+
+
+// -----------------------------------------------------------------------------
+// Styles globaux
+// -----------------------------------------------------------------------------
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+::selection {
+  color: var(--color-text);
+  background-color: var(--color-secondary-soft-hover);
+}
