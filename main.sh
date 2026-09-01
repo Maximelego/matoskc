@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$mode="$1"
+mode=$1
 
-echo "Running app in $1 mode"
-docker compose up -f ./docker-compose.$1.yml -d
+echo "Running app in ${mode} mode"
+docker compose -f ./docker-compose.${mode}.yml up -d
