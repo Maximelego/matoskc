@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { ASSETS } from '../../assets/manifest';
+
 defineProps<{
   title: string;
 }>();
+
+
 </script>
 
 <template>
   <header class="app-header">
+    <image class="app-header__logo" :src="ASSETS.meta.src" alt="logo"/>
     <h1 class="app-header__title">
       {{ title }}
     </h1>
@@ -29,6 +34,10 @@ defineProps<{
     margin: 0;
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
+  }
+
+  &__logo {
+    width: auto;
   }
 }
 </style>

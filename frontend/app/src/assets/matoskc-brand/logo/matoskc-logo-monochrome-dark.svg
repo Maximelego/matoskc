@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" role="img" aria-labelledby="title desc">
+  <title id="title">Logo MatosKC monochrome sombre</title>
+  <desc id="desc">Version monochrome sombre du logo MatosKC.</desc>
+  <g transform="translate(16 16)" fill="none" stroke="#1F2933" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="4" width="112" height="112" rx="26" stroke-width="8"/>
+    <path d="M43 39v-5c0-6 5-11 11-11h12c6 0 11 5 11 11v5" stroke-width="8"/>
+    <rect x="22" y="39" width="76" height="62" rx="10" stroke-width="8"/>
+    <path d="M23 60h74M66 47 56 65l12 8-12 22" stroke-width="7"/>
+  </g>
+  <text x="168" y="106" fill="#1F2933" font-family="Inter, system-ui, sans-serif" font-size="76" font-weight="700" letter-spacing="-3">MatosKC</text>
+</svg>
