@@ -1,6 +1,8 @@
 <template>
   <main class="app-body">
-    <slot />
+    <div class="app-body__content">
+      <slot />
+    </div>
   </main>
 </template>
 
@@ -9,8 +11,21 @@
   flex: 1;
   width: 100%;
   box-sizing: border-box;
-  padding: 1rem;
-  color: var(--color-text);
-  background-color: var(--color-background);
+
+  &__content {
+    width: 100%;
+    max-width: 90rem;
+    box-sizing: border-box;
+    margin-inline: auto;
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .app-body {
+    &__content {
+      padding: 1.25rem 1rem;
+    }
+  }
 }
 </style>

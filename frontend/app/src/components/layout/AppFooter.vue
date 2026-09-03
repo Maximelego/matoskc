@@ -1,24 +1,40 @@
 <template>
   <footer class="app-footer">
-    <slot>
-      <p class="app-footer__text">
-        Application de suivi du matériel
-      </p>
-    </slot>
+    <div class="app-footer__content">
+      <slot>
+        <span>MatosKC</span>
+      </slot>
+    </div>
   </footer>
 </template>
 
 <style scoped lang="scss">
 .app-footer {
-  padding: 1rem;
   color: var(--color-text-secondary);
   background-color: var(--color-surface);
   border-top: 1px solid var(--color-border);
 
-  &__text {
-    margin: 0;
+  &__content {
+    width: 100%;
+    max-width: 90rem;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-inline: auto;
+    padding: 1rem 1.5rem;
     font-size: var(--font-size-sm);
-    text-align: center;
+  }
+}
+
+@media (max-width: 48rem) {
+  .app-footer {
+    &__content {
+      flex-direction: column;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      text-align: center;
+    }
   }
 }
 </style>
