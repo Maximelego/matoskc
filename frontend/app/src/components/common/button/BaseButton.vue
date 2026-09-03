@@ -61,6 +61,7 @@ function handleClick(event: MouseEvent): void {
     <BaseSpinner
         v-if="loading"
         size="small"
+        variant="secondary"
         label="Action en cours"
     />
 
@@ -87,7 +88,6 @@ function handleClick(event: MouseEvent): void {
 </template>
 
 <style scoped lang="scss">
-@use "app/src/style/theme.scss";
 
 .base-button {
   display: inline-flex;

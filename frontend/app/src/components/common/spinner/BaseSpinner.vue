@@ -1,13 +1,16 @@
 <script setup lang="ts">
 type SpinnerSize = "small" | "medium" | "large";
+type SpinnerVariant = "primary" | "secondary" | "inherit";
 
 withDefaults(
   defineProps<{
     size?: SpinnerSize;
+    variant?: SpinnerVariant;
     label?: string;
   }>(),
   {
     size: "medium",
+    variant: "primary",
     label: "Chargement en cours",
   },
 );
@@ -16,7 +19,10 @@ withDefaults(
 <template>
   <span
     class="base-spinner"
-    :class="`base-spinner--${size}`"
+    :class="[
+      `base-spinner--${size}`,
+      `base-spinner--${variant}`,
+    ]"
     role="status"
     :aria-label="label"
   />
@@ -24,44 +30,79 @@ withDefaults(
 
 <style scoped lang="scss">
 .base-spinner {
+  --spinner-size: 2rem;
+  --spinner-thickness: 0.3125rem;
+  --spinner-color: var(--color-primary);
+
   display: inline-block;
-  box-sizing: border-box;
+  width: var(--spinner-size);
+  aspect-ratio: 1;
   flex-shrink: 0;
-  color: inherit;
-  border-style: solid;
-  border-color: var(--color-border);
-  border-top-color: currentColor;
   border-radius: 50%;
-  animation: base-spinner-rotation 700ms linear infinite;
+  background:
+    radial-gradient(
+      farthest-side,
+      var(--spinner-color) 94%,
+      transparent
+    )
+    top / var(--spinner-thickness) var(--spinner-thickness)
+    no-repeat,
+    conic-gradient(
+      transparent 30%,
+      var(--spinner-color)
+    );
+
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--spinner-thickness)),
+    var(--color-text) 0
+  );
+
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--spinner-thickness)),
+    var(--color-text) 0
+  );
+
+  animation: base-spinner-rotate 1s infinite linear;
 
   &--small {
-    width: 1rem;
-    height: 1rem;
-    border-width: 0.125rem;
+    --spinner-size: 1rem;
+    --spinner-thickness: 0.1875rem;
   }
 
   &--medium {
-    width: 1.5rem;
-    height: 1.5rem;
-    border-width: 0.1875rem;
+    --spinner-size: 2rem;
+    --spinner-thickness: 0.3125rem;
   }
 
   &--large {
-    width: 2rem;
-    height: 2rem;
-    border-width: 0.25rem;
+    --spinner-size: 3.125rem;
+    --spinner-thickness: 0.5rem;
+  }
+
+  &--primary {
+    --spinner-color: var(--color-primary);
+  }
+
+  &--secondary {
+    --spinner-color: var(--color-secondary);
+  }
+
+  &--inherit {
+    --spinner-color: currentColor;
   }
 }
 
-@keyframes base-spinner-rotation {
+@keyframes base-spinner-rotate {
   to {
-    transform: rotate(360deg);
+    transform: rotate(1turn);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .base-spinner {
-    animation-duration: 1400ms;
+    animation-duration: 2s;
   }
 }
 </style>
