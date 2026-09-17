@@ -1,0 +1,398 @@
+@startuml
+title MatosKC — Modèle métier proposé (version de travail)
+
+hide methods
+hide circle
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+legend left
+  |= Marqueur |= Sens |
+  | <<métier>> | Entité ou concept du domaine |
+  | <<association>> | Relation porteuse d'informations |
+  | <<à valider>> | Choix métier encore ouvert |
+endlegend
+
+package "Référentiel du matériel" {
+  class CategorieEquipement <<métier>> {
+    +id
+    +nom
+  }
+
+  class Equipement <<métier>> {
+    +id
+    +nom
+    +statut
+  }
+
+  class ModeleControle <<métier>> {
+    +id
+    +nom
+    +actif
+  }
+
+  class PointControle <<métier>> {
+    +id
+    +libelle
+    +checks : Liste<Texte>
+    +imageReference
+  }
+
+  class ModelePointControle <<association>> {
+    +position
+  }
+
+  CategorieEquipement "1" -- "0..*" Equipement : classe >
+  CategorieEquipement "1" -- "0..*" ModeleControle : propose >
+  ModeleControle "1" *-- "1..*" ModelePointControle : ordonne >
+  PointControle "1" -- "0..*" ModelePointControle : référence >
+}
+
+package "Cycle de location" {
+  class Client <<métier>> {
+    +id
+    +nom
+    +prenom
+    +telephone
+  }
+
+  class Location <<métier>> {
+    +id
+    +numeroCommandeClient
+    +debutPrevu
+    +finPrevue
+  }
+
+  class Inspection <<métier>> {
+    +id
+    +type
+    +dateCreation
+    +statut
+  }
+
+  enum TypeInspection {
+    DEPART
+    RETOUR
+    CONTROLE_INTERNE
+    CONTROLE_APRES_ENTRETIEN
+  }
+
+  class Signature <<métier>> {
+    +id
+    +dateSignature
+  }
+
+  Client "1" -- "0..*" Location : contracte >
+  Equipement "1" -- "0..*" Location : fait l'objet de >
+  Location "0..1" -- "0..2" Inspection : départ / retour >
+  Equipement "1" -- "0..*" Inspection : est inspecté lors de >
+  Inspection "0..*" --> "1" ModeleControle : utilise exactement >
+  Inspection --> TypeInspection
+  Inspection "1" *-- "0..1" Signature : est éventuellement signée >
+}
+
+package "Constats et suivi des défauts" {
+  class Verification <<métier>> {
+    +id
+    +resultat : CONFORME | NON_CONFORME
+    +commentaireOperateur
+    +commentaireSuivi
+    +photos
+  }
+
+  class Defaut <<métier>> {
+    +id
+    +description
+    +statut : OUVERT | RESOLU
+    +dateCreation
+    +dateResolution
+    +photos
+  }
+
+  class ObservationDefaut <<association>> {
+    +nature : DETECTION | CONFIRMATION | RESOLUTION
+  }
+
+  class Entretien <<métier>> {
+    +id
+    +date
+    +description
+  }
+
+  class EntretienDefaut <<association>> {
+    +actionRealisee
+  }
+
+  Inspection "1" *-- "1..*" Verification : contient >
+  Verification "0..*" --> "1" PointControle : répond à >
+  Verification "1" -- "0..*" ObservationDefaut
+  Defaut "1" -- "1..*" ObservationDefaut
+  Equipement "1" -- "0..*" Defaut : possède dans son historique >
+  Equipement "1" -- "0..*" Entretien : reçoit >
+  Entretien "1" -- "0..*" EntretienDefaut
+  Defaut "1" -- "0..*" EntretienDefaut
+  Entretien "0..1" -- "0..*" Inspection : donne lieu à un contrôle >
+}
+
+package "Traçabilité" {
+  class Compte <<métier>> {
+    +id
+    +nom
+    +role
+  }
+
+  class Operateur <<métier>> {
+    +id
+    +prenom
+  }
+
+  class EvenementAudit <<métier>> {
+    +id
+    +dateHeure
+    +actionMetier
+    +typeEntiteCible
+    +idEntiteCible
+  }
+
+  Compte "1" -- "0..*" EvenementAudit : session authentifiée >
+  Operateur "0..1" -- "0..*" EvenementAudit : action déclarée >
+}
+
+note right of Equipement
+  La disponibilité devrait être déduite
+  du statut et des règles métier, plutôt
+  qu'enregistrée séparément.
+end note
+
+note right of ModeleControle
+  Hypothèse retenue : un modèle publié et
+  ses points déjà utilisés sont immuables.
+  Toute modification crée de nouveaux objets.
+end note
+
+note bottom of Location
+  <<à valider>>
+  Une location possède au maximum un départ
+  et un retour. L'unicité devra être exprimée
+  par une règle métier portant sur le type.
+end note
+
+note bottom of Inspection
+  <<à valider>>
+  Le modèle référencé suffit-il comme historique,
+  ou faut-il figer explicitement une version ?
+end note
+
+note bottom of ObservationDefaut
+  Cette association permet à plusieurs constats
+  successifs de parler du même défaut sans le
+  supprimer après réparation.
+end note
+
+note bottom of EvenementAudit
+  La cible désigne une entité métier, jamais
+  une « ligne PostgreSQL ». Compte et opérateur
+  restent distincts à cause des sessions partagées.
+end note
+
+@enduml
+@startuml
+title MatosKC — Modèle métier proposé (version de travail)
+
+hide methods
+hide circle
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+legend left
+  |= Marqueur |= Sens |
+  | <<métier>> | Entité ou concept du domaine |
+  | <<association>> | Relation porteuse d'informations |
+  | <<à valider>> | Choix métier encore ouvert |
+endlegend
+
+package "Référentiel du matériel" {
+  class CategorieEquipement <<métier>> {
+    +id
+    +nom
+  }
+
+  class Equipement <<métier>> {
+    +id
+    +nom
+    +statut
+  }
+
+  class ModeleControle <<métier>> {
+    +id
+    +nom
+    +actif
+  }
+
+  class PointControle <<métier>> {
+    +id
+    +libelle
+    +checks : Liste<Texte>
+    +imageReference
+  }
+
+  class ModelePointControle <<association>> {
+    +position
+  }
+
+  CategorieEquipement "1" -- "0..*" Equipement : classe >
+  CategorieEquipement "1" -- "0..*" ModeleControle : propose >
+  ModeleControle "1" *-- "1..*" ModelePointControle : ordonne >
+  PointControle "1" -- "0..*" ModelePointControle : référence >
+}
+
+package "Cycle de location" {
+  class Client <<métier>> {
+    +id
+    +nom
+    +prenom
+    +telephone
+  }
+
+  class Location <<métier>> {
+    +id
+    +numeroCommandeClient
+    +debutPrevu
+    +finPrevue
+  }
+
+  class Inspection <<métier>> {
+    +id
+    +type
+    +dateCreation
+    +statut
+  }
+
+  enum TypeInspection {
+    DEPART
+    RETOUR
+    CONTROLE_INTERNE
+    CONTROLE_APRES_ENTRETIEN
+  }
+
+  class Signature <<métier>> {
+    +id
+    +dateSignature
+  }
+
+  Client "1" -- "0..*" Location : contracte >
+  Equipement "1" -- "0..*" Location : fait l'objet de >
+  Location "0..1" -- "0..2" Inspection : départ / retour >
+  Equipement "1" -- "0..*" Inspection : est inspecté lors de >
+  Inspection "0..*" --> "1" ModeleControle : utilise exactement >
+  Inspection --> TypeInspection
+  Inspection "1" *-- "0..1" Signature : est éventuellement signée >
+}
+
+package "Constats et suivi des défauts" {
+  class Verification <<métier>> {
+    +id
+    +resultat : CONFORME | NON_CONFORME
+    +commentaireOperateur
+    +commentaireSuivi
+    +photos
+  }
+
+  class Defaut <<métier>> {
+    +id
+    +description
+    +statut : OUVERT | RESOLU
+    +dateCreation
+    +dateResolution
+    +photos
+  }
+
+  class ObservationDefaut <<association>> {
+    +nature : DETECTION | CONFIRMATION | RESOLUTION
+  }
+
+  class Entretien <<métier>> {
+    +id
+    +date
+    +description
+  }
+
+  class EntretienDefaut <<association>> {
+    +actionRealisee
+  }
+
+  Inspection "1" *-- "1..*" Verification : contient >
+  Verification "0..*" --> "1" PointControle : répond à >
+  Verification "1" -- "0..*" ObservationDefaut
+  Defaut "1" -- "1..*" ObservationDefaut
+  Equipement "1" -- "0..*" Defaut : possède dans son historique >
+  Equipement "1" -- "0..*" Entretien : reçoit >
+  Entretien "1" -- "0..*" EntretienDefaut
+  Defaut "1" -- "0..*" EntretienDefaut
+  Entretien "0..1" -- "0..*" Inspection : donne lieu à un contrôle >
+}
+
+package "Traçabilité" {
+  class Compte <<métier>> {
+    +id
+    +nom
+    +role
+  }
+
+  class Operateur <<métier>> {
+    +id
+    +prenom
+  }
+
+  class EvenementAudit <<métier>> {
+    +id
+    +dateHeure
+    +actionMetier
+    +typeEntiteCible
+    +idEntiteCible
+  }
+
+  Compte "1" -- "0..*" EvenementAudit : session authentifiée >
+  Operateur "0..1" -- "0..*" EvenementAudit : action déclarée >
+}
+
+note right of Equipement
+  La disponibilité devrait être déduite
+  du statut et des règles métier, plutôt
+  qu'enregistrée séparément.
+end note
+
+note right of ModeleControle
+  Hypothèse retenue : un modèle publié et
+  ses points déjà utilisés sont immuables.
+  Toute modification crée de nouveaux objets.
+end note
+
+note bottom of Location
+  <<à valider>>
+  Une location possède au maximum un départ
+  et un retour. L'unicité devra être exprimée
+  par une règle métier portant sur le type.
+end note
+
+note bottom of Inspection
+  <<à valider>>
+  Le modèle référencé suffit-il comme historique,
+  ou faut-il figer explicitement une version ?
+end note
+
+note bottom of ObservationDefaut
+  Cette association permet à plusieurs constats
+  successifs de parler du même défaut sans le
+  supprimer après réparation.
+end note
+
+note bottom of EvenementAudit
+  La cible désigne une entité métier, jamais
+  une « ligne PostgreSQL ». Compte et opérateur
+  restent distincts à cause des sessions partagées.
+end note
+
+@enduml

@@ -1,1 +1,61 @@
-backend/app/__pycache__/*
+# Build outputs
+**/bin/
+**/obj/
+artifacts/
+publish/
+
+# Test results and coverage
+TestResults/
+**/TestResults/
+coverage/
+.coverage/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# IDEs and editors
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS Code local settings
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# NuGet artifacts
+packages/
+*.nupkg
+*.snupkg
+
+# Logs
+logs/
+*.log
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+secrets/
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+*__pycache__
