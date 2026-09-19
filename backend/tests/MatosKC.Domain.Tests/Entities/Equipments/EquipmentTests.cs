@@ -10,7 +10,7 @@ public class EquipmentTests
         // Arrange et Act
         var equipment = new Equipment(
             "Fenwick 01",
-            "Fenwick",
+            Guid.NewGuid(),
             "SN-123");
 
         // Assert
@@ -22,7 +22,7 @@ public class EquipmentTests
     {
         var equipment = new Equipment(
             "Fenwick 01",
-            "Fenwick",
+            Guid.NewGuid(),
             "SN-123");
 
         Assert.Equal(EquipmentStatus.Available, equipment.Status);
@@ -36,7 +36,7 @@ public class EquipmentTests
         var equipment = new Equipment(
             expectedId,
             "Fenwick 01",
-            "Fenwick",
+            Guid.NewGuid(),
             "SN-123");
 
         Assert.Equal(expectedId, equipment.Id);
@@ -47,11 +47,10 @@ public class EquipmentTests
     {
         var equipment = new Equipment(
             "  Fenwick 01  ",
-            "  Fenwick  ",
+            Guid.NewGuid(),
             "  SN-123  ");
 
         Assert.Equal("Fenwick 01", equipment.Name);
-        Assert.Equal("Fenwick", equipment.Category);
         Assert.Equal("SN-123", equipment.SerialNumber);
     }
 
@@ -61,10 +60,24 @@ public class EquipmentTests
         Action action = () => new Equipment(
             Guid.Empty,
             "Fenwick 01",
-            "Fenwick",
+            Guid.NewGuid(),
             "SN-123");
 
-        Assert.Throws<ArgumentException>(action);
+        var exception = Assert.Throws<ArgumentException>(action);
+        Assert.Equal("id", exception.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_WithEmptyCategoryId_ShouldThrowArgumentException()
+    {
+        Action action = () => new Equipment(
+            Guid.NewGuid(),
+            "Fenwick 01",
+            Guid.Empty,
+            "SN-123");
+
+        var exception = Assert.Throws<ArgumentException>(action);
+        Assert.Equal("categoryId", exception.ParamName);
     }
 
     [Theory]
@@ -76,22 +89,7 @@ public class EquipmentTests
     {
         Action action = () => new Equipment(
             invalidName!,
-            "Fenwick",
-            "SN-123");
-
-        Assert.ThrowsAny<ArgumentException>(action);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Constructor_WithInvalidCategory_ShouldThrowArgumentException(
-        string? invalidCategory)
-    {
-        Action action = () => new Equipment(
-            "Fenwick 01",
-            invalidCategory!,
+            Guid.NewGuid(),
             "SN-123");
 
         Assert.ThrowsAny<ArgumentException>(action);
@@ -106,7 +104,7 @@ public class EquipmentTests
     {
         Action action = () => new Equipment(
             "Fenwick 01",
-            "Fenwick",
+            Guid.NewGuid(),
             invalidSerial!);
 
         Assert.ThrowsAny<ArgumentException>(action);
@@ -118,7 +116,7 @@ public class EquipmentTests
         var exception = Assert.Throws<ArgumentException>(
             () => new Equipment(
                 "",
-                "Fenwick",
+                Guid.NewGuid(),
                 "SN-123"));
 
         Assert.Equal("name", exception.ParamName);
@@ -181,7 +179,7 @@ public class EquipmentTests
     {
         var equipment = new Equipment(
             "Fenwick 01",
-            "Fenwick",
+            Guid.NewGuid(),
             "SN-123");
 
         switch (expectedStatus)

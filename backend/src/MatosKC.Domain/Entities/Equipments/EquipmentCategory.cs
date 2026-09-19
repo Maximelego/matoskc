@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace MatosKC.Domain.Equipments;
 
 public class EquipmentCategory
@@ -21,11 +19,18 @@ public class EquipmentCategory
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         Id = id;
-        Name = name;
-        Description = description;
+        Name = name.Trim();
+
+        if (description != null)
+        {
+            description = description.Trim();
+            Description = description == "" ? null : description;  
+        }
     }
 
     public EquipmentCategory(string name, string? description) :this(Guid.NewGuid(), name, description)
     {
     }
+
+
 }

@@ -4,11 +4,11 @@ public class Equipment
 {
     public Guid Id { get; }
     public string Name { get; }
-    public string Category { get;}
+    public Guid CategoryId { get;}
     public string SerialNumber { get; }
     public EquipmentStatus Status { get; private set;}
 
-    public Equipment(Guid id, string name, string category, string serialNumber)
+    public Equipment(Guid id, string name, Guid categoryId, string serialNumber)
     {
         if (id == Guid.Empty)
         {
@@ -18,18 +18,25 @@ public class Equipment
             );
         }
 
+        if (categoryId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Equipment's Category Identifier cannot be Empty",
+                nameof(categoryId)
+            );
+        }
+
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentException.ThrowIfNullOrWhiteSpace(category);
         ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
 
         Id = id;
         Name = name.Trim();
-        Category = category.Trim();
+        CategoryId = categoryId;
         SerialNumber = serialNumber.Trim();
         Status = EquipmentStatus.Available;
     }
 
-    public Equipment(string name, string category, string serialNumber): this(Guid.NewGuid(), name, category, serialNumber)
+    public Equipment(string name, Guid categoryId, string serialNumber): this(Guid.NewGuid(), name, categoryId, serialNumber)
     {}
 
     public bool CanTransitionTo(EquipmentStatus newStatus)
