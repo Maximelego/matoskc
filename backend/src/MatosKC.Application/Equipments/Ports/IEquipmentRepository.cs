@@ -1,4 +1,4 @@
-namespace MatosKC.Application.Equipment.Ports;
+namespace MatosKC.Application.Equipments.Ports;
 
 using MatosKC.Domain.Equipments;
 
@@ -11,4 +11,5 @@ public interface IEquipmentRepository
     Task AddAsync(Equipment equipment, CancellationToken cancellationToken);
 
     Task<Equipment> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken);
+
 }

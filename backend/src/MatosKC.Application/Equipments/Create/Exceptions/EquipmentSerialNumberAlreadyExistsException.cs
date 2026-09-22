@@ -1,4 +1,4 @@
-namespace MatosKC.Application.Equipments;
+namespace MatosKC.Application.Equipments.Create.Exceptions;
 
 public class EquipmentSerialNumberAlreadyExistsException : Exception
 {

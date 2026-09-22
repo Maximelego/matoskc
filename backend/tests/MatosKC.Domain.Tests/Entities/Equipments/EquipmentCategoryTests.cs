@@ -21,7 +21,7 @@ public class EquipmentCategoryTests
     public void Constructor_WithId_ShouldPreserveProvidedId()
     {
         var id = Guid.NewGuid();
-        
+
         var equipmentCategory = new EquipmentCategory(
             id,
             "Fenwick",
@@ -35,7 +35,7 @@ public class EquipmentCategoryTests
     public void Constructor_WithEmptyId_ShouldThrowArgumentException()
     {
         var id = Guid.Empty;
-        
+
         var action = () => new EquipmentCategory(
             id,
             "Fenwick",
@@ -51,7 +51,7 @@ public class EquipmentCategoryTests
     public void Constructor_WithInvalidName_ShouldThrowArgumentException(
         string? invalidName
     )
-    {        
+    {
         var action = () => new EquipmentCategory(
             Guid.NewGuid(),
             invalidName!,
@@ -66,7 +66,7 @@ public class EquipmentCategoryTests
     public void Constructor_ValidName_ShouldTrimName(
         string name
     )
-    {        
+    {
         var equipmentCategory = new EquipmentCategory(
             Guid.NewGuid(),
             name,
@@ -77,7 +77,7 @@ public class EquipmentCategoryTests
 
     [Fact]
     public void Constructor_WithNullDescription_ShouldKeepDescription()
-    {        
+    {
         var equipmentCategory = new EquipmentCategory(
             Guid.NewGuid(),
             "Fenwick",
@@ -92,7 +92,7 @@ public class EquipmentCategoryTests
     public void Constructor_WithEmptyDescription_ShouldSetDescriptionAsNull(
         string? description
     )
-    {        
+    {
         var equipmentCategory = new EquipmentCategory(
             Guid.NewGuid(),
             "Fenwick",
@@ -103,11 +103,11 @@ public class EquipmentCategoryTests
 
     [Theory]
     [InlineData("This is a totally valid description")]
-    [InlineData("  This is a totally valid description"  )]
+    [InlineData("  This is a totally valid description")]
     public void Constructor_WithFilledDescription_ShouldTrimDescription(
         string description
     )
-    {       
+    {
         var equipmentCategory = new EquipmentCategory(
             Guid.NewGuid(),
             "Fenwick",

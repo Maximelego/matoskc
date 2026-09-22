@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MatosKC.Application/MatosKC.Application.csproj" />
+    <Project Path="src/MatosKC.Domain/MatosKC.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MatosKC.Application.Tests/MatosKC.Application.Tests.csproj" />
+    <Project Path="tests/MatosKC.Domain.Tests/MatosKC.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

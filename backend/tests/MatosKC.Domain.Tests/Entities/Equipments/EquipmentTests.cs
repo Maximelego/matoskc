@@ -94,7 +94,7 @@ public class EquipmentTests
 
         Assert.ThrowsAny<ArgumentException>(action);
     }
-    
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -221,7 +221,7 @@ public class EquipmentTests
         }
 
         return equipment;
-    }   
+    }
 
 
     [Theory]

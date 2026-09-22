@@ -20,12 +20,9 @@ public class EquipmentCategory
 
         Id = id;
         Name = name.Trim();
-
-        if (description != null)
-        {
-            description = description.Trim();
-            Description = description == "" ? null : description;
-        }
+        Description = string.IsNullOrWhiteSpace(description)
+            ? null
+            : description.Trim();
     }
 
     public EquipmentCategory(string name, string? description) : this(Guid.NewGuid(), name, description)

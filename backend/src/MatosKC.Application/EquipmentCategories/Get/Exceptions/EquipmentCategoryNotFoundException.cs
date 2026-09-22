@@ -1,3 +1,4 @@
+namespace MatosKC.Application.EquipmentCategories.Get.Exceptions;
 
 public class EquipmentCategoryNotFoundException : Exception
 {
