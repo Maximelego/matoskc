@@ -10,4 +10,5 @@ public interface IEquipmentRepository
 
     Task AddAsync(Equipment equipment, CancellationToken cancellationToken);
 
+    Task<Equipment> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken);
 }

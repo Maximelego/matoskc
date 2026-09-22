@@ -1,7 +1,5 @@
 namespace MatosKC.Application.Equipment.Ports;
 
-using MatosKC.Domain.Equipments;
-
 public interface IEquipmentCategoryRepository
 {
 

@@ -24,11 +24,11 @@ public class EquipmentCategory
         if (description != null)
         {
             description = description.Trim();
-            Description = description == "" ? null : description;  
+            Description = description == "" ? null : description;
         }
     }
 
-    public EquipmentCategory(string name, string? description) :this(Guid.NewGuid(), name, description)
+    public EquipmentCategory(string name, string? description) : this(Guid.NewGuid(), name, description)
     {
     }
 

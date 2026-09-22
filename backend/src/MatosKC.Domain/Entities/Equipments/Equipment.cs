@@ -4,9 +4,9 @@ public class Equipment
 {
     public Guid Id { get; }
     public string Name { get; }
-    public Guid CategoryId { get;}
+    public Guid CategoryId { get; }
     public string SerialNumber { get; }
-    public EquipmentStatus Status { get; private set;}
+    public EquipmentStatus Status { get; private set; }
 
     public Equipment(Guid id, string name, Guid categoryId, string serialNumber)
     {
@@ -36,8 +36,8 @@ public class Equipment
         Status = EquipmentStatus.Available;
     }
 
-    public Equipment(string name, Guid categoryId, string serialNumber): this(Guid.NewGuid(), name, categoryId, serialNumber)
-    {}
+    public Equipment(string name, Guid categoryId, string serialNumber) : this(Guid.NewGuid(), name, categoryId, serialNumber)
+    { }
 
     public bool CanTransitionTo(EquipmentStatus newStatus)
     {
@@ -59,7 +59,7 @@ public class Equipment
             (EquipmentStatus.Maintenance, EquipmentStatus.Available) => true,
             (EquipmentStatus.Maintenance, EquipmentStatus.Unavailable) => true,
             (EquipmentStatus.Maintenance, EquipmentStatus.Decommissioned) => true,
-            
+
             // Any other case
             _ => false,
         };
@@ -71,7 +71,7 @@ public class Equipment
         {
             throw new InvalidOperationException($"Cannot transition equipment from {Status} to {newStatus}.");
         }
-        Status = newStatus;    
+        Status = newStatus;
     }
 
 }
