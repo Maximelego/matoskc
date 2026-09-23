@@ -2,6 +2,7 @@ namespace MatosKC.Infrastructure.Persistence.Repositories;
 
 using MatosKC.Application.Equipments.Ports;
 using MatosKC.Domain.Equipments;
+
 using Microsoft.EntityFrameworkCore;
 
 public sealed class EquipmentRepository
@@ -42,11 +43,43 @@ public sealed class EquipmentRepository
 
     public Task<bool> ExistsByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return _dbContext.Equipments.AnyAsync(
+            equipment =>
+                equipment.Id == id,
+            cancellationToken
+        );
     }
 
-    public Task<Equipment> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken)
+    public Task<Equipment?> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return _dbContext.Equipments
+            .SingleOrDefaultAsync(
+                equipment => equipment.Id == id,
+                cancellationToken
+            );
+    }
+
+    public Task<List<Equipment>> ListEquipmentsAsync(Guid? categoryId, EquipmentStatus? status, string? search, CancellationToken cancellationToken)
+    {
+        var query = _dbContext.Equipments.AsQueryable();
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(equipment => equipment.CategoryId == categoryId.Value);
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(equipment => equipment.Status == status.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(equipment =>
+                equipment.Name.Contains(search) ||
+                equipment.SerialNumber.Contains(search));
+        }
+
+        return query.ToListAsync(cancellationToken);
     }
 }
