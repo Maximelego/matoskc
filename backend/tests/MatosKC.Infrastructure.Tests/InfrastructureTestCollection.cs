@@ -1,6 +1,6 @@
 namespace MatosKC.Infrastructure.Tests;
 
-[CollectionDefinition(Name)]
+[CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class InfrastructureTestCollection
     : ICollectionFixture<PostgreSqlFixture>
 {

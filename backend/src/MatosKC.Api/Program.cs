@@ -50,6 +50,12 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<CreateEquipmentUseCase>();
 
+builder.Services.Configure<RouteHandlerOptions>(
+    options => options.ThrowOnBadRequest = true
+);
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();

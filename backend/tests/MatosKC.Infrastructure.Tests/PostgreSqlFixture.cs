@@ -7,8 +7,7 @@ using Testcontainers.PostgreSql;
 public sealed class PostgreSqlFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer PostgreSqlContainer =
-        new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
+        new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase("matoskc_tests")
             .WithUsername("matoskc")
             .WithPassword("matoskc_tests")
@@ -19,7 +18,6 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         await PostgreSqlContainer.StartAsync();
 
         await using MatosKCDbContext dbContext = CreateDbContext();
-
         await dbContext.Database.MigrateAsync();
     }
 
