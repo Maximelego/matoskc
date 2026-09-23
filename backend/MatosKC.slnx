@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/MatosKC.Api/MatosKC.Api.csproj" />
     <Project Path="src/MatosKC.Application/MatosKC.Application.csproj" />
     <Project Path="src/MatosKC.Domain/MatosKC.Domain.csproj" />
+    <Project Path="src/MatosKC.Infrastructure/MatosKC.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MatosKC.Application.Tests/MatosKC.Application.Tests.csproj" />

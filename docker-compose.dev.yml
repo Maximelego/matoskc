@@ -31,7 +31,7 @@ services:
         environment:
             POSTGRES_DB: matoskc
             POSTGRES_USER: matoskc
-            POSTGRES_PASSWORD: matoskc
+            POSTGRES_PASSWORD: matoskc_dev
         ports:
             - "5432:5432"
         volumes:

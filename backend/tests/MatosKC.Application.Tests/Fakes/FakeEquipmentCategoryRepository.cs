@@ -50,7 +50,7 @@ internal sealed class FakeEquipmentCategoryRepository : IEquipmentCategoryReposi
         return Task.FromResult(_categories.ContainsKey(id));
     }
 
-    public Task<EquipmentCategory?> GetEquipmentCategoryByIdAsync(
+    public Task<EquipmentCategory?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {

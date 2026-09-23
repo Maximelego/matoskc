@@ -16,7 +16,7 @@ public class GetEquipmentCategoryUseCase
 
     public async Task<EquipmentCategory> ExecuteAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
-        var equipmentCategory = await EquipmentCategoryRepository.GetEquipmentCategoryByIdAsync(categoryId, cancellationToken);
+        var equipmentCategory = await EquipmentCategoryRepository.GetByIdAsync(categoryId, cancellationToken);
         if (equipmentCategory == null)
         {
             throw new EquipmentCategoryNotFoundException(categoryId);

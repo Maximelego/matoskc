@@ -11,6 +11,6 @@ public interface IEquipmentCategoryRepository
 
     Task AddAsync(EquipmentCategory category, CancellationToken cancellationToken);
 
-    Task<EquipmentCategory?> GetEquipmentCategoryByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<EquipmentCategory?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
 }
