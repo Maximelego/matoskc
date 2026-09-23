@@ -1,8 +1,8 @@
 namespace MatosKC.Application.EquipmentCategories.Get;
 
 using MatosKC.Application.EquipmentCategories.Get.Exceptions;
+using MatosKC.Application.EquipmentCategories.Mappings;
 using MatosKC.Application.EquipmentCategories.Ports;
-using MatosKC.Domain.Equipments;
 
 public class GetEquipmentCategoryUseCase
 {
@@ -14,14 +14,14 @@ public class GetEquipmentCategoryUseCase
         EquipmentCategoryRepository = equipmentCategoryRepository;
     }
 
-    public async Task<EquipmentCategory> ExecuteAsync(Guid categoryId, CancellationToken cancellationToken = default)
+    public async Task<GetEquipmentCategoryResult> ExecuteAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var equipmentCategory = await EquipmentCategoryRepository.GetByIdAsync(categoryId, cancellationToken);
         if (equipmentCategory == null)
         {
             throw new EquipmentCategoryNotFoundException(categoryId);
         }
-        return equipmentCategory;
+        return equipmentCategory.ToResult();
     }
 
 }

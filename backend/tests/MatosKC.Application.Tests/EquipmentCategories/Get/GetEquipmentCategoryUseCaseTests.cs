@@ -20,7 +20,7 @@ public sealed class GetEquipmentCategoryUseCaseTests
         repository.Seed(category);
         var useCase = new GetEquipmentCategoryUseCase(repository);
 
-        var result = await useCase.ExecuteAsync(category.Id);
+        GetEquipmentCategoryResult result = await useCase.ExecuteAsync(category.Id);
 
         Assert.Equal(category.Id, result.Id);
         Assert.Equal(category.Name, result.Name);

@@ -12,16 +12,29 @@ services:
             NODE_ENV: development
 
     backend:
-        image: python:3.14-alpine
+        image: mcr.microsoft.com/dotnet/sdk:10.0-alpine
         working_dir: /app
-        ports:
-            - "8000:8000"
         volumes:
             - ./backend:/app
-            - backend_venv:/opt/venv
-        command: sh /app/main.sh
+            - backend_nuget_packages:/root/.nuget/packages
+        ports:
+            - "8000:8000"
+        command:
+            - dotnet
+            - watch
+            - --project
+            - src/MatosKC.Api/MatosKC.Api.csproj
+            - run
+            - --no-launch-profile
         environment:
-            DATABASE_URL: postgresql+psycopg://matoskc:matoskc@database:5432/matoskc
+            ASPNETCORE_ENVIRONMENT: Development
+            ASPNETCORE_URLS: http://0.0.0.0:8000
+
+            DOTNET_USE_POLLING_FILE_WATCHER: "true"
+            DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
+            DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "true"
+
+            ConnectionStrings__MatosKCDatabase: Host=database;Port=5432;Database=matoskc;Username=matoskc;Password=matoskc_dev
         depends_on:
             database:
                 condition: service_healthy
@@ -37,12 +50,14 @@ services:
         volumes:
             - matoskc_postgres_data:/var/lib/postgresql/data
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U matoskc -d matoskc"]
+            test:
+                - CMD-SHELL
+                - pg_isready -U matoskc -d matoskc
             interval: 5s
             timeout: 5s
             retries: 5
 
 volumes:
     frontend_node_modules:
-    backend_venv:
+    backend_nuget_packages:
     matoskc_postgres_data:

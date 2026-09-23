@@ -6,7 +6,9 @@
     <Project Path="src/MatosKC.Infrastructure/MatosKC.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MatosKC.Api.Tests/MatosKC.Api.Tests.csproj" />
     <Project Path="tests/MatosKC.Application.Tests/MatosKC.Application.Tests.csproj" />
     <Project Path="tests/MatosKC.Domain.Tests/MatosKC.Domain.Tests.csproj" />
+    <Project Path="tests/MatosKC.Infrastructure.Tests/MatosKC.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>
