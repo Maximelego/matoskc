@@ -3,8 +3,6 @@ namespace MatosKC.Infrastructure.Persistence.Repositories;
 using MatosKC.Application.Equipments.Ports;
 using MatosKC.Domain.Equipments;
 
-using Microsoft.EntityFrameworkCore;
-
 public sealed class EquipmentRepository
     : IEquipmentRepository
 {

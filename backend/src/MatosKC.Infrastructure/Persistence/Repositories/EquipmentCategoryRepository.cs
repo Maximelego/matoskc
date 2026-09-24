@@ -1,8 +1,8 @@
 namespace MatosKC.Infrastructure.Persistence.Repositories;
 
+using MatosKC.Application.EquipmentCategories.List;
 using MatosKC.Application.EquipmentCategories.Ports;
 using MatosKC.Domain.Equipments;
-using Microsoft.EntityFrameworkCore;
 
 public sealed class EquipmentCategoryRepository
     : IEquipmentCategoryRepository
@@ -61,8 +61,18 @@ public sealed class EquipmentCategoryRepository
         );
     }
 
-    public Task<EquipmentCategory?> GetEquipmentCategoryByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<EquipmentCategory?> GetEquipmentCategoryByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await _dbContext.EquipmentCategories
+            .SingleOrDefaultAsync(
+                category => category.Id == id,
+                cancellationToken
+            );
+    }
+
+    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken)
+    {
+        return _dbContext.EquipmentCategories
+            .ToListAsync(cancellationToken);
     }
 }

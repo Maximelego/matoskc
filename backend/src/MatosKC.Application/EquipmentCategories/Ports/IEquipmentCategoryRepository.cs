@@ -1,5 +1,6 @@
 namespace MatosKC.Application.EquipmentCategories.Ports;
 
+using MatosKC.Application.EquipmentCategories.List;
 using MatosKC.Domain.Equipments;
 
 public interface IEquipmentCategoryRepository
@@ -11,7 +12,7 @@ public interface IEquipmentCategoryRepository
 
     Task AddAsync(EquipmentCategory category, CancellationToken cancellationToken);
 
-    Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(CancellationToken cancellationToken);
+    Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken);
 
     Task<EquipmentCategory?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 

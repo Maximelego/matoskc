@@ -70,4 +70,9 @@ internal sealed class FakeEquipmentCategoryRepository : IEquipmentCategoryReposi
 
         return Task.CompletedTask;
     }
+
+    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }

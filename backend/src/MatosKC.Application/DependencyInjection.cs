@@ -5,6 +5,7 @@ using MatosKC.Application.EquipmentCategories.Get;
 using MatosKC.Application.Equipments.Create;
 using MatosKC.Application.Equipments.Get;
 using MatosKC.Application.Equipments.List;
+
 using Microsoft.Extensions.DependencyInjection;
 
 public static class DependencyInjection

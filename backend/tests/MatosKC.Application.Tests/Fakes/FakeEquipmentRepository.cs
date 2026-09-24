@@ -40,8 +40,32 @@ internal sealed class FakeEquipmentRepository : IEquipmentRepository
         throw new NotImplementedException();
     }
 
-    public Task<Equipment> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken)
+    public Task<Equipment?> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(AddedEquipments.FirstOrDefault(equipment => equipment.Id == id));
+    }
+
+    public Task<List<Equipment>> ListEquipmentsAsync(Guid? categoryId, EquipmentStatus? status, string? search, CancellationToken cancellationToken)
+    {
+        var filteredEquipments = AddedEquipments.AsEnumerable();
+
+        if (categoryId.HasValue)
+        {
+            filteredEquipments = filteredEquipments.Where(equipment => equipment.CategoryId == categoryId.Value);
+        }
+
+        if (status.HasValue)
+        {
+            filteredEquipments = filteredEquipments.Where(equipment => equipment.Status == status.Value);
+        }
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            filteredEquipments = filteredEquipments.Where(equipment =>
+                equipment.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                equipment.SerialNumber.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return Task.FromResult(filteredEquipments.ToList());
     }
 }

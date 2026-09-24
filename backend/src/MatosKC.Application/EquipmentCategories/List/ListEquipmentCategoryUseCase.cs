@@ -14,7 +14,7 @@ public class ListEquipmentCategoryUseCase
 
     public async Task<ListEquipmentCategoryResult> ExecuteAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken)
     {
-        var equipmentCategories = await _equipmentCategoryRepository.ListEquipmentCategoriesAsync(cancellationToken);
+        var equipmentCategories = await _equipmentCategoryRepository.ListEquipmentCategoriesAsync(query, cancellationToken);
 
         return new ListEquipmentCategoryResult(
             equipmentCategories.Select(equipmentCategory => equipmentCategory.ToResult())

@@ -107,6 +107,40 @@ public sealed class EquipmentCategoryEndpointsTests
         );
     }
 
+    [Fact]
+    public async Task ListCategories_ShouldReturnAllCategories()
+    {
+        string name1 = $"Category-{Guid.NewGuid():N}";
+        string name2 = $"Category-{Guid.NewGuid():N}";
+
+        await CreateCategoryAsync(name1, null);
+        await CreateCategoryAsync(name2, null);
+
+        HttpResponseMessage response = await Client.GetAsync(
+            "/api/equipment-categories",
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using JsonDocument body = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync(
+                TestContext.Current.CancellationToken
+            )
+        );
+
+        var categories = body.RootElement.EnumerateArray()
+            .Select(element => new
+            {
+                Id = element.GetProperty("id").GetGuid(),
+                Name = element.GetProperty("name").GetString()
+            })
+            .ToList();
+
+        Assert.Contains(categories, c => c.Name == name1);
+        Assert.Contains(categories, c => c.Name == name2);
+    }
+
     private async Task<Guid> CreateCategoryAsync(
         string name,
         string? description
@@ -128,4 +162,5 @@ public sealed class EquipmentCategoryEndpointsTests
 
         return body.RootElement.GetProperty("id").GetGuid();
     }
+
 }
