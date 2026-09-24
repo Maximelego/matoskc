@@ -3,6 +3,7 @@ namespace MatosKC.Api.Endpoints;
 using MatosKC.Api.Contracts;
 using MatosKC.Application.EquipmentCategories.Create;
 using MatosKC.Application.EquipmentCategories.Get;
+using MatosKC.Application.EquipmentCategories.List;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 public static class EquipmentCategoryEndpoints
@@ -71,6 +72,21 @@ public static class EquipmentCategoryEndpoints
         GetEquipmentCategoryResult result =
             await useCase.ExecuteAsync(
                 id,
+                cancellationToken
+            );
+
+        return TypedResults.Ok(result);
+    }
+
+    private static async Task<
+        Ok<ListEquipmentCategoryResult>
+    > ListAsync(
+        ListEquipmentCategoryUseCase useCase,
+        ListEquipmentCategoryQuery query,
+        CancellationToken cancellationToken)
+    {
+        ListEquipmentCategoryResult result =
+            await useCase.ExecuteAsync(
                 cancellationToken
             );
 

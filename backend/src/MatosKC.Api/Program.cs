@@ -1,15 +1,7 @@
 using MatosKC.Api.Endpoints;
 using MatosKC.Api.ErrorHandling;
-using MatosKC.Application.EquipmentCategories.Create;
-using MatosKC.Application.EquipmentCategories.Get;
-using MatosKC.Application.EquipmentCategories.Ports;
-using MatosKC.Application.Equipments.Create;
-using MatosKC.Application.Equipments.Ports;
+using MatosKC.Application;
 using MatosKC.Infrastructure.Persistence;
-using MatosKC.Infrastructure.Persistence.Repositories;
-
-using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,25 +22,9 @@ builder.Services.AddDbContext<MatosKCDbContext>(
     options => options.UseNpgsql(connectionString)
 );
 
-builder.Services.AddScoped<
-    IEquipmentCategoryRepository,
-    EquipmentCategoryRepository
->();
-
-builder.Services.AddScoped<
-    IEquipmentRepository,
-    EquipmentRepository
->();
-
-builder.Services.AddScoped<
-    CreateEquipmentCategoryUseCase
->();
-
-builder.Services.AddScoped<
-    GetEquipmentCategoryUseCase
->();
-
-builder.Services.AddScoped<CreateEquipmentUseCase>();
+// Add services to the container.
+builder.Services.AddApplication()
+                .AddRepositories();
 
 builder.Services.Configure<RouteHandlerOptions>(
     options => options.ThrowOnBadRequest = true
