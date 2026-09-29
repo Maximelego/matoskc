@@ -87,7 +87,7 @@ public static class EquipmentEndpoints
     private static async Task<
         Ok<ListEquipmentResult>
     > ListEquipmentAsync(
-        ListEquipmentsQuery query,
+        [AsParameters] ListEquipmentsQuery query,
         ListEquipmentUseCase useCase,
         CancellationToken cancellationToken
     )

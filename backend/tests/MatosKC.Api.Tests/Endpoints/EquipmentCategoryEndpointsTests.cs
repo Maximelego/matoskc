@@ -3,13 +3,16 @@ namespace MatosKC.Api.Tests.Endpoints;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using MatosKC.Application.EquipmentCategories.List;
 
 [Collection(ApiTestCollection.Name)]
 public sealed class EquipmentCategoryEndpointsTests
 {
     private readonly HttpClient Client;
 
-    public EquipmentCategoryEndpointsTests(MatosKCApiFactory factory)
+    public EquipmentCategoryEndpointsTests(
+        MatosKCApiFactory factory
+    )
     {
         Client = factory.CreateClient();
     }
@@ -29,7 +32,11 @@ public sealed class EquipmentCategoryEndpointsTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Created,
+            response.StatusCode
+        );
+
         Assert.NotNull(response.Headers.Location);
 
         using JsonDocument body = JsonDocument.Parse(
@@ -38,7 +45,10 @@ public sealed class EquipmentCategoryEndpointsTests
             )
         );
 
-        Guid id = body.RootElement.GetProperty("id").GetGuid();
+        Guid id = body.RootElement
+            .GetProperty("id")
+            .GetGuid();
+
         Assert.NotEqual(Guid.Empty, id);
     }
 
@@ -46,15 +56,23 @@ public sealed class EquipmentCategoryEndpointsTests
     public async Task GetCategory_WithExistingId_ShouldReturnItsDto()
     {
         string name = $"Souffleur-{Guid.NewGuid():N}";
-        const string description = "Souffleur de laine isolante";
-        Guid id = await CreateCategoryAsync(name, description);
+        const string description =
+            "Souffleur de laine isolante";
+
+        Guid id = await CreateCategoryAsync(
+            name,
+            description
+        );
 
         HttpResponseMessage response = await Client.GetAsync(
             $"/api/equipment-categories/{id}",
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            response.StatusCode
+        );
 
         using JsonDocument body = JsonDocument.Parse(
             await response.Content.ReadAsStringAsync(
@@ -62,11 +80,25 @@ public sealed class EquipmentCategoryEndpointsTests
             )
         );
 
-        Assert.Equal(id, body.RootElement.GetProperty("id").GetGuid());
-        Assert.Equal(name, body.RootElement.GetProperty("name").GetString());
+        Assert.Equal(
+            id,
+            body.RootElement
+                .GetProperty("id")
+                .GetGuid()
+        );
+
+        Assert.Equal(
+            name,
+            body.RootElement
+                .GetProperty("name")
+                .GetString()
+        );
+
         Assert.Equal(
             description,
-            body.RootElement.GetProperty("description").GetString()
+            body.RootElement
+                .GetProperty("description")
+                .GetString()
         );
     }
 
@@ -78,7 +110,11 @@ public sealed class EquipmentCategoryEndpointsTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            response.StatusCode
+        );
+
         Assert.Equal(
             "application/problem+json",
             response.Content.Headers.ContentType?.MediaType
@@ -100,7 +136,11 @@ public sealed class EquipmentCategoryEndpointsTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode
+        );
+
         Assert.Equal(
             "application/problem+json",
             response.Content.Headers.ContentType?.MediaType
@@ -121,24 +161,28 @@ public sealed class EquipmentCategoryEndpointsTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        using JsonDocument body = JsonDocument.Parse(
-            await response.Content.ReadAsStringAsync(
-                TestContext.Current.CancellationToken
-            )
+        Assert.Equal(
+            HttpStatusCode.OK,
+            response.StatusCode
         );
 
-        var categories = body.RootElement.EnumerateArray()
-            .Select(element => new
-            {
-                Id = element.GetProperty("id").GetGuid(),
-                Name = element.GetProperty("name").GetString()
-            })
-            .ToList();
+        ListEquipmentCategoryResult? result =
+            await response.Content
+                .ReadFromJsonAsync<ListEquipmentCategoryResult>(
+                    TestContext.Current.CancellationToken
+                );
 
-        Assert.Contains(categories, c => c.Name == name1);
-        Assert.Contains(categories, c => c.Name == name2);
+        Assert.NotNull(result);
+
+        Assert.Contains(
+            result.EquipmentCategories,
+            category => category.Name == name1
+        );
+
+        Assert.Contains(
+            result.EquipmentCategories,
+            category => category.Name == name2
+        );
     }
 
     private async Task<Guid> CreateCategoryAsync(
@@ -146,11 +190,16 @@ public sealed class EquipmentCategoryEndpointsTests
         string? description
     )
     {
-        HttpResponseMessage response = await Client.PostAsJsonAsync(
-            "/api/equipment-categories",
-            new { name, description },
-            TestContext.Current.CancellationToken
-        );
+        HttpResponseMessage response =
+            await Client.PostAsJsonAsync(
+                "/api/equipment-categories",
+                new
+                {
+                    name,
+                    description
+                },
+                TestContext.Current.CancellationToken
+            );
 
         response.EnsureSuccessStatusCode();
 
@@ -160,7 +209,8 @@ public sealed class EquipmentCategoryEndpointsTests
             )
         );
 
-        return body.RootElement.GetProperty("id").GetGuid();
+        return body.RootElement
+            .GetProperty("id")
+            .GetGuid();
     }
-
 }
