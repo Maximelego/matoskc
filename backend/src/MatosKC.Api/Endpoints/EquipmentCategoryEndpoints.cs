@@ -38,7 +38,7 @@ public static class EquipmentCategoryEndpoints
                 StatusCodes.Status404NotFound
             );
 
-        group.MapGet("/", ListAsync)
+        group.MapGet("/", ListEquipmentCategoriesAsync)
             .WithName("ListEquipmentCategories")
             .WithSummary("List equipment categories")
             .Produces<ListEquipmentCategoryResult>(
@@ -85,17 +85,16 @@ public static class EquipmentCategoryEndpoints
         return TypedResults.Ok(result);
     }
 
-    private static async Task<
-        Ok<ListEquipmentCategoryResult>
-    > ListAsync(
+    private static async Task<IResult> ListEquipmentCategoriesAsync(
         ListEquipmentCategoryUseCase useCase,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        ListEquipmentCategoryResult result =
-            await useCase.ExecuteAsync(
-                cancellationToken
-            );
+        var query = new ListEquipmentCategoryQuery();
 
-        return TypedResults.Ok(result);
+        ListEquipmentCategoryResult result =
+            await useCase.ExecuteAsync(query, cancellationToken);
+
+        return Results.Ok(result);
     }
 }

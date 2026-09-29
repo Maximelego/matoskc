@@ -12,9 +12,9 @@ public class ListEquipmentCategoryUseCase
         _equipmentCategoryRepository = equipmentCategoryRepository;
     }
 
-    public async Task<ListEquipmentCategoryResult> ExecuteAsync(CancellationToken cancellationToken)
+    public async Task<ListEquipmentCategoryResult> ExecuteAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken)
     {
-        var equipmentCategories = await _equipmentCategoryRepository.ListEquipmentCategoriesAsync(cancellationToken);
+        var equipmentCategories = await _equipmentCategoryRepository.ListEquipmentCategoriesAsync(query, cancellationToken);
 
         return new ListEquipmentCategoryResult(
             equipmentCategories.ConvertAll(equipmentCategory => equipmentCategory.ToResult())

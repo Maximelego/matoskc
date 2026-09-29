@@ -72,7 +72,7 @@ public sealed class EquipmentCategoryRepository
             );
     }
 
-    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(CancellationToken cancellationToken)
+    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken)
     {
         return _dbContext.EquipmentCategories
             .ToListAsync(cancellationToken);

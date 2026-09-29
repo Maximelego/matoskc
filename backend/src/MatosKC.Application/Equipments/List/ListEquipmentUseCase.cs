@@ -17,8 +17,7 @@ public class ListEquipmentUseCase
         var equipments = await _equipmentRepository.ListEquipmentsAsync(query.CategoryId, query.Status, query.Search, cancellationToken);
 
         return new ListEquipmentResult(
-            equipments.Select(equipment => equipment.ToDto())
-                      .ToList()
+            equipments.ConvertAll(equipment => equipment.ToDto())
         );
     }
 }

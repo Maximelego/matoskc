@@ -72,7 +72,7 @@ internal sealed class FakeEquipmentCategoryRepository : IEquipmentCategoryReposi
         return Task.CompletedTask;
     }
 
-    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(CancellationToken cancellationToken)
+    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
