@@ -7,6 +7,10 @@ export const equipmentsApi = {
     return api.get<ListEquipmentsDto>("/api/equipments", { query: { ...filters } });
   },
 
+  listMock(filters: EquipmentFilters = {}) {
+    
+  },
+
   getById(id: string) {
     return api.get<EquipmentDto>(`/api/equipments/${encodeURIComponent(id)}`);
   },

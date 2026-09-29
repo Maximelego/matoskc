@@ -1,22 +1,7 @@
-import { createMemoryHistory, createRouter } from "vue-router";
-import { routes } from "./routes.ts";
-
-const isAuthenticated = false;
+import { createRouter, createWebHistory } from "vue-router";
+import { routes } from "./routes";
 
 export const router = createRouter({
-  history: createMemoryHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-});
-
-router.beforeEach(async (to, from) => {
-  console.log(from.path);
-  console.log(to.path);
-  if (
-    // make sure the user is authenticated
-    !isAuthenticated &&
-    to.path !== "/login"
-  ) {
-    // redirect the user to the login page
-    return { path: "/login" };
-  }
 });

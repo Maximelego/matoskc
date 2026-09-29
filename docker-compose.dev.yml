@@ -35,6 +35,12 @@ services:
             DOTNET_USE_POLLING_FILE_WATCHER: "true"
             DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
             DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "true"
+            
+            HOME: /tmp/dotnet-home
+            DOTNET_CLI_HOME: /tmp/dotnet-home
+            DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+            DOTNET_NOLOGO: "1"
+
 
             ConnectionStrings__MatosKCDatabase: Host=database;Port=5432;Database=matoskc;Username=matoskc;Password=matoskc_dev
         depends_on:
