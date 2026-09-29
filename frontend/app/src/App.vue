@@ -1,7 +1,18 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+
+import { RouterView } from 'vue-router';
+import AppLayout from './components/layout/AppLayout.vue';
+
 </script>
 
 <template>
-  <HelloWorld />
+    <AppLayout title="MatosKC">
+        <template #default>
+            <RouterView />
+        </template>
+    </AppLayout>
 </template>
+
+<style lang=scss>
+
+</style>

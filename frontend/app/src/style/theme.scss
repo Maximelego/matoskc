@@ -1,0 +1,201 @@
+@use "sass:map";
+
+// -----------------------------------------------------------------------------
+// Palettes
+// -----------------------------------------------------------------------------
+
+// Couleur primaire
+$blue: (
+  50: #eef8fe,
+  100: #d9f0fd,
+  200: #b9e3fb,
+  300: #88cff7,
+  400: #5bbaf3,
+  500: #43adef,
+  600: #168fd2,
+  700: #0878b8,
+  800: #0b6192,
+  900: #0e5278
+);
+
+// Couleur secondaire
+$pink: (
+  50: #fff1f8,
+  100: #ffe0ef,
+  200: #ffc1df,
+  300: #fa95c7,
+  400: #f47db9,
+  500: #ef6cad,
+  600: #db438f,
+  700: #bd2d76,
+  800: #9c285f,
+  900: #82264f
+);
+
+// Couleurs neutres
+$gray: (
+  50: #f9fafb,
+  100: #f3f4f6,
+  200: #e5e7eb,
+  300: #cbd0d6,
+  400: #9ca4ad,
+  500: #66717e,
+  600: #505961,
+  700: #3c4248,
+  800: #292d31,
+  850: #202326,
+  900: #151719,
+  950: #0e1011
+);
+
+// -----------------------------------------------------------------------------
+// Thème clair
+// -----------------------------------------------------------------------------
+
+$theme-light: (
+  // Arrière-plans
+  background: map.get($gray, 100),
+  surface: #ffffff,
+  surface-secondary: map.get($gray, 200),
+  surface-hover: #eef0f2,
+  surface-selected: map.get($blue, 50),
+
+  // Textes
+  text: #1f2933,
+  text-secondary: map.get($gray, 500),
+  text-disabled: map.get($gray, 400),
+  text-on-primary: #ffffff,
+  text-on-secondary: #ffffff,
+
+  // Couleur primaire
+  primary: map.get($blue, 700),
+  primary-hover: map.get($blue, 800),
+  primary-active: map.get($blue, 900),
+  primary-soft: map.get($blue, 50),
+  primary-soft-hover: map.get($blue, 100),
+
+  // Couleur secondaire
+  secondary: map.get($pink, 700),
+  secondary-hover: map.get($pink, 800),
+  secondary-active: map.get($pink, 900),
+  secondary-soft: map.get($pink, 50),
+  secondary-soft-hover: map.get($pink, 100),
+
+  // Teintes d'identité exactes
+  brand-primary: map.get($blue, 500),
+  brand-secondary: map.get($pink, 500),
+
+  // Structure et formulaires
+  border: map.get($gray, 300),
+  border-strong: map.get($gray, 400),
+  input-background: #ffffff,
+  input-placeholder: map.get($gray, 500),
+  focus: map.get($blue, 500),
+
+  // États métier
+  success: #237a44,
+  success-soft: #e7f5ec,
+  warning: #946200,
+  warning-soft: #fff4ce,
+  danger: #c62828,
+  danger-soft: #fdecec,
+  info: map.get($blue, 700),
+  info-soft: map.get($blue, 50),
+
+  // Effets
+  overlay: rgb(15 23 42 / 45%),
+  shadow: rgb(31 41 51 / 12%)
+);
+
+// -----------------------------------------------------------------------------
+// Thème sombre
+// -----------------------------------------------------------------------------
+
+$theme-dark: (
+  // Arrière-plans
+  background: map.get($gray, 900),
+  surface: map.get($gray, 850),
+  surface-secondary: map.get($gray, 800),
+  surface-hover: #32373c,
+  surface-selected: #173447,
+
+  // Textes
+  text: map.get($gray, 100),
+  text-secondary: #aeb5bd,
+  text-disabled: #737b84,
+  text-on-primary: #071b28,
+  text-on-secondary: #2a101d,
+
+  // Couleur primaire
+  primary: map.get($blue, 500),
+  primary-hover: map.get($blue, 400),
+  primary-active: map.get($blue, 300),
+  primary-soft: #173447,
+  primary-soft-hover: #1c4058,
+
+  // Couleur secondaire
+  secondary: map.get($pink, 500),
+  secondary-hover: map.get($pink, 400),
+  secondary-active: map.get($pink, 300),
+  secondary-soft: #412238,
+  secondary-soft-hover: #512944,
+
+  // Teintes d'identité exactes
+  brand-primary: map.get($blue, 500),
+  brand-secondary: map.get($pink, 500),
+
+  // Structure et formulaires
+  border: map.get($gray, 700),
+  border-strong: #596169,
+  input-background: map.get($gray, 800),
+  input-placeholder: #8f979f,
+  focus: map.get($blue, 400),
+
+  // États métier
+  success: #5ed08a,
+  success-soft: #183727,
+  warning: #f2bf4b,
+  warning-soft: #3b3018,
+  danger: #ff7373,
+  danger-soft: #412020,
+  info: map.get($blue, 400),
+  info-soft: #173447,
+
+  // Effets
+  overlay: rgb(0 0 0 / 65%),
+  shadow: rgb(0 0 0 / 35%)
+);
+
+// -----------------------------------------------------------------------------
+// Génération des propriétés CSS
+// -----------------------------------------------------------------------------
+
+@mixin generate-theme($theme) {
+  @each $name, $value in $theme {
+    --color-#{$name}: #{$value};
+  }
+}
+
+// Thème clair par défaut
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  @include generate-theme($theme-light);
+}
+
+// Thème sombre choisi manuellement
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  @include generate-theme($theme-dark);
+}
+
+// Préférence du système, en l'absence de choix manuel
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    @include generate-theme($theme-dark);
+  }
+}
