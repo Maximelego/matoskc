@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import NotFoundComponent from '../components/notfound/NotFoundComponent.vue';
+import NotFoundComponent from "../components/notfound/NotFoundComponent.vue";
 </script>
 
 <template>
-    <NotFoundComponent/>
+  <NotFoundComponent />
 </template>

@@ -32,17 +32,17 @@ function validateRule(
     case "minLength":
       return value.length >= rule.value
         ? undefined
-        : rule.message ?? `Ce champ doit contenir au moins ${rule.value} caractères.`;
+        : (rule.message ?? `Ce champ doit contenir au moins ${rule.value} caractères.`);
 
     case "maxLength":
       return value.length <= rule.value
         ? undefined
-        : rule.message ?? `Ce champ ne peut pas dépasser ${rule.value} caractères.`;
+        : (rule.message ?? `Ce champ ne peut pas dépasser ${rule.value} caractères.`);
 
     case "email":
       return EMAIL_PATTERN.test(value)
         ? undefined
-        : rule.message ?? "L’adresse e-mail n’est pas valide.";
+        : (rule.message ?? "L’adresse e-mail n’est pas valide.");
 
     case "pattern":
       return matchesPattern(value, rule.value) ? undefined : rule.message;
@@ -50,24 +50,18 @@ function validateRule(
     case "sameAs":
       return value === values[rule.field]
         ? undefined
-        : rule.message ?? "Les deux valeurs doivent être identiques.";
+        : (rule.message ?? "Les deux valeurs doivent être identiques.");
 
     case "custom":
       return rule.validate(value, values);
   }
 }
 
-export function validateField(
-  field: FormFieldDefinition,
-  values: Readonly<FormValues>,
-): string[] {
+export function validateField(field: FormFieldDefinition, values: Readonly<FormValues>): string[] {
   const value = values[field.name] ?? "";
   const rules = field.rules ?? [];
   const requiredRule = rules.find(
-    (rule): rule is Extract<
-      FieldValidationRule,
-      { type: "required" }
-    > => rule.type === "required",
+    (rule): rule is Extract<FieldValidationRule, { type: "required" }> => rule.type === "required",
   );
 
   if (isEmpty(value)) {
@@ -89,10 +83,7 @@ function mergeErrors(target: FormErrors, source: FormErrors): void {
       continue;
     }
 
-    target[fieldName] = [
-      ...(target[fieldName] ?? []),
-      ...fieldErrors,
-    ];
+    target[fieldName] = [...(target[fieldName] ?? []), ...fieldErrors];
   }
 }
 

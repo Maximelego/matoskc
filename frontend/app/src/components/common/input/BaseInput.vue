@@ -5,23 +5,9 @@ defineOptions({
   inheritAttrs: false,
 });
 
-type InputType =
-  | "text"
-  | "email"
-  | "tel"
-  | "password"
-  | "search"
-  | "url";
+type InputType = "text" | "email" | "tel" | "password" | "search" | "url";
 
-type InputMode =
-  | "none"
-  | "text"
-  | "decimal"
-  | "numeric"
-  | "tel"
-  | "search"
-  | "email"
-  | "url";
+type InputMode = "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
 
 const props = withDefaults(
   defineProps<{
@@ -102,7 +88,10 @@ function handleBlur(event: FocusEvent): void {
       'base-input--readonly': readonly,
     }"
   >
-    <label class="base-input__label" :for="id">
+    <label
+      class="base-input__label"
+      :for="id"
+    >
       {{ label }}
 
       <span

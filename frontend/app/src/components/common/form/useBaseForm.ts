@@ -1,11 +1,6 @@
 import { computed, reactive, ref } from "vue";
 
-import type {
-  FormErrors,
-  FormFieldDefinition,
-  FormValidator,
-  FormValues,
-} from "./form.types";
+import type { FormErrors, FormFieldDefinition, FormValidator, FormValues } from "./form.types";
 import { validateForm as collectFormErrors } from "./form.validators";
 
 function createValues(
@@ -13,10 +8,7 @@ function createValues(
   initialValues: Partial<FormValues>,
 ): FormValues {
   return Object.fromEntries(
-    fields.map((field) => [
-      field.name,
-      initialValues[field.name] ?? field.defaultValue ?? "",
-    ]),
+    fields.map((field) => [field.name, initialValues[field.name] ?? field.defaultValue ?? ""]),
   );
 }
 
@@ -39,9 +31,7 @@ export function useBaseForm(
     return collectFormErrors(fields, values, formValidators);
   }
 
-  const isValid = computed<boolean>(
-    () => Object.keys(collectErrors()).length === 0,
-  );
+  const isValid = computed<boolean>(() => Object.keys(collectErrors()).length === 0);
 
   function setValue(fieldName: string, value: string): void {
     if (values[fieldName] !== value) {
@@ -54,10 +44,7 @@ export function useBaseForm(
     }
   }
 
-  function setValues(
-    nextValues: Partial<FormValues>,
-    markAsDirty = false,
-  ): void {
+  function setValues(nextValues: Partial<FormValues>, markAsDirty = false): void {
     for (const field of fields) {
       const nextValue = nextValues[field.name] ?? field.defaultValue ?? "";
 

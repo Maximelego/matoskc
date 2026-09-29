@@ -15,7 +15,7 @@ $blue: (
   600: #168fd2,
   700: #0878b8,
   800: #0b6192,
-  900: #0e5278
+  900: #0e5278,
 );
 
 // Couleur secondaire
@@ -29,7 +29,7 @@ $pink: (
   600: #db438f,
   700: #bd2d76,
   800: #9c285f,
-  900: #82264f
+  900: #82264f,
 );
 
 // Couleurs neutres
@@ -45,7 +45,7 @@ $gray: (
   800: #292d31,
   850: #202326,
   900: #151719,
-  950: #0e1011
+  950: #0e1011,
 );
 
 // -----------------------------------------------------------------------------
@@ -59,7 +59,6 @@ $theme-light: (
   surface-secondary: map.get($gray, 200),
   surface-hover: #eef0f2,
   surface-selected: map.get($blue, 50),
-
   // Textes
   text: #1f2933,
   text-secondary: map.get($gray, 500),
@@ -73,25 +72,21 @@ $theme-light: (
   primary-active: map.get($blue, 900),
   primary-soft: map.get($blue, 50),
   primary-soft-hover: map.get($blue, 100),
-
   // Couleur secondaire
   secondary: map.get($pink, 700),
   secondary-hover: map.get($pink, 800),
   secondary-active: map.get($pink, 900),
   secondary-soft: map.get($pink, 50),
   secondary-soft-hover: map.get($pink, 100),
-
   // Teintes d'identité exactes
   brand-primary: map.get($blue, 500),
   brand-secondary: map.get($pink, 500),
-
   // Structure et formulaires
   border: map.get($gray, 300),
   border-strong: map.get($gray, 400),
   input-background: #ffffff,
   input-placeholder: map.get($gray, 500),
   focus: map.get($blue, 500),
-
   // États métier
   success: #237a44,
   success-soft: #e7f5ec,
@@ -101,7 +96,6 @@ $theme-light: (
   danger-soft: #fdecec,
   info: map.get($blue, 700),
   info-soft: map.get($blue, 50),
-
   // Effets
   overlay: rgb(15 23 42 / 45%),
   shadow: rgb(31 41 51 / 12%)
@@ -143,14 +137,12 @@ $theme-dark: (
   // Teintes d'identité exactes
   brand-primary: map.get($blue, 500),
   brand-secondary: map.get($pink, 500),
-
   // Structure et formulaires
   border: map.get($gray, 700),
   border-strong: #596169,
   input-background: map.get($gray, 800),
   input-placeholder: #8f979f,
   focus: map.get($blue, 400),
-
   // États métier
   success: #5ed08a,
   success-soft: #183727,

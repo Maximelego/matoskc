@@ -21,7 +21,7 @@ defineProps<{
     </AppHeader>
 
     <AppBody>
-      <slot name="default"/>
+      <slot name="default" />
     </AppBody>
 
     <AppFooter>

@@ -2,28 +2,12 @@ export type FormValues = Record<string, string>;
 
 export type FormErrors = Partial<Record<string, string[]>>;
 
-export type FormInputType =
-  | "text"
-  | "email"
-  | "tel"
-  | "password"
-  | "search"
-  | "url";
+export type FormInputType = "text" | "email" | "tel" | "password" | "search" | "url";
 
 export type FormInputMode =
-  | "none"
-  | "text"
-  | "decimal"
-  | "numeric"
-  | "tel"
-  | "search"
-  | "email"
-  | "url";
+  "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
 
-export type FieldValidator = (
-  value: string,
-  values: Readonly<FormValues>,
-) => string | undefined;
+export type FieldValidator = (value: string, values: Readonly<FormValues>) => string | undefined;
 
 export type FieldValidationRule =
   | {
@@ -73,6 +57,4 @@ export interface FormFieldDefinition {
   rules?: readonly FieldValidationRule[];
 }
 
-export type FormValidator = (
-  values: Readonly<FormValues>,
-) => FormErrors;
+export type FormValidator = (values: Readonly<FormValues>) => FormErrors;

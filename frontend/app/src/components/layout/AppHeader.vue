@@ -46,7 +46,10 @@ function closeMenu(): void {
         <slot name="navigation" />
       </nav>
 
-      <div v-if="$slots.actions" class="app-header__actions">
+      <div
+        v-if="$slots.actions"
+        class="app-header__actions"
+      >
         <slot name="actions" />
       </div>
     </div>

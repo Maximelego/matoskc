@@ -19,10 +19,7 @@ withDefaults(
 <template>
   <span
     class="base-spinner"
-    :class="[
-      `base-spinner--${size}`,
-      `base-spinner--${variant}`,
-    ]"
+    :class="[`base-spinner--${size}`, `base-spinner--${variant}`]"
     role="status"
     :aria-label="label"
   />
@@ -40,17 +37,9 @@ withDefaults(
   flex-shrink: 0;
   border-radius: 50%;
   background:
-    radial-gradient(
-      farthest-side,
-      var(--spinner-color) 94%,
-      transparent
-    )
-    top / var(--spinner-thickness) var(--spinner-thickness)
-    no-repeat,
-    conic-gradient(
-      transparent 30%,
-      var(--spinner-color)
-    );
+    radial-gradient(farthest-side, var(--spinner-color) 94%, transparent) top /
+      var(--spinner-thickness) var(--spinner-thickness) no-repeat,
+    conic-gradient(transparent 30%, var(--spinner-color));
 
   -webkit-mask: radial-gradient(
     farthest-side,

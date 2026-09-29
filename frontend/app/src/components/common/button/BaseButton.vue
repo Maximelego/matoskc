@@ -1,13 +1,7 @@
 <script setup lang="ts">
-
 import BaseSpinner from "../spinner/BaseSpinner.vue";
 
-type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "outline"
-  | "ghost"
-  | "danger";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 
 type ButtonSize = "small" | "medium" | "large";
 
@@ -31,7 +25,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   click: [event: MouseEvent];
 }>();
-
 
 function handleClick(event: MouseEvent): void {
   if (props.disabled || props.loading) {
@@ -59,10 +52,10 @@ function handleClick(event: MouseEvent): void {
     @click="handleClick"
   >
     <BaseSpinner
-        v-if="loading"
-        size="small"
-        variant="secondary"
-        label="Action en cours"
+      v-if="loading"
+      size="small"
+      variant="secondary"
+      label="Action en cours"
     />
 
     <span
@@ -88,7 +81,6 @@ function handleClick(event: MouseEvent): void {
 </template>
 
 <style scoped lang="scss">
-
 .base-button {
   display: inline-flex;
   align-items: center;

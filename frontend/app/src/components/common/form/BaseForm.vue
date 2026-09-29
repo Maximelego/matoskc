@@ -4,12 +4,7 @@ import { nextTick, watch } from "vue";
 import BaseButton from "../button/BaseButton.vue";
 import BaseInput from "../input/BaseInput.vue";
 
-import type {
-  FormErrors,
-  FormFieldDefinition,
-  FormValidator,
-  FormValues,
-} from "./form.types";
+import type { FormErrors, FormFieldDefinition, FormValidator, FormValues } from "./form.types";
 import { useBaseForm } from "./useBaseForm";
 
 const props = withDefaults(
@@ -49,11 +44,7 @@ const {
   markAllTouched,
   validate,
   getFieldErrors,
-} = useBaseForm(
-  props.fields,
-  props.modelValue ?? {},
-  props.validators,
-);
+} = useBaseForm(props.fields, props.modelValue ?? {}, props.validators);
 
 watch(
   () => props.modelValue,
@@ -65,9 +56,13 @@ watch(
   { deep: true },
 );
 
-watch(isValid, (valid) => {
-  emit("validity-change", valid);
-}, { immediate: true });
+watch(
+  isValid,
+  (valid) => {
+    emit("validity-change", valid);
+  },
+  { immediate: true },
+);
 
 function cloneValues(): FormValues {
   return { ...values };
@@ -83,7 +78,7 @@ function getLengthRule(
 ): number | undefined {
   const rule = field.rules?.find((candidate) => candidate.type === ruleType);
 
-  return rule && "value" in rule ? rule.value as number : undefined;
+  return rule && "value" in rule ? (rule.value as number) : undefined;
 }
 
 function getVisibleError(fieldName: string): string | undefined {
@@ -144,7 +139,11 @@ function handleFieldKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <form class="base-form" novalidate @submit.prevent="handleSubmit">
+  <form
+    class="base-form"
+    novalidate
+    @submit.prevent="handleSubmit"
+  >
     <div class="base-form__fields">
       <BaseInput
         v-for="field in fields"

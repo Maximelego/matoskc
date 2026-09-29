@@ -1,7 +1,7 @@
-import  type { Component } from "vue";
+import type { Component } from "vue";
 
 export type RouteType = {
-    name: string;
-    path: string;
-    component: Component;
-}
+  name: string;
+  path: string;
+  component: Component;
+};
