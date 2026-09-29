@@ -2,6 +2,7 @@ namespace MatosKC.Application;
 
 using MatosKC.Application.EquipmentCategories.Create;
 using MatosKC.Application.EquipmentCategories.Get;
+using MatosKC.Application.EquipmentCategories.List;
 using MatosKC.Application.Equipments.Create;
 using MatosKC.Application.Equipments.Get;
 using MatosKC.Application.Equipments.List;
@@ -16,6 +17,7 @@ public static class DependencyInjection
     {
         services.AddScoped<CreateEquipmentCategoryUseCase>();
         services.AddScoped<GetEquipmentCategoryUseCase>();
+        services.AddScoped<ListEquipmentCategoryUseCase>();
 
         services.AddScoped<CreateEquipmentUseCase>();
         services.AddScoped<GetEquipmentUseCase>();

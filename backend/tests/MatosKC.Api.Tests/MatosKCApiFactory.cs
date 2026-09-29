@@ -4,12 +4,12 @@ using MatosKC.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 
-public sealed class MatosKCApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class MatosKCApiFactory
+    : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer PostgreSqlContainer =
         new PostgreSqlBuilder("postgres:16-alpine")
@@ -20,7 +20,19 @@ public sealed class MatosKCApiFactory : WebApplicationFactory<Program>, IAsyncLi
 
     public async ValueTask InitializeAsync()
     {
+        // 1. Démarre PostgreSQL.
         await PostgreSqlContainer.StartAsync();
+
+        // 2. Force la construction de l'API et de son conteneur DI.
+        _ = CreateClient();
+
+        // 3. Applique les migrations avec le vrai conteneur DI de l'API.
+        using IServiceScope scope = Services.CreateScope();
+
+        MatosKCDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
+
+        await dbContext.Database.MigrateAsync();
     }
 
     public new async ValueTask DisposeAsync()
@@ -33,37 +45,27 @@ public sealed class MatosKCApiFactory : WebApplicationFactory<Program>, IAsyncLi
     {
         builder.UseEnvironment("Testing");
 
-        builder.ConfigureAppConfiguration(
-            (_, configuration) =>
-            {
-                configuration.AddInMemoryCollection(
-                    new Dictionary<string, string?>
-                    {
-                        ["ConnectionStrings:MatosKCDatabase"] =
-                            PostgreSqlContainer.GetConnectionString()
-                    }
-                );
-            }
+        string connectionString =
+            PostgreSqlContainer.GetConnectionString();
+
+        // Rend la connexion disponible au Program.cs.
+        builder.UseSetting(
+            "ConnectionStrings:MatosKCDatabase",
+            connectionString
         );
 
         builder.ConfigureServices(
             services =>
             {
+                // Retire la configuration PostgreSQL enregistrée
+                // normalement par Program.cs/AddInfrastructure().
                 services.RemoveAll<MatosKCDbContext>();
                 services.RemoveAll<DbContextOptions<MatosKCDbContext>>();
 
+                // La remplace par la base PostgreSQL du conteneur de test.
                 services.AddDbContext<MatosKCDbContext>(
-                    options => options.UseNpgsql(
-                        PostgreSqlContainer.GetConnectionString()
-                    )
+                    options => options.UseNpgsql(connectionString)
                 );
-
-                using ServiceProvider serviceProvider = services.BuildServiceProvider();
-                using IServiceScope scope = serviceProvider.CreateScope();
-                MatosKCDbContext dbContext =
-                    scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
-
-                dbContext.Database.Migrate();
             }
         );
     }

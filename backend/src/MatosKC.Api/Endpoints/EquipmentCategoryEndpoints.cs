@@ -38,6 +38,13 @@ public static class EquipmentCategoryEndpoints
                 StatusCodes.Status404NotFound
             );
 
+        group.MapGet("/", ListAsync)
+            .WithName("ListEquipmentCategories")
+            .WithSummary("List equipment categories")
+            .Produces<ListEquipmentCategoryResult>(
+                StatusCodes.Status200OK
+            );
+
         return endpoints;
     }
 
@@ -82,7 +89,6 @@ public static class EquipmentCategoryEndpoints
         Ok<ListEquipmentCategoryResult>
     > ListAsync(
         ListEquipmentCategoryUseCase useCase,
-        ListEquipmentCategoryQuery query,
         CancellationToken cancellationToken)
     {
         ListEquipmentCategoryResult result =

@@ -14,6 +14,7 @@ services:
     backend:
         image: mcr.microsoft.com/dotnet/sdk:10.0-alpine
         working_dir: /app
+        user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
         volumes:
             - ./backend:/app
             - backend_nuget_packages:/root/.nuget/packages

@@ -2,6 +2,9 @@ namespace MatosKC.Infrastructure.Persistence.Configurations;
 
 using MatosKC.Domain.Equipments;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 public sealed class EquipmentCategoryConfiguration
     : IEntityTypeConfiguration<EquipmentCategory>
 {

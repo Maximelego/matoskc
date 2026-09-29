@@ -15,7 +15,7 @@ public static class EquipmentEndpoints
             .MapGroup("/api/equipments")
             .WithTags("Equipment");
 
-        group.MapPost("/", CreateAsync)
+        group.MapPost("", CreateAsync)
             .WithName("CreateEquipment")
             .WithSummary("Create an equipment")
             .Produces<CreatedResourceResponse>(
@@ -38,7 +38,7 @@ public static class EquipmentEndpoints
                 StatusCodes.Status404NotFound
             );
 
-        group.MapGet("/", ListEquipmentAsync)
+        group.MapGet("", ListEquipmentAsync)
             .WithName("GetEquipmentsByFilter")
             .WithSummary("Get equipments by filters")
             .Produces<ListEquipmentResult>(

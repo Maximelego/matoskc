@@ -5,6 +5,9 @@ using MatosKC.Application.Equipments.Ports;
 using MatosKC.Infrastructure.Persistence;
 using MatosKC.Infrastructure.Persistence.Repositories;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(

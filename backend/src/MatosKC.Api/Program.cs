@@ -1,7 +1,8 @@
 using MatosKC.Api.Endpoints;
 using MatosKC.Api.ErrorHandling;
 using MatosKC.Application;
-using MatosKC.Infrastructure.Persistence;
+using MatosKC.Infrastructure;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,13 +19,9 @@ string connectionString =
         "Connection string 'MatosKCDatabase' was not found."
     );
 
-builder.Services.AddDbContext<MatosKCDbContext>(
-    options => options.UseNpgsql(connectionString)
-);
-
 // Add services to the container.
 builder.Services.AddApplication()
-                .AddRepositories();
+                .AddInfrastructure(connectionString);
 
 builder.Services.Configure<RouteHandlerOptions>(
     options => options.ThrowOnBadRequest = true

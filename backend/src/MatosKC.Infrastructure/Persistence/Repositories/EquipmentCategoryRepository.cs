@@ -4,6 +4,8 @@ using MatosKC.Application.EquipmentCategories.List;
 using MatosKC.Application.EquipmentCategories.Ports;
 using MatosKC.Domain.Equipments;
 
+using Microsoft.EntityFrameworkCore;
+
 public sealed class EquipmentCategoryRepository
     : IEquipmentCategoryRepository
 {
@@ -70,7 +72,7 @@ public sealed class EquipmentCategoryRepository
             );
     }
 
-    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken)
+    public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(CancellationToken cancellationToken)
     {
         return _dbContext.EquipmentCategories
             .ToListAsync(cancellationToken);
