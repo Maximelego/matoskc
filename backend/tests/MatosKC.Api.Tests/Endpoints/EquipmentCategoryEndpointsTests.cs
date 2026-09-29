@@ -2,6 +2,7 @@ namespace MatosKC.Api.Tests.Endpoints;
 
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using MatosKC.Application.EquipmentCategories.List;
 
@@ -145,6 +146,37 @@ public sealed class EquipmentCategoryEndpointsTests
             "application/problem+json",
             response.Content.Headers.ContentType?.MediaType
         );
+    }
+
+    [Fact]
+    public async Task CreateCategory_WithDuplicateName_ShouldReturnConflict()
+    {
+        string name = $"Category-{Guid.NewGuid():N}";
+        await CreateCategoryAsync(name, null);
+
+        HttpResponseMessage response = await Client.PostAsJsonAsync(
+            "/api/equipment-categories",
+            new { name, description = (string?)null },
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task CreateCategory_WithMalformedJson_ShouldReturnBadRequest()
+    {
+        using var content = new StringContent("{", Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await Client.PostAsync(
+            "/api/equipment-categories",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
