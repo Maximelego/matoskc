@@ -18,11 +18,6 @@ public class GetEquipmentUseCase
     {
         var equipment = await _EquipmentRepository.RetrieveByIdAsync(id, cancellationToken);
 
-        if (equipment is null)
-        {
-            throw new EquipmentNotFoundException(id);
-        }
-
-        return equipment.ToDto();
+        return equipment is null ? throw new EquipmentNotFoundException(id) : equipment.ToDto();
     }
 }

@@ -18,7 +18,6 @@ services:
         user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
         volumes:
             - ./backend:/app
-            - backend_nuget_packages:/root/.nuget/packages
         ports:
             - "8000:8000"
         command:
@@ -32,15 +31,15 @@ services:
             ASPNETCORE_ENVIRONMENT: Development
             ASPNETCORE_URLS: http://0.0.0.0:8000
 
+            HOME: /tmp/dotnet-home
+            DOTNET_CLI_HOME: /tmp/dotnet-home
+            NUGET_PACKAGES: /tmp/dotnet-home/.nuget/packages
+            DOTNET_NOLOGO: "true"
+            DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+
             DOTNET_USE_POLLING_FILE_WATCHER: "true"
             DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
             DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "true"
-            
-            HOME: /tmp/dotnet-home
-            DOTNET_CLI_HOME: /tmp/dotnet-home
-            DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
-            DOTNET_NOLOGO: "1"
-
 
             ConnectionStrings__MatosKCDatabase: Host=database;Port=5432;Database=matoskc;Username=matoskc;Password=matoskc_dev
         depends_on:
@@ -67,5 +66,5 @@ services:
 
 volumes:
     frontend_node_modules:
-    backend_nuget_packages:
     matoskc_postgres_data:
+        name: matoskc_postgres_data_dev

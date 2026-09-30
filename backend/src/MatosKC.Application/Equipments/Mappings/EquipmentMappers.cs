@@ -27,6 +27,7 @@ public static class EquipmentMapper
             equipment.Id,
             equipment.Name,
             equipment.SerialNumber,
+            equipment.Status,
             equipment.CategoryId
         );
     }

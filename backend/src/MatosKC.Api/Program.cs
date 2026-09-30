@@ -2,6 +2,9 @@ using MatosKC.Api.Endpoints;
 using MatosKC.Api.ErrorHandling;
 using MatosKC.Application;
 using MatosKC.Infrastructure;
+using MatosKC.Infrastructure.Persistence;
+using MatosKC.Infrastructure.Persistence.Seeding;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,10 +29,22 @@ builder.Services.AddApplication()
 builder.Services.Configure<RouteHandlerOptions>(
     options => options.ThrowOnBadRequest = true
 );
-builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<ApiExceptionHandler>();
-
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+
+    MatosKCDbContext dbContext =
+        scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
+
+    await dbContext.Database.MigrateAsync();
+
+    DevelopmentDataSeeder dataSeeder =
+        scope.ServiceProvider.GetRequiredService<DevelopmentDataSeeder>();
+
+    await dataSeeder.SeedAsync();
+}
 
 app.UseExceptionHandler();
 

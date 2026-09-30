@@ -10,14 +10,12 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 case "${ENVIRONMENT}" in
     dev)
         COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.dev.yml"
-        REMOVE_VOLUMES=true
-        NO_CACHE=true
+        DEV_DATABASE_VOLUME="matoskc_postgres_data_dev"
         ;;
 
     prod)
         COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.prod.yml"
-        REMOVE_VOLUMES=false
-        NO_CACHE=false
+        DEV_DATABASE_VOLUME=""
         ;;
 
     *)
@@ -35,32 +33,29 @@ fi
 start_services() {
     echo "Starting MatosKC in ${ENVIRONMENT} mode..."
 
-    if [ "${NO_CACHE}" = true ]; then
-        docker compose \
-            -f "${COMPOSE_FILE}" \
-            build --no-cache
-
-        docker compose \
-            -f "${COMPOSE_FILE}" \
-            up --detach
-    else
-        docker compose \
-            -f "${COMPOSE_FILE}" \
-            up --detach --build
-    fi
+    docker compose \
+        -f "${COMPOSE_FILE}" \
+        up --detach --build
 }
 
 stop_services() {
     echo "Stopping MatosKC in ${ENVIRONMENT} mode..."
 
-    if [ "${REMOVE_VOLUMES}" = true ]; then
-        docker compose \
-            -f "${COMPOSE_FILE}" \
-            down --volumes
-    else
-        docker compose \
-            -f "${COMPOSE_FILE}" \
-            down
+    docker compose \
+        -f "${COMPOSE_FILE}" \
+        down
+}
+
+reset_dev_database() {
+    if [ "${ENVIRONMENT}" != "dev" ]; then
+        echo "Database reset is only available in dev mode."
+        exit 1
+    fi
+
+    echo "Removing development database volume ${DEV_DATABASE_VOLUME}..."
+
+    if docker volume inspect "${DEV_DATABASE_VOLUME}" >/dev/null 2>&1; then
+        docker volume rm "${DEV_DATABASE_VOLUME}"
     fi
 }
 
@@ -75,15 +70,32 @@ case "${COMMAND}" in
 
     restart)
         stop_services
+
+        if [ "${ENVIRONMENT}" = "dev" ]; then
+            reset_dev_database
+        fi
+
+        start_services
+        ;;
+
+    reset-db)
+        if [ "${ENVIRONMENT}" != "dev" ]; then
+            echo "Database reset is only available in dev mode."
+            exit 1
+        fi
+
+        stop_services
+        reset_dev_database
         start_services
         ;;
 
     *)
-        echo "Usage: $0 {start|stop|restart} {dev|prod}"
+        echo "Usage: $0 {start|stop|restart|reset-db} {dev|prod}"
         echo
         echo "Examples:"
         echo "  $0 start dev"
         echo "  $0 restart dev"
+        echo "  $0 reset-db dev"
         echo "  $0 start prod"
         echo "  $0 stop prod"
         exit 1

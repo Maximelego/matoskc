@@ -4,6 +4,7 @@ using MatosKC.Application.EquipmentCategories.Ports;
 using MatosKC.Application.Equipments.Ports;
 using MatosKC.Infrastructure.Persistence;
 using MatosKC.Infrastructure.Persistence.Repositories;
+using MatosKC.Infrastructure.Persistence.Seeding;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,8 @@ public static class DependencyInjection
             IEquipmentRepository,
             EquipmentRepository
         >();
+
+        services.AddScoped<DevelopmentDataSeeder>();
 
         return services;
     }
