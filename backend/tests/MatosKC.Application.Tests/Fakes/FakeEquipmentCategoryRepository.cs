@@ -1,6 +1,6 @@
+using MatosKC.Application.EquipmentCategories.List;
 using MatosKC.Application.EquipmentCategories.Ports;
 using MatosKC.Domain.Equipments;
-using MatosKC.Application.EquipmentCategories.List;
 
 namespace MatosKC.Application.Tests.Fakes;
 
@@ -25,6 +25,10 @@ internal sealed class FakeEquipmentCategoryRepository : IEquipmentCategoryReposi
     public CancellationToken GetByIdCancellationToken { get; private set; }
 
     public CancellationToken AddCancellationToken { get; private set; }
+
+    public CancellationToken ListCancellationToken { get; private set; }
+
+    public ListEquipmentCategoryQuery? LastListQuery { get; private set; }
 
     public void Seed(EquipmentCategory category)
     {
@@ -74,6 +78,9 @@ internal sealed class FakeEquipmentCategoryRepository : IEquipmentCategoryReposi
 
     public Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        LastListQuery = query;
+        ListCancellationToken = cancellationToken;
+
+        return Task.FromResult(_categories.Values.ToList());
     }
 }
