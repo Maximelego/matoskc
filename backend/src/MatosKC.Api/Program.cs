@@ -35,6 +35,7 @@ string connectionString =
 // Add services to the container.
 builder.Services.AddApplication()
                 .AddInfrastructure(connectionString);
+                .AddObjectStorage(builder.Configuration);
 
 builder.Services.Configure<RouteHandlerOptions>(
     options => options.ThrowOnBadRequest = true

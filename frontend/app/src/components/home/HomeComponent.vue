@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import AdminHomeComponent from "./adminHomeComponent/AdminHomeComponent.vue";
+import MagaHomeComponent from "./magaHomeComponent/MagaHomeComponent.vue";
 </script>
 
 <template>
   <div class="home">
-    <AdminHomeComponent />
+    <MagaHomeComponent />
   </div>
 </template>
 

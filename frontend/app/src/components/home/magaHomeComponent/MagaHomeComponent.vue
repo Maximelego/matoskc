@@ -1,40 +1,14 @@
 <script setup lang="ts">
-import HomeTile from "../HomeTile.vue";
+import HomeTile, { type HomeTileProps } from "../HomeTile.vue";
 
 const menus = [
   {
-    title: "État des lieux de départ",
-    description: "Préparer la remise du matériel et recueillir la signature.",
-    icon: "↗",
-    featured: true,
+    title: "Etats des Lieux",
+    description: "Liste des Etats des Lieux.",
+    icon: "clipboard",
+    to: "/inspections",
   },
-  {
-    title: "État des lieux de retour",
-    description: "Comparer le matériel à son état de départ.",
-    icon: "↙",
-  },
-  {
-    title: "Reprendre un brouillon",
-    description: "Poursuivre un état des lieux interrompu.",
-    icon: "◷",
-  },
-  {
-    title: "Contrôle interne",
-    description: "Vérifier un matériel sans dossier de location.",
-    icon: "✓",
-  },
-  {
-    title: "Rechercher un équipement",
-    description: "Consulter une fiche ou retrouver un matériel.",
-    icon: "⌕",
-    to: "/equipments",
-  },
-  {
-    title: "Synchronisation",
-    description: "Consulter les dossiers en attente d’envoi.",
-    icon: "↻",
-  },
-] as const;
+] as HomeTileProps[];
 </script>
 
 <template>
@@ -51,11 +25,7 @@ const menus = [
       <HomeTile
         v-for="menu in menus"
         :key="menu.title"
-        :title="menu.title"
-        :description="menu.description"
-        :icon="menu.icon"
-        :to="'to' in menu ? menu.to : undefined"
-        :featured="'featured' in menu ? menu.featured : false"
+        v-bind="menu"
       />
     </div>
   </section>

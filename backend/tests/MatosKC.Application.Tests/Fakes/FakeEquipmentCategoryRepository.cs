@@ -1,6 +1,6 @@
+using MatosKC.Application.EquipmentCategories.List;
 using MatosKC.Application.EquipmentCategories.Ports;
 using MatosKC.Domain.Equipments;
-using MatosKC.Application.EquipmentCategories.List;
 
 namespace MatosKC.Application.Tests.Fakes;
 
