@@ -42,9 +42,47 @@ services:
             DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "true"
 
             ConnectionStrings__MatosKCDatabase: Host=database;Port=5432;Database=matoskc;Username=matoskc;Password=matoskc_dev
+
+            S3__ServiceUrl: http://object-storage:3900
+            S3__Region: garage
+            S3__AccessKey: GK0123456789abcdef0123456789abcdef
+            S3__SecretKey: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+            S3__BucketName: matoskc
+            S3__ForcePathStyle: "true"
         depends_on:
             database:
                 condition: service_healthy
+            object-storage:
+                condition: service_healthy
+
+    object-storage:
+        image: dxflrs/garage:v2.4.1
+        command:
+            - /garage
+            - server
+            - --single-node
+            - --default-bucket
+        environment:
+            GARAGE_DEFAULT_ACCESS_KEY: GK0123456789abcdef0123456789abcdef
+            GARAGE_DEFAULT_SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+            GARAGE_DEFAULT_BUCKET: matoskc
+        ports:
+            - "3900:3900"
+            - "3903:3903"
+        volumes:
+            - ./docker/garage/garage.toml:/etc/garage.toml:ro
+            - matoskc_garage_metadata:/var/lib/garage/meta
+            - matoskc_garage_data:/var/lib/garage/data
+        healthcheck:
+            test:
+                - CMD
+                - /garage
+                - status
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+        restart: unless-stopped
 
     database:
         image: postgres:16-alpine
@@ -66,5 +104,13 @@ services:
 
 volumes:
     frontend_node_modules:
+        name: frontend_node_modules_dev
+
     matoskc_postgres_data:
         name: matoskc_postgres_data_dev
+
+    matoskc_garage_metadata:
+        name: matoskc_garage_metadata_dev
+
+    matoskc_garage_data:
+        name: matoskc_garage_data_dev

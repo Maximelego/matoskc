@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts";
 import type { EquipmentDto, EquipmentStatus } from "../../api/equipments/dto";
 import BaseModal from "../common/modal/BaseModal.vue";
@@ -7,6 +7,7 @@ import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.v
 
 const props = defineProps<{
   equipment: EquipmentDto | null;
+  open: boolean;
   equipmentCategories: EquipmentCategoryDto[];
   busy?: boolean;
   error?: string | null;
@@ -14,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
+  closed: [];
   changeStatus: [equipment: EquipmentDto, status: EquipmentStatus];
 }>();
 
@@ -59,14 +61,11 @@ function submit(): void {
   emit("changeStatus", equipment, status);
 }
 
-onMounted(() => {
-  console.log(props.equipmentCategories);
-});
 </script>
 
 <template>
   <BaseModal
-    :open="equipment !== null"
+    :open="open"
     :busy="busy"
     :title="equipment?.name ?? 'Détails de l’équipement'"
     @close="emit('close')"
@@ -233,5 +232,12 @@ onMounted(() => {
   &__error {
     color: var(--color-danger);
   }
+}
+
+@media (max-width: 42rem) {
+  .equipment-details { gap: 1rem; }
+  .equipment-details__photo { min-height: 9rem; }
+  .equipment-details__fields { grid-template-columns: minmax(0, 1fr); gap: 0.875rem; }
+  .equipment-details__status button { justify-self: stretch; min-height: 2.75rem; }
 }
 </style>

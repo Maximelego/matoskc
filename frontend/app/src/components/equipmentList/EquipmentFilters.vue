@@ -187,4 +187,18 @@ function update(patch: Partial<EquipmentFilters>): void {
     text-decoration: underline;
   }
 }
+
+@media (max-width: 42rem) {
+  .equipment-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0.875rem;
+  }
+  .equipment-filters__field { min-width: 0; }
+  .equipment-filters__field--search, .equipment-filters__message { grid-column: 1 / -1; }
+  .equipment-filters__reset { grid-column: 1 / -1; justify-self: stretch; border: 1px solid var(--color-border); }
+}
+@media (max-width: 23rem) {
+  .equipment-filters { grid-template-columns: minmax(0, 1fr); }
+}
 </style>

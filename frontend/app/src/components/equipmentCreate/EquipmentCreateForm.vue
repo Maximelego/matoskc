@@ -250,4 +250,12 @@ onMounted(loadCategories);
     margin-top: 0.5rem;
   }
 }
+
+@media (max-width: 42rem) {
+  .equipment-create-form__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .equipment-create-form__actions :deep(button) { width: 100%; min-height: 2.75rem; }
+}
+@media (max-width: 23rem) {
+  .equipment-create-form__actions { grid-template-columns: 1fr; }
+}
 </style>
