@@ -17,17 +17,8 @@ export type ListEquipmentsDto = {
   equipments: EquipmentDto[];
 };
 
-// ASP.NET Core currently serializes EquipmentStatus as its numeric enum value.
-export type EquipmentStatus = 0 | 1 | 2 | 3 | 4 | 5;
-
-export const EquipmentStatus = {
-  Available: 0 as EquipmentStatus,
-  Rented: 1 as EquipmentStatus,
-  Maintenance: 2 as EquipmentStatus,
-  Reserved: 3 as EquipmentStatus,
-  Lost: 4 as EquipmentStatus,
-  Retired: 5 as EquipmentStatus,
-};
+export type EquipmentStatus =
+  "Available" | "Unavailable" | "ToBeDecided" | "Decommissioned" | "Maintenance" | "Borrowed";
 
 export type EquipmentFilters = {
   categoryId?: string;

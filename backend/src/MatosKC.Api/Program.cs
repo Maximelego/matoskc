@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MatosKC.Api.Endpoints;
 using MatosKC.Api.ErrorHandling;
 using MatosKC.Application;
@@ -7,7 +8,16 @@ using MatosKC.Infrastructure.Persistence.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
+
 var builder = WebApplication.CreateBuilder(args);
+
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter()
+    );
+});
 
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();

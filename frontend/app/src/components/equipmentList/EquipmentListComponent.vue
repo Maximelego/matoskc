@@ -1,54 +1,194 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ApiError } from "../../api/client";
+import { equipmentCategoriesApi } from "../../api/equipment-categories";
+import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
 import { equipmentsApi } from "../../api/equipments";
-import type { EquipmentDto } from "../../api/equipments/dto";
+import type { EquipmentDto, EquipmentFilters } from "../../api/equipments/dto";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
 import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import EquipmentCreateForm from "../equipmentCreate/EquipmentCreateForm.vue";
+import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
+import EquipmentDetailsModal from "./EquipmentDetailsModal.vue";
+import EquipmentFiltersControl from "./EquipmentFilters.vue";
 
-const emit = defineEmits<{
-  view: [equipment: EquipmentDto];
-  edit: [equipment: EquipmentDto];
-}>();
+const selectedEquipment = ref<EquipmentDto | null>(null);
+
+type SortKey = "name" | "serialNumber" | "equipmentCategoryId" | "status";
+
+type SortDirection = "asc" | "desc";
+
+const statusLabels: Record<string, string> = {
+  Available: "Disponible",
+  Unavailable: "Indisponible",
+  ToBeDecided: "À décider",
+  Decommissioned: "Réformé",
+  Maintenance: "En maintenance",
+  Borrowed: "Emprunté",
+};
 
 const equipments = ref<EquipmentDto[]>([]);
+const categories = ref<EquipmentCategoryDto[]>([]);
+const filters = ref<EquipmentFilters>({});
+
 const loading = ref(false);
+const categoriesLoading = ref(false);
+const categoriesError = ref(false);
 const error = ref<string | null>(null);
 const notice = ref("");
 
 const createOpen = ref(false);
 const createBusy = ref(false);
 
+const sortKey = ref<SortKey>("name");
+const sortDirection = ref<SortDirection>("asc");
+const collator = new Intl.Collator("fr", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+let requestVersion = 0;
+
+const categoryNames = computed(
+  () => new Map(categories.value.map((category) => [category.id, category.name])),
+);
+
+function categoryName(equipment: EquipmentDto): string {
+  return categoryNames.value.get(equipment.equipmentCategoryId) ?? equipment.equipmentCategoryId;
+}
+
+function statusLabel(equipment: EquipmentDto): string {
+  return statusLabels[equipment.status] ?? equipment.status;
+}
+
+const sortedEquipments = computed(() =>
+  [...equipments.value].sort((first, second) => {
+    function sortValue(equipment: EquipmentDto): string {
+      if (sortKey.value === "equipmentCategoryId") {
+        return categoryName(equipment);
+      }
+
+      if (sortKey.value === "status") {
+        return statusLabel(equipment);
+      }
+
+      return equipment[sortKey.value];
+    }
+
+    const comparison = collator.compare(sortValue(first), sortValue(second));
+
+    return (
+      (sortDirection.value === "asc" ? comparison : -comparison) ||
+      collator.compare(first.id, second.id)
+    );
+  }),
+);
+
+function toggleSort(key: SortKey): void {
+  if (sortKey.value === key) {
+    sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
+    return;
+  }
+
+  sortKey.value = key;
+  sortDirection.value = "asc";
+}
+
+function ariaSort(key: SortKey): "ascending" | "descending" | "none" {
+  if (sortKey.value !== key) return "none";
+  return sortDirection.value === "asc" ? "ascending" : "descending";
+}
+
+function openDetails(equipment: EquipmentDto): void {
+  selectedEquipment.value = equipment;
+}
+
+function equipmentErrorMessage(cause: unknown): string {
+  if (cause instanceof ApiError) {
+    if (cause.status === 401) {
+      return "Veuillez vous connecter pour consulter les équipements.";
+    }
+
+    if (cause.status === 403) {
+      return "Vous ne disposez pas des droits nécessaires pour consulter les équipements.";
+    }
+
+    if (cause.status >= 500) {
+      return "Le serveur rencontre un problème. Veuillez réessayer dans quelques instants.";
+    }
+
+    return cause.message;
+  }
+
+  if (cause instanceof TypeError) {
+    return "Impossible de joindre l’API. Veuillez vérifier votre connexion et la disponibilité du serveur.";
+  }
+
+  return "Impossible de charger les équipements.";
+}
+
 async function loadEquipments(): Promise<void> {
+  const version = ++requestVersion;
+
   loading.value = true;
   error.value = null;
 
   try {
-    const result = await equipmentsApi.list();
-    equipments.value = result.equipments;
-  } catch (cause: unknown) {
-    if (cause instanceof ApiError) {
-      if (cause.status === 401) {
-        error.value = "Veuillez vous connecter pour consulter les équipements.";
-      } else if (cause.status === 403) {
-        error.value = "Vous ne disposez pas des droits nécessaires pour consulter les équipements.";
-      } else if (cause.status >= 500) {
-        error.value =
-          "Le serveur rencontre un problème. Veuillez réessayer dans quelques instants.";
-      } else {
-        error.value = cause.message;
-      }
-    } else if (cause instanceof TypeError) {
-      error.value =
-        "Impossible de joindre l’API. Veuillez vérifier votre connexion et la disponibilité du serveur.";
-    } else {
-      error.value = "Impossible de charger les équipements.";
+    const result = await equipmentsApi.list({
+      categoryId: filters.value.categoryId,
+      status: filters.value.status,
+      search: filters.value.search?.trim() || undefined,
+    });
+
+    if (version === requestVersion) {
+      equipments.value = result.equipments;
     }
+  } catch (cause: unknown) {
+    if (version !== requestVersion) return;
+
+    equipments.value = [];
+    error.value = equipmentErrorMessage(cause);
   } finally {
-    loading.value = false;
+    if (version === requestVersion) {
+      loading.value = false;
+    }
+  }
+}
+
+async function loadCategories(): Promise<void> {
+  categoriesLoading.value = true;
+  categoriesError.value = false;
+
+  try {
+    const result = await equipmentCategoriesApi.list();
+    categories.value = result.equipmentCategories;
+  } catch {
+    categoriesError.value = true;
+  } finally {
+    categoriesLoading.value = false;
+  }
+}
+
+function updateFilters(next: EquipmentFilters): void {
+  const searchChanged = next.search !== filters.value.search;
+  filters.value = next;
+
+  if (searchTimer) clearTimeout(searchTimer);
+
+  requestVersion++;
+  equipments.value = [];
+  loading.value = true;
+  error.value = null;
+
+  if (searchChanged) {
+    searchTimer = setTimeout(() => {
+      void loadEquipments();
+    }, 300);
+  } else {
+    void loadEquipments();
   }
 }
 
@@ -58,7 +198,15 @@ async function handleCreated(): Promise<void> {
   await loadEquipments();
 }
 
-onMounted(loadEquipments);
+onMounted(() => {
+  void loadCategories();
+  void loadEquipments();
+});
+
+onUnmounted(() => {
+  if (searchTimer) clearTimeout(searchTimer);
+  requestVersion++;
+});
 </script>
 
 <template>
@@ -112,6 +260,7 @@ onMounted(loadEquipments);
       role="alert"
     >
       <p>{{ error }}</p>
+
       <BaseButton
         variant="outline"
         size="small"
@@ -124,16 +273,27 @@ onMounted(loadEquipments);
     <div class="equipment-list__panel">
       <div class="equipment-list__panel-header">
         <h2>Liste des équipements</h2>
+
         <span
           v-if="!loading && !error"
           class="equipment-list__count"
         >
-          {{ equipments.length }} équipement{{ equipments.length > 1 ? "s" : "" }}
+          {{ equipments.length }}
+          équipement{{ equipments.length > 1 ? "s" : "" }}
         </span>
       </div>
 
+      <EquipmentFiltersControl
+        :model-value="filters"
+        :categories="categories"
+        :categories-loading="categoriesLoading"
+        :categories-error="categoriesError"
+        @update:model-value="updateFilters"
+        @retry-categories="loadCategories"
+      />
+
       <div
-        v-if="loading && equipments.length === 0"
+        v-if="loading"
         class="equipment-list__state"
         role="status"
       >
@@ -145,32 +305,94 @@ onMounted(loadEquipments);
         v-else-if="!error && equipments.length === 0"
         class="equipment-list__state"
       >
-        Aucun équipement à afficher.
+        Aucun équipement ne correspond aux filtres sélectionnés.
       </p>
 
       <div
-        v-if="equipments.length > 0"
-        class="equipment-list__table-scroll"
+        v-if="!loading && !error && equipments.length > 0"
+        class="equipment-list__table-container"
       >
         <table class="equipment-list__table">
           <thead>
             <tr>
-              <th scope="col">Équipement</th>
-              <th scope="col">Numéro de série</th>
-              <th scope="col">Catégorie</th>
               <th
                 scope="col"
-                class="equipment-list__actions-heading"
+                :aria-sort="ariaSort('name')"
               >
-                Actions
+                <button
+                  type="button"
+                  @click="toggleSort('name')"
+                >
+                  Équipement
+                  <span aria-hidden="true">
+                    {{ sortKey === "name" ? (sortDirection === "asc" ? "▲" : "▼") : "↕" }}
+                  </span>
+                </button>
+              </th>
+
+              <th
+                scope="col"
+                :aria-sort="ariaSort('serialNumber')"
+              >
+                <button
+                  type="button"
+                  @click="toggleSort('serialNumber')"
+                >
+                  Numéro de série
+                  <span aria-hidden="true">
+                    {{ sortKey === "serialNumber" ? (sortDirection === "asc" ? "▲" : "▼") : "↕" }}
+                  </span>
+                </button>
+              </th>
+
+              <th
+                scope="col"
+                :aria-sort="ariaSort('equipmentCategoryId')"
+              >
+                <button
+                  type="button"
+                  @click="toggleSort('equipmentCategoryId')"
+                >
+                  Catégorie
+                  <span aria-hidden="true">
+                    {{
+                      sortKey === "equipmentCategoryId"
+                        ? sortDirection === "asc"
+                          ? "▲"
+                          : "▼"
+                        : "↕"
+                    }}
+                  </span>
+                </button>
+              </th>
+
+              <th
+                scope="col"
+                :aria-sort="ariaSort('status')"
+              >
+                <button
+                  type="button"
+                  @click="toggleSort('status')"
+                >
+                  État
+                  <span aria-hidden="true">
+                    {{ sortKey === "status" ? (sortDirection === "asc" ? "▲" : "▼") : "↕" }}
+                  </span>
+                </button>
               </th>
             </tr>
           </thead>
 
           <tbody>
             <tr
-              v-for="equipment in equipments"
+              v-for="equipment in sortedEquipments"
               :key="equipment.id"
+              class="equipment-list__clickable-row"
+              tabindex="0"
+              :aria-label="`Consulter les détails de ${equipment.name}`"
+              @click="openDetails(equipment)"
+              @keydown.enter.prevent="openDetails(equipment)"
+              @keydown.space.prevent="openDetails(equipment)"
             >
               <th
                 scope="row"
@@ -184,39 +406,11 @@ onMounted(loadEquipments);
               </td>
 
               <td class="equipment-list__category">
-                {{ equipment.equipmentCategoryId }}
+                {{ categoryName(equipment) }}
               </td>
 
-              <td class="equipment-list__actions-cell">
-                <div class="equipment-list__row-actions">
-                  <button
-                    type="button"
-                    class="equipment-list__icon-button"
-                    :aria-label="`Consulter ${equipment.name}`"
-                    :title="`Consulter ${equipment.name}`"
-                    :disabled="loading"
-                    @click="emit('view', equipment)"
-                  >
-                    <BaseIcon
-                      name="view"
-                      :size="18"
-                    />
-                  </button>
-
-                  <button
-                    type="button"
-                    class="equipment-list__icon-button"
-                    :aria-label="`Modifier ${equipment.name}`"
-                    :title="`Modifier ${equipment.name}`"
-                    :disabled="loading"
-                    @click="emit('edit', equipment)"
-                  >
-                    <BaseIcon
-                      name="edit"
-                      :size="18"
-                    />
-                  </button>
-                </div>
+              <td>
+                <EquipmentStatusBadge :status="equipment.status" />
               </td>
             </tr>
           </tbody>
@@ -232,6 +426,22 @@ onMounted(loadEquipments);
     >
       <EquipmentCreateForm
         v-if="createOpen"
+        @cancel="createOpen = false"
+        @busy="createBusy = $event"
+        @created="handleCreated"
+      />
+    </BaseModal>
+
+    <BaseModal
+      :open="createOpen"
+      :busy="createBusy"
+      title="Créer un équipement"
+      @close="createOpen = false"
+    >
+      <EquipmentDetailsModal
+        v-if="selectedEquipment !== null"
+        :equipment="selectedEquipment"
+        :equipment-categories="categories"
         @cancel="createOpen = false"
         @busy="createBusy = $event"
         @created="handleCreated"
@@ -277,7 +487,6 @@ onMounted(loadEquipments);
     margin: 0;
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
-    color: var(--color-text);
     background: var(--color-primary-soft);
   }
 
@@ -327,7 +536,7 @@ onMounted(loadEquipments);
     color: var(--color-text-secondary);
   }
 
-  &__table-scroll {
+  &__table-container {
     overflow-x: auto;
   }
 
@@ -348,11 +557,40 @@ onMounted(loadEquipments);
     vertical-align: middle;
   }
 
+  &__table tr {
+    cursor: pointer;
+  }
+
   &__table thead th {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
     white-space: nowrap;
+  }
+
+  &__table thead button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: none;
+    font: inherit;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+  }
+
+  &__table thead button:hover {
+    color: var(--color-primary);
+  }
+
+  &__table thead button:focus-visible {
+    outline: 0.1875rem solid var(--color-focus);
+    outline-offset: 0.25rem;
+  }
+
+  &__table thead button span {
+    font-size: 0.7rem;
   }
 
   &__table tbody tr:last-child th,
@@ -360,13 +598,13 @@ onMounted(loadEquipments);
     border-bottom: 0;
   }
 
-  &__table tbody tr {
-    transition: background-color 150ms ease;
+  &__table tbody tr:nth-child(even) {
+    background: var(--color-surface-secondary);
   }
 
   &__table tbody tr:hover,
   &__table tbody tr:focus-within {
-    background: var(--color-surface-hover);
+    background: var(--color-primary-soft);
   }
 
   &__name {
@@ -391,13 +629,9 @@ onMounted(loadEquipments);
     transition: opacity 150ms ease;
   }
 
-  &__table tbody tr:nth-child(even) {
-    background: var(--color-surface-secondary);
-  }
-
-  &__table tbody tr:hover,
-  &__table tbody tr:focus-within {
-    background: var(--color-primary-soft);
+  tr:hover &__row-actions,
+  tr:focus-within &__row-actions {
+    opacity: 1;
   }
 
   &__icon-button {
@@ -412,21 +646,16 @@ onMounted(loadEquipments);
     color: var(--color-text-secondary);
     background: transparent;
     cursor: pointer;
+  }
 
-    &:hover {
-      color: var(--color-primary);
-      background: var(--color-primary-soft);
-    }
+  &__icon-button:hover {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
 
-    &:focus-visible {
-      outline: 0.1875rem solid var(--color-focus);
-      outline-offset: 0.125rem;
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+  &__icon-button:focus-visible {
+    outline: 0.1875rem solid var(--color-focus);
+    outline-offset: 0.125rem;
   }
 }
 
@@ -437,7 +666,6 @@ onMounted(loadEquipments);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .equipment-list__table tbody tr,
   .equipment-list__row-actions {
     transition: none;
   }

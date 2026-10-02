@@ -14,4 +14,8 @@ export const equipmentsApi = {
   create(dto: CreateEquipmentDto) {
     return api.post<CreatedResourceDto, CreateEquipmentDto>("/api/equipments", dto);
   },
+
+  updateStatus(id: string, status: EquipmentDto["status"]) {
+    return api.patch<EquipmentDto>(`/api/equipments/${encodeURIComponent(id)}/status`, { status });
+  },
 };
