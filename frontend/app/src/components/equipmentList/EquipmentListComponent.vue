@@ -4,7 +4,7 @@ import { ApiError } from "../../api/client";
 import { equipmentCategoriesApi } from "../../api/equipment-categories";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
 import { equipmentsApi } from "../../api/equipments";
-import type { EquipmentDto, EquipmentFilters } from "../../api/equipments/dto";
+import type { EquipmentDto, EquipmentFilters, EquipmentStatus } from "../../api/equipments/dto";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
@@ -196,6 +196,16 @@ async function handleCreated(): Promise<void> {
   createOpen.value = false;
   notice.value = "L’équipement a été créé.";
   await loadEquipments();
+}
+
+async function handleStatusChange(equipment: EquipmentDto, status: EquipmentStatus): Promise<void> {
+  try {
+    await equipmentsApi.updateStatus(equipment.id, status);
+    notice.value = "L’état de l’équipement a été mis à jour.";
+    await loadEquipments();
+  } catch (cause: unknown) {
+    error.value = equipmentErrorMessage(cause);
+  }
 }
 
 onMounted(() => {
@@ -442,9 +452,8 @@ onUnmounted(() => {
         v-if="selectedEquipment !== null"
         :equipment="selectedEquipment"
         :equipment-categories="categories"
-        @cancel="createOpen = false"
-        @busy="createBusy = $event"
-        @created="handleCreated"
+        @close="selectedEquipment = null"
+        @change-status="handleStatusChange"
       />
     </BaseModal>
   </section>
