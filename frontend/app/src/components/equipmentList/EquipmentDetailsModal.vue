@@ -4,6 +4,7 @@ import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts
 import type { EquipmentDto, EquipmentStatus } from "../../api/equipments/dto";
 import BaseModal from "../common/modal/BaseModal.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
+import EquipmentQRCode from "./EquipmentQRCode.vue";
 
 const props = defineProps<{
   equipment: EquipmentDto | null;
@@ -60,7 +61,6 @@ function submit(): void {
 
   emit("changeStatus", equipment, status);
 }
-
 </script>
 
 <template>
@@ -151,6 +151,14 @@ function submit(): void {
           </button>
         </template>
       </form>
+
+      <div>
+        <h3>QR Code de l'équipement</h3>
+        <EquipmentQRCode
+          :equipment-id="equipment.id"
+          :equipment-name="equipment.name"
+        />
+      </div>
     </div>
   </BaseModal>
 </template>
@@ -235,9 +243,19 @@ function submit(): void {
 }
 
 @media (max-width: 42rem) {
-  .equipment-details { gap: 1rem; }
-  .equipment-details__photo { min-height: 9rem; }
-  .equipment-details__fields { grid-template-columns: minmax(0, 1fr); gap: 0.875rem; }
-  .equipment-details__status button { justify-self: stretch; min-height: 2.75rem; }
+  .equipment-details {
+    gap: 1rem;
+  }
+  .equipment-details__photo {
+    min-height: 9rem;
+  }
+  .equipment-details__fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.875rem;
+  }
+  .equipment-details__status button {
+    justify-self: stretch;
+    min-height: 2.75rem;
+  }
 }
 </style>

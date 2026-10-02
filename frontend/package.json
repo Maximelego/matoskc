@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "qrcode.vue": "^3.11.0",
     "scss": "^0.2.4"
   },
   "devDependencies": {

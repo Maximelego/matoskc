@@ -11,6 +11,7 @@ services:
         environment:
             NODE_ENV: development
             VITE_API_PROXY_TARGET: http://backend:8000
+            VITE_PUBLIC_APP_URL: "https://matoskc.hexenis.fr"
 
     backend:
         image: mcr.microsoft.com/dotnet/sdk:10.0-alpine
@@ -49,6 +50,9 @@ services:
             S3__SecretKey: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
             S3__BucketName: matoskc
             S3__ForcePathStyle: "true"
+            AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+            AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
+
         depends_on:
             database:
                 condition: service_healthy

@@ -8,6 +8,8 @@ public sealed class MatosKCDbContext : DbContext
 {
     public DbSet<Equipment> Equipments => Set<Equipment>();
 
+    public DbSet<EquipmentPhoto> EquipmentPhotos => Set<EquipmentPhoto>();
+
     public DbSet<EquipmentCategory> EquipmentCategories =>
         Set<EquipmentCategory>();
 

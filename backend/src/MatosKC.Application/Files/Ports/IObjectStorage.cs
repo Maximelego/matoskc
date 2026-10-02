@@ -2,6 +2,10 @@ namespace MatosKC.Application.Files.Ports;
 
 public interface IObjectStorage
 {
+    public Task EnsureReadyAsync(
+        CancellationToken cancellationToken = default
+    );
+
     public Task StoreAsync(
         string objectKey,
         Stream content,

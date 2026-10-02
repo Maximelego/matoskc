@@ -4,6 +4,8 @@ using System.Text.Json;
 using MatosKC.Application.EquipmentCategories.Create.Exceptions;
 using MatosKC.Application.EquipmentCategories.Get.Exceptions;
 using MatosKC.Application.Equipments.Create.Exceptions;
+using MatosKC.Application.Equipments.Get.Exceptions;
+using MatosKC.Application.EquipmentPhotos.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 
 public sealed class ApiExceptionHandler : IExceptionHandler
@@ -41,6 +43,20 @@ public sealed class ApiExceptionHandler : IExceptionHandler
                     (
                         StatusCodes.Status404NotFound,
                         "Equipment category not found",
+                        exception.Message
+                    ),
+
+                EquipmentNotFoundException =>
+                    (
+                        StatusCodes.Status404NotFound,
+                        "Equipment not found",
+                        exception.Message
+                    ),
+
+                EquipmentPhotoNotFoundException =>
+                    (
+                        StatusCodes.Status404NotFound,
+                        "Equipment photo not found",
                         exception.Message
                     ),
 

@@ -1,6 +1,7 @@
 namespace MatosKC.Api.Tests;
 
 using MatosKC.Infrastructure.Persistence;
+using MatosKC.Application.Files.Ports;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +54,11 @@ public sealed class MatosKCApiFactory
             "ConnectionStrings:MatosKCDatabase",
             connectionString
         );
+        builder.UseSetting("S3:ServiceUrl", "http://unused.test");
+        builder.UseSetting("S3:Region", "us-east-1");
+        builder.UseSetting("S3:AccessKey", "test");
+        builder.UseSetting("S3:SecretKey", "test");
+        builder.UseSetting("S3:BucketName", "test");
 
         builder.ConfigureServices(
             services =>
@@ -66,6 +72,9 @@ public sealed class MatosKCApiFactory
                 services.AddDbContext<MatosKCDbContext>(
                     options => options.UseNpgsql(connectionString)
                 );
+
+                services.RemoveAll<IObjectStorage>();
+                services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
             }
         );
     }

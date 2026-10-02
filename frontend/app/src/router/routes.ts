@@ -1,6 +1,7 @@
 import ListEquipmentView from "../views/EquipmentListView.vue";
 import HomeView from "../views/HomeView.vue";
 import InspectionView from "../views/InspectionView.vue";
+import InspectionAdminView from "../views/InspectionAdminView.vue";
 import LoginView from "../views/LoginView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
 
@@ -16,6 +17,18 @@ export const routes = [
     name: "Inspections",
     component: InspectionView,
     meta: { title: "Inspections" },
+  },
+  {
+    path: "/inspections/:equipmentId",
+    name: "InspectionEquipment",
+    component: InspectionView,
+    meta: { title: "État des lieux" },
+  },
+  {
+    path: "/admin/inspections",
+    name: "AdminInspections",
+    component: InspectionAdminView,
+    meta: { title: "Consultation des états des lieux" },
   },
   {
     path: "/equipments",

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { InspectionAnswer, InspectionSection } from "../../api/inspections/dto";
+import type { InspectionAnswer, InspectionSection, PreviousDefect } from "../../api/inspections/dto";
 import InspectionQuestion from "./InspectionQuestion.vue";
 
-defineProps<{ section: InspectionSection; answers: Record<string, InspectionAnswer>; errors: Record<string, string[]> }>();
+defineProps<{ section: InspectionSection; answers: Record<string, InspectionAnswer>; errors: Record<string, string[]>; previousDefects: PreviousDefect[] }>();
 const emit = defineEmits<{ update: [answer: InspectionAnswer] }>();
 </script>
 
@@ -18,6 +18,7 @@ const emit = defineEmits<{ update: [answer: InspectionAnswer] }>();
       :question="question"
       :answer="answers[question.id]"
       :errors="errors[question.id]"
+      :previous-defect="previousDefects.find(defect => defect.questionId === question.id)"
       @update="emit('update', $event)"
     />
   </section>

@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { equipmentsApi } from "../../api/equipments/index.ts";
+import { equipmentsApi } from "../../api/equipments";
+import type { EquipmentDto } from "../../api/equipments/dto";
 import type {
   InspectionAnswer,
-  InspectionEquipmentDto,
+  InspectionDirection,
+  PreviousInspection,
   InspectionQuestion,
   InspectionTemplateDto,
 } from "../../api/inspections/dto";
 import { inspectionsApi } from "../../api/inspections/mock";
-import InspectionEquipmentPicker from "./InspectionEquipmentPicker.vue";
 import InspectionSectionStep from "./InspectionSectionStep.vue";
 import { sectionErrors } from "./inspectionValidation";
 
-const props = defineProps<{ equipmentId?: string }>();
+const props = defineProps<{ equipmentId: string }>();
 const model = ref<InspectionTemplateDto | null>(null);
-const availableEquipment = ref<InspectionEquipmentDto[]>([]);
-const selectedEquipment = ref<InspectionEquipmentDto | null>(null);
+const selectedEquipment = ref<EquipmentDto | null>(null);
+const previousInspection = ref<PreviousInspection | null>(null);
+const direction = ref<InspectionDirection>("departure");
 const loading = ref(true);
 const loadError = ref("");
 const step = ref(0);
@@ -31,22 +33,25 @@ async function load(): Promise<void> {
   loading.value = true;
   loadError.value = "";
   try {
-    const [template, equipment] = await Promise.all([
-      inspectionsApi.getDepartureTemplate("blower"),
-      equipmentsApi.list({
-        status: "Available",
-      }),
+    const equipment = await equipmentsApi.getById(props.equipmentId);
+    if (equipment.status !== "Available" && equipment.status !== "Borrowed")
+      throw new Error("Cet équipement ne peut pas faire l’objet d’un état des lieux actuellement.");
+    direction.value = equipment.status === "Available" ? "departure" : "return";
+    const [template, previous] = await Promise.all([
+      inspectionsApi.getTemplate(equipment.equipmentCategoryId),
+      inspectionsApi.getPreviousInspection(equipment.id),
     ]);
+    selectedEquipment.value = equipment;
     model.value = template;
-    availableEquipment.value = equipment;
-    selectedEquipment.value = props.equipmentId
-      ? await inspectionsApi.getEquipment(props.equipmentId)
-      : null;
+    previousInspection.value = previous;
   } catch (cause) {
     loadError.value = cause instanceof Error ? cause.message : "Impossible de charger le modèle.";
   } finally {
     loading.value = false;
   }
+}
+function priorDefect(questionId: string): string | undefined {
+  return previousInspection.value?.defects.find(defect => defect.questionId === questionId)?.observation;
 }
 function updateAnswer(answer: InspectionAnswer): void {
   answers.value = { ...answers.value, [answer.questionId]: answer };
@@ -55,9 +60,9 @@ function updateAnswer(answer: InspectionAnswer): void {
 function next(): void {
   if (step.value === 0) {
     identityError.value =
-      operatorFirstName.value.trim() && selectedEquipment.value
+      operatorFirstName.value.trim()
         ? ""
-        : "Veuillez saisir votre prénom et sélectionner un matériel disponible.";
+        : "Veuillez saisir votre prénom.";
     if (identityError.value) return;
   } else if (currentSection.value) {
     errors.value = sectionErrors(currentSection.value, answers.value);
@@ -100,7 +105,7 @@ onMounted(() => {
     aria-labelledby="inspection-title"
   >
     <header>
-      <h1 id="inspection-title">{{ model?.title ?? "État des lieux de départ" }}</h1>
+      <h1 id="inspection-title">État des lieux de {{ direction === "return" ? "retour" : "départ" }}</h1>
       <p
         class="inspection-wizard__demo"
         role="status"
@@ -140,23 +145,21 @@ onMounted(() => {
         class="inspection-wizard__identity"
         aria-labelledby="identity-title"
       >
-        <h2 id="identity-title">Opérateur et matériel</h2>
+        <h2 id="identity-title">Identification</h2>
         <label for="inspection-operator">Prénom de l’opérateur *</label>
         <input
           id="inspection-operator"
           v-model.trim="operatorFirstName"
           autocomplete="given-name"
         />
-        <p v-if="equipmentId && selectedEquipment">
-          Matériel identifié par le QR code : <strong>{{ selectedEquipment.name }}</strong> ({{
-            selectedEquipment.serialNumber
-          }}).
-        </p>
-        <InspectionEquipmentPicker
-          :equipment="availableEquipment"
-          :selected-id="selectedEquipment?.id"
-          @select="selectedEquipment = $event"
-        />
+        <p v-if="selectedEquipment">Équipement : <strong>{{ selectedEquipment.name }}</strong> ({{ selectedEquipment.serialNumber }}).</p>
+        <p>Catégorie : {{ model.title }}</p>
+        <section v-if="previousInspection?.defects.length" class="inspection-wizard__prior" aria-label="Défauts préexistants">
+          <h3>Défauts relevés lors du précédent état des lieux</h3>
+          <p>Constat du {{ previousInspection.performedAt }}.</p>
+          <ul><li v-for="defect in previousInspection.defects" :key="defect.questionId">{{ model.sections.flatMap(section => section.questions).find(question => question.id === defect.questionId)?.label ?? defect.questionId }} : {{ defect.observation }}</li></ul>
+        </section>
+        <p v-else>Aucun défaut antérieur connu dans les données de démonstration.</p>
         <p
           v-if="identityError"
           class="inspection-wizard__error"
@@ -170,6 +173,7 @@ onMounted(() => {
         :section="currentSection"
         :answers="answers"
         :errors="errors"
+        :previous-defects="previousInspection?.defects ?? []"
         @update="updateAnswer"
       />
       <section
@@ -180,6 +184,7 @@ onMounted(() => {
         <h2 id="summary-title">Récapitulatif</h2>
         <p>Opérateur : {{ operatorFirstName }}</p>
         <p>Matériel : {{ selectedEquipment?.name }} ({{ selectedEquipment?.serialNumber }})</p>
+        <p>Sens : {{ direction === "return" ? "Retour" : "Départ" }}</p>
         <p>Modèle : version {{ model.version }}</p>
         <section
           v-for="(section, index) in sections"
@@ -202,6 +207,7 @@ onMounted(() => {
             >
               <dt>{{ question.label }}</dt>
               <dd>{{ answerText(question) }}</dd>
+              <dd v-if="priorDefect(question.id)">Défaut préexistant : {{ priorDefect(question.id) }}</dd>
               <dd v-if="observation(question.id)">Observation : {{ observation(question.id) }}</dd>
               <dd v-if="photoCount(question.id)">
                 {{ photoCount(question.id) }} photographie(s) sélectionnée(s)
@@ -286,6 +292,8 @@ onMounted(() => {
   color: var(--color-text);
   background: var(--color-input-background);
 }
+.inspection-wizard__prior { border: 1px solid var(--color-warning); border-radius: .5rem; padding: .75rem; background: var(--color-warning-soft); }
+.inspection-wizard__prior h3 { margin: 0; }
 .inspection-wizard__error {
   color: var(--color-danger);
 }

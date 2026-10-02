@@ -37,14 +37,20 @@ export type InspectionDraft = {
   templateVersion: number;
   operatorFirstName: string;
   equipmentId: string;
+  direction: InspectionDirection;
   answers: Record<string, InspectionAnswer>;
 };
 
-export type InspectionEquipmentDto = {
+export type InspectionDirection = "departure" | "return";
+
+export type PreviousDefect = {
+  questionId: string;
+  observation: string;
+  photoUrls: string[];
+};
+
+export type PreviousInspection = {
   id: string;
-  name: string;
-  serialNumber: string;
-  equipmentCategoryId: string;
-  status: "Available";
-  photoUrl: string | null;
+  performedAt: string;
+  defects: PreviousDefect[];
 };

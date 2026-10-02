@@ -1,122 +1,35 @@
-import type { InspectionEquipmentDto, InspectionTemplateDto } from "./dto";
+import type { InspectionTemplateDto, PreviousInspection } from "./dto";
 
-// Données de démonstration : aucun appel réseau ni enregistrement.
-const blowerTemplate: InspectionTemplateDto = {
-  id: "blower-depart",
-  version: 1,
-  equipmentCategoryId: "blower",
-  title: "État des lieux de départ — machine à souffler",
-  sections: [
-    {
-      id: "identification",
-      title: "Identification et accessoires",
-      description: "Vérifiez les éléments remis au locataire.",
-      questions: [
-        {
-          id: "accessories",
-          kind: "condition",
-          label: "Accessoires et tuyaux présents",
-          required: true,
-          photoRequiredWhen: "nonCompliant",
-        },
-      ],
-    },
-    {
-      id: "exterior",
-      title: "État extérieur",
-      questions: [
-        {
-          id: "housing",
-          kind: "condition",
-          label: "État du carter",
-          required: true,
-          photoRequiredWhen: "nonCompliant",
-        },
-        {
-          id: "wheels",
-          kind: "condition",
-          label: "État des roues et poignées",
-          required: true,
-          photoRequiredWhen: "nonCompliant",
-        },
-        {
-          id: "cable",
-          kind: "condition",
-          label: "État du câble électrique",
-          required: true,
-          photoRequiredWhen: "nonCompliant",
-        },
-      ],
-    },
-    {
-      id: "operation",
-      title: "Fonctionnement",
-      questions: [
-        {
-          id: "startup",
-          kind: "condition",
-          label: "Mise en marche et commandes",
-          required: true,
-          photoRequiredWhen: "nonCompliant",
-        },
-        {
-          id: "hose",
-          kind: "condition",
-          label: "État du tuyau et des raccords",
-          required: true,
-          photoRequiredWhen: "nonCompliant",
-        },
-        {
-          id: "counter",
-          kind: "number",
-          label: "Compteur horaire",
-          required: false,
-          min: 0,
-          unit: "h",
-        },
-      ],
-    },
-  ],
+// Catégories et identifiants repris de DevelopmentData.cs. Les équipements proviennent de l’API réelle.
+const categoryNames = ["Machines à souffler", "Chariots élévateurs", "Tire-palettes", "Camions", "Véhicules utilitaires"] as const;
+const checks: Record<number, [string, string][]> = {
+  1: [["accessories", "Accessoires et tuyaux présents"], ["housing", "État du carter"], ["wheels", "État des roues et poignées"], ["cable", "État du câble électrique"], ["startup", "Mise en marche et commandes"], ["hose", "État du tuyau et des raccords"]],
+  2: [["forks", "État des fourches"], ["mast", "État du mât"], ["tires", "État des pneus"], ["brakes", "Freinage"], ["controls", "Commandes et avertisseur"]],
+  3: [["forks", "État des fourches"], ["wheels", "État des galets et roues"], ["handle", "État du timon"], ["lift", "Levage et descente"]],
+  4: [["body", "Carrosserie et benne"], ["tires", "État des pneus"], ["lights", "Éclairage et signalisation"], ["cab", "Cabine et accessoires"], ["brakes", "Freinage"]],
+  5: [["body", "Carrosserie"], ["tires", "État des pneus"], ["lights", "Éclairage et signalisation"], ["cargo", "Espace de chargement"], ["cab", "Cabine et accessoires"]],
 };
-
-const availableEquipment: InspectionEquipmentDto[] = [
-  {
-    id: "blower-001",
-    name: "Souffleuse ISOVER 1",
-    serialNumber: "ISO-001",
-    equipmentCategoryId: "blower",
-    status: "Available",
-    photoUrl: null,
-  },
-  {
-    id: "blower-002",
-    name: "Souffleuse ISOVER 2",
-    serialNumber: "ISO-002",
-    equipmentCategoryId: "blower",
-    status: "Available",
-    photoUrl: null,
-  },
-  {
-    id: "blower-003",
-    name: "Souffleuse ISOVER 3",
-    serialNumber: "ISO-003",
-    equipmentCategoryId: "blower",
-    status: "Available",
-    photoUrl: null,
-  },
-];
+const categoryPrefix = "10000000-0000-0000-0000-";
 
 export const inspectionsApi = {
-  getEquipment(id: string): Promise<InspectionEquipmentDto> {
-    const equipment = availableEquipment.find((item) => item.id === id);
-    return equipment
-      ? Promise.resolve(structuredClone(equipment))
-      : Promise.reject(new Error("Matériel introuvable ou indisponible pour un départ."));
+  getTemplate(categoryId: string): Promise<InspectionTemplateDto> {
+    const number = Number(categoryId.slice(categoryPrefix.length));
+    if (!categoryId.startsWith(categoryPrefix) || !Number.isInteger(number) || !(number in checks))
+      return Promise.reject(new Error("Aucune liste de vérification pour cette catégorie."));
+    const template: InspectionTemplateDto = {
+      id: `inspection-category-${number}`, version: 1, equipmentCategoryId: categoryId,
+      title: `État des lieux — ${categoryNames[number - 1]}`,
+      sections: [{ id: "condition", title: "Contrôle du matériel", questions: checks[number]!.map(([id, label]) => ({ id, label, kind: "condition" as const, required: true, photoRequiredWhen: "nonCompliant" as const })) }],
+    };
+    return Promise.resolve(structuredClone(template));
   },
-  getDepartureTemplate(categoryId: string): Promise<InspectionTemplateDto> {
-    if (categoryId !== blowerTemplate.equipmentCategoryId) {
-      return Promise.reject(new Error("Aucun modèle de démonstration pour cette catégorie."));
-    }
-    return Promise.resolve(structuredClone(blowerTemplate));
+  getPreviousInspection(equipmentId: string): Promise<PreviousInspection | null> {
+    // Exemples explicites liés aux GUID des équipements empruntés en base de développement.
+    const examples: Record<string, PreviousInspection> = {
+      "20000000-0000-0000-0000-000000000002": { id: "demo-prior-2", performedAt: "2026-01-15", defects: [{ questionId: "housing", observation: "Rayure sur le carter latéral.", photoUrls: [] }] },
+      "20000000-0000-0000-0000-000000000006": { id: "demo-prior-6", performedAt: "2026-01-15", defects: [{ questionId: "forks", observation: "Marque d’usure sur la fourche gauche.", photoUrls: [] }] },
+      "20000000-0000-0000-0000-000000000011": { id: "demo-prior-11", performedAt: "2026-01-15", defects: [{ questionId: "body", observation: "Éraflure sur le plateau arrière.", photoUrls: [] }] },
+    };
+    return Promise.resolve(examples[equipmentId.toLowerCase()] ? structuredClone(examples[equipmentId.toLowerCase()]) : null);
   },
 };

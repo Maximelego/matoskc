@@ -4,6 +4,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using MatosKC.Application.EquipmentCategories.Ports;
 using MatosKC.Application.Equipments.Ports;
+using MatosKC.Application.EquipmentPhotos.Ports;
 using MatosKC.Application.Files.Ports;
 using MatosKC.Infrastructure.Persistence;
 using MatosKC.Infrastructure.Persistence.Repositories;
@@ -36,6 +37,11 @@ public static class DependencyInjection
         services.AddScoped<
             IEquipmentRepository,
             EquipmentRepository
+        >();
+
+        services.AddScoped<
+            IEquipmentPhotoRepository,
+            EquipmentPhotoRepository
         >();
 
         services.AddScoped<DevelopmentDataSeeder>();
@@ -81,10 +87,10 @@ public static class DependencyInjection
                 ),
 
             ForcePathStyle =
-                configuration.GetValue(
-                    "S3:ForcePathStyle",
-                    true
-                )
+                !bool.TryParse(
+                    configuration["S3:ForcePathStyle"],
+                    out bool forcePathStyle
+                ) || forcePathStyle
         };
 
         services.AddSingleton(options);

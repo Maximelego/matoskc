@@ -16,11 +16,22 @@ import EquipmentFiltersControl from "./EquipmentFilters.vue";
 const selectedEquipment = ref<EquipmentDto | null>(null);
 const detailsOpen = ref(false);
 const createContentVisible = ref(false);
-function openCreate(): void { createContentVisible.value = true; createOpen.value = true; }
-function closeCreate(): void { createOpen.value = false; }
-function clearCreate(): void { if (!createOpen.value) createContentVisible.value = false; }
-function closeDetails(): void { detailsOpen.value = false; }
-function clearDetails(): void { if (!detailsOpen.value) selectedEquipment.value = null; }
+function openCreate(): void {
+  createContentVisible.value = true;
+  createOpen.value = true;
+}
+function closeCreate(): void {
+  createOpen.value = false;
+}
+function clearCreate(): void {
+  if (!createOpen.value) createContentVisible.value = false;
+}
+function closeDetails(): void {
+  detailsOpen.value = false;
+}
+function clearDetails(): void {
+  if (!detailsOpen.value) selectedEquipment.value = null;
+}
 type SortKey = "name" | "serialNumber" | "equipmentCategoryId" | "status";
 type SortDirection = "asc" | "desc";
 const statusLabels: Record<string, string> = {

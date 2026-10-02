@@ -12,6 +12,7 @@ const menus: HomeTileProps[] = [
     title: "Etats des Lieux",
     description: "Liste des Etats des Lieux.",
     icon: "clipboard",
+    to: "/admin/inspections",
   },
   {
     title: "Gestion",

@@ -77,6 +77,42 @@ internal static class DevelopmentData
         ];
     }
 
+    public static IReadOnlyCollection<EquipmentPhoto> CreateEquipmentPhotos()
+    {
+        return
+        [
+            CreatePhoto(1, 1, "souffleur-demo.png"),
+            CreatePhoto(2, 4, "chariot-demo.png"),
+            CreatePhoto(3, 7, "tire-palette-demo.png"),
+            CreatePhoto(4, 10, "camion-demo.png"),
+            CreatePhoto(5, 13, "utilitaire-demo.png")
+        ];
+    }
+
+    private static EquipmentPhoto CreatePhoto(
+        int photoSequence,
+        int equipmentSequence,
+        string fileName
+    )
+    {
+        Guid photoId = Guid.Parse(
+            $"30000000-0000-0000-0000-{photoSequence:D12}"
+        );
+        Guid equipmentId = Guid.Parse(
+            $"20000000-0000-0000-0000-{equipmentSequence:D12}"
+        );
+
+        return new EquipmentPhoto(
+            photoId,
+            equipmentId,
+            $"equipments/{equipmentId}/photos/{photoId}",
+            fileName,
+            "image/png",
+            68,
+            DateTimeOffset.Parse("2026-01-01T00:00:00Z")
+        );
+    }
+
     private static Equipment CreateEquipment(
         int sequence,
         string name,

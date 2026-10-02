@@ -91,4 +91,44 @@ public sealed class MatosKCDbContextTests
             () => dbContext.SaveChangesAsync(TestContext.Current.CancellationToken)
         );
     }
+
+    [Fact]
+    public async Task EquipmentPhoto_ShouldBePersistedAndDeletedWithItsEquipment()
+    {
+        Guid photoId = Guid.NewGuid();
+
+        await using (var writeContext = Fixture.CreateDbContext())
+        {
+            var category = new EquipmentCategory(
+                $"Photos-{Guid.NewGuid():N}",
+                null
+            );
+            var equipment = new Equipment(
+                "Souffleur photographié",
+                category.Id,
+                $"PHOTO-{Guid.NewGuid():N}"
+            );
+            var photo = new EquipmentPhoto(
+                photoId,
+                equipment.Id,
+                $"equipments/{equipment.Id}/photos/{photoId}",
+                "souffleur.png",
+                "image/png",
+                68,
+                DateTimeOffset.UtcNow
+            );
+
+            writeContext.AddRange(category, equipment, photo);
+            await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            writeContext.Equipments.Remove(equipment);
+            await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var readContext = Fixture.CreateDbContext();
+        Assert.False(await readContext.EquipmentPhotos.AnyAsync(
+            photo => photo.Id == photoId,
+            TestContext.Current.CancellationToken
+        ));
+    }
 }

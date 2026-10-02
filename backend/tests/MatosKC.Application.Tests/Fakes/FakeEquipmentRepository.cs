@@ -37,7 +37,10 @@ internal sealed class FakeEquipmentRepository : IEquipmentRepository
 
     public Task<bool> ExistsByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        ExistsCancellationToken = cancellationToken;
+        return Task.FromResult(
+            AddedEquipments.Any(equipment => equipment.Id == id)
+        );
     }
 
     public Task<Equipment?> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken)

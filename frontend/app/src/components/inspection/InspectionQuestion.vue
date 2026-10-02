@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { InspectionAnswer, InspectionQuestion } from "../../api/inspections/dto";
+import type { InspectionAnswer, InspectionQuestion, PreviousDefect } from "../../api/inspections/dto";
 import { emptyAnswer } from "./inspectionValidation";
 
-const props = defineProps<{ question: InspectionQuestion; answer?: InspectionAnswer; errors?: string[] }>();
+const props = defineProps<{ question: InspectionQuestion; answer?: InspectionAnswer; errors?: string[]; previousDefect?: PreviousDefect }>();
 const emit = defineEmits<{ update: [answer: InspectionAnswer] }>();
 const current = computed(() => props.answer ?? emptyAnswer(props.question));
 const condition = computed(() => current.value.kind === "condition" ? current.value : null);
@@ -37,6 +37,10 @@ function setNumber(value: string): void {
 
 <template>
   <div class="inspection-question" :class="{ 'inspection-question--invalid': errors?.length }">
+    <aside v-if="previousDefect" class="inspection-question__prior">
+      <strong>Défaut préexistant</strong><p>{{ previousDefect.observation }}</p>
+      <a v-for="url in previousDefect.photoUrls" :key="url" :href="url" target="_blank" rel="noopener noreferrer">Voir la photographie du constat précédent</a>
+    </aside>
     <fieldset v-if="question.kind === 'condition' && condition">
       <legend>{{ question.label }} <span v-if="question.required" aria-label="obligatoire">*</span></legend>
       <p v-if="question.help" class="inspection-question__help">{{ question.help }}</p>
@@ -83,6 +87,8 @@ function setNumber(value: string): void {
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   background: var(--color-surface);
+  &__prior { padding: .75rem; margin-bottom: .75rem; border-radius: .5rem; background: var(--color-warning-soft); }
+  &__prior p { margin: .35rem 0; }
   &--invalid { border-color: var(--color-danger); }
   fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
   legend, label { font-weight: var(--font-weight-semibold); }

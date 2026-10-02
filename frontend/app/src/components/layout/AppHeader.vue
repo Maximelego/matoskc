@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { RouterLink } from "vue-router";
 
 defineProps<{
   title: string;
@@ -19,9 +20,12 @@ function closeMenu(): void {
 <template>
   <header class="app-header">
     <div class="app-header__content">
-      <span class="app-header__title">
+      <RouterLink
+        to="/"
+        class="app-header__title"
+      >
         {{ title }}
-      </span>
+      </RouterLink>
 
       <button
         class="app-header__menu-button"
@@ -76,9 +80,16 @@ function closeMenu(): void {
 
   &__title {
     flex-shrink: 0;
+    text-decoration: none;
     color: var(--color-primary);
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
+
+    &:hover {
+      cursor: pointer;
+      scale: 1.1;
+      transition: scale 0.2s ease-in-out;
+    }
   }
 
   &__navigation {

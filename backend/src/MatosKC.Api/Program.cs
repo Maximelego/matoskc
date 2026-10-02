@@ -34,7 +34,7 @@ string connectionString =
 
 // Add services to the container.
 builder.Services.AddApplication()
-                .AddInfrastructure(connectionString);
+                .AddInfrastructure(connectionString)
                 .AddObjectStorage(builder.Configuration);
 
 builder.Services.Configure<RouteHandlerOptions>(
@@ -67,5 +67,6 @@ if (app.Environment.IsDevelopment())
 
 app.MapEquipmentCategoryEndpoints();
 app.MapEquipmentEndpoints();
+app.MapEquipmentPhotoEndpoints();
 
 app.Run();
