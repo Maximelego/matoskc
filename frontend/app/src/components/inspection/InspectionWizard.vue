@@ -9,7 +9,7 @@ import type {
   InspectionQuestion,
   InspectionTemplateDto,
 } from "../../api/inspections/dto";
-import { inspectionsApi } from "../../api/inspections/mock";
+import { inspectionsApi } from "../../api/inspections";
 import InspectionSectionStep from "./InspectionSectionStep.vue";
 import { sectionErrors } from "./inspectionValidation";
 

@@ -54,3 +54,26 @@ export type PreviousInspection = {
   performedAt: string;
   defects: PreviousDefect[];
 };
+
+export type InspectionRecord = {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  serialNumber: string;
+  direction: InspectionDirection;
+  performedAt: string;
+  operatorFirstName: string;
+  templateVersion: number;
+  sections: {
+    id: string;
+    title: string;
+    answers: {
+      questionId: string;
+      label: string;
+      value: "compliant" | "nonCompliant" | string | number;
+      observation?: string;
+      photoUrls: string[];
+    }[];
+  }[];
+};
+

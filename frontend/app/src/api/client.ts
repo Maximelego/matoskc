@@ -46,6 +46,16 @@ class ApiClient {
     return this.request<T>("PATCH", path, body, options);
   }
 
+  getBlob(path: string, options?: Options): Promise<Blob> {
+    return this.request<Blob>("GET", path, undefined, options, "blob");
+  }
+
+  putFile<T = void>(path: string, file: File, options?: Options): Promise<T> {
+    const form = new FormData();
+    form.append("file", file);
+    return this.request<T>("PUT", path, form, options);
+  }
+
   delete<T = void>(path: string, options?: Options): Promise<T> {
     return this.request<T>("DELETE", path, undefined, options);
   }
@@ -55,6 +65,7 @@ class ApiClient {
     path: string,
     body?: unknown,
     options: Options = {},
+    responseType: "json" | "blob" = "json",
   ): Promise<T> {
     const { query, headers: customHeaders, ...init } = options;
     const url = new URL(`${this.baseUrl}/${path.replace(/^\/+/, "")}`, window.location.origin);
@@ -65,13 +76,13 @@ class ApiClient {
 
     const headers = new Headers(customHeaders);
     headers.set("Accept", "application/json");
-    if (body !== undefined) headers.set("Content-Type", "application/json");
+    if (body !== undefined && !(body instanceof FormData)) headers.set("Content-Type", "application/json");
 
     const response = await fetch(url, {
       ...init,
       method,
       headers,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }),
     });
 
     if (!response.ok) {
@@ -82,7 +93,7 @@ class ApiClient {
 
     if (response.status === 204 || response.status === 205) return undefined as T;
 
-    return (await response.json()) as T;
+    return (responseType === "blob" ? await response.blob() : await response.json()) as T;
   }
 }
 

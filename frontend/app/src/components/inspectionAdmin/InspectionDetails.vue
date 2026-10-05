@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { InspectionRecord } from "../../api/inspections/admin";
+import type { InspectionRecord } from "../../api/inspections";
 
 const props = defineProps<{ inspection: InspectionRecord }>();
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });

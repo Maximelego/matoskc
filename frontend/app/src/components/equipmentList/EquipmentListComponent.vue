@@ -13,6 +13,7 @@ import EquipmentCreateForm from "../equipmentCreate/EquipmentCreateForm.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentDetailsModal from "./EquipmentDetailsModal.vue";
 import EquipmentFiltersControl from "./EquipmentFilters.vue";
+
 const selectedEquipment = ref<EquipmentDto | null>(null);
 const detailsOpen = ref(false);
 const createContentVisible = ref(false);

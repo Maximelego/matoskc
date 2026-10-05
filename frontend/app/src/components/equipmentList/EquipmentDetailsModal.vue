@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, defineEmits, defineProps, ref, watch } from "vue";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts";
 import type { EquipmentDto, EquipmentStatus } from "../../api/equipments/dto";
 import BaseModal from "../common/modal/BaseModal.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
+import EquipmentPhoto from "./EquipmentPhoto.vue";
 import EquipmentQRCode from "./EquipmentQRCode.vue";
 
 const props = defineProps<{
@@ -74,12 +75,10 @@ function submit(): void {
       v-if="equipment"
       class="equipment-details"
     >
-      <div
-        class="equipment-details__photo"
-        aria-label="Photographie de l’équipement"
-      >
-        <span>Photographie à venir</span>
-      </div>
+      <EquipmentPhoto
+        :equipment-id="equipment.id"
+        :open="open"
+      />
 
       <dl class="equipment-details__fields">
         <div>
@@ -152,8 +151,7 @@ function submit(): void {
         </template>
       </form>
 
-      <div>
-        <h3>QR Code de l'équipement</h3>
+      <div class="equipment-qrcode">
         <EquipmentQRCode
           :equipment-id="equipment.id"
           :equipment-name="equipment.name"

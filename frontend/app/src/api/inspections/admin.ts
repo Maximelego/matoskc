@@ -1,26 +1,5 @@
-import type { InspectionDirection } from "./dto";
 
-export type InspectionRecord = {
-  id: string;
-  equipmentId: string;
-  equipmentName: string;
-  serialNumber: string;
-  direction: InspectionDirection;
-  performedAt: string;
-  operatorFirstName: string;
-  templateVersion: number;
-  sections: {
-    id: string;
-    title: string;
-    answers: {
-      questionId: string;
-      label: string;
-      value: "compliant" | "nonCompliant" | string | number;
-      observation?: string;
-      photoUrls: string[];
-    }[];
-  }[];
-};
+import type { InspectionRecord } from "./dto";
 
 // Données de démonstration. À remplacer par les endpoints de consultation des inspections.
 // Les GUID et les noms correspondent aux équipements de DevelopmentData.cs.
