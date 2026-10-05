@@ -1,6 +1,6 @@
 using MatosKC.Domain.Equipments;
 
-namespace MatosKC.Domain.Tests.Equipments;
+namespace MatosKC.Domain.Tests.Entities.Equipments;
 
 public class EquipmentTests
 {

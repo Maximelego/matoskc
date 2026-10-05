@@ -37,7 +37,8 @@ public class Equipment
     }
 
     public Equipment(string name, Guid categoryId, string serialNumber) : this(Guid.NewGuid(), name, categoryId, serialNumber)
-    { }
+    {
+    }
 
     public bool CanTransitionTo(EquipmentStatus newStatus)
     {

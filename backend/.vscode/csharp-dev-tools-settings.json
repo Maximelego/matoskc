@@ -1,0 +1,7 @@
+{
+  "testGenerationPreferences": {
+    "testFramework": "xunit",
+    "assertionLibrary": "standard",
+    "additionalPrompt": ""
+  }
+}
