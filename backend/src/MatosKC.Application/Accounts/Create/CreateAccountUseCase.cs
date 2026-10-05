@@ -19,8 +19,14 @@ public class CreateAccountUseCase
     }
 
 
-    public async Task ExecuteAsync(CreateAccountDto dto, CancellationToken cancellationToken = default)
+    public async Task<Guid> ExecuteAsync(CreateAccountDto dto, CancellationToken cancellationToken = default)
     {
+
+        if (string.IsNullOrWhiteSpace(dto.Password))
+            throw new InvalidOperationException("Password cannot be null or empty.");
+
+        var hashedPassword = _passwordHasher.HashPassword(dto.Password);
+
         if (dto.Email != null && dto.Role != Role.Agency)
         {
             if (await _accountRepository.ExistsByEmailAsync(dto.Email, cancellationToken))
@@ -33,14 +39,9 @@ public class CreateAccountUseCase
             if (!await _agencyRepository.ExistsByIdAsync(agencyId, cancellationToken))
                 throw new InvalidOperationException($"The specified agency does not exist ({dto.AgencyId}).");
 
-            if (await _accountRepository.ExistsAgencyAccountAsync(agencyId, cancellationToken))
+            if (dto.Role == Role.Agency && await _accountRepository.ExistsAgencyAccountAsync(agencyId, cancellationToken))
                 throw new InvalidOperationException($"An account for the specified agency already exists ({dto.AgencyId}).");
         }
-
-        if (string.IsNullOrWhiteSpace(dto.Password))
-            throw new InvalidOperationException("Password cannot be null or empty.");
-
-        var hashedPassword = _passwordHasher.HashPassword(dto.Password ?? string.Empty);
 
         var account = new Account(
             dto.DisplayName,
@@ -51,6 +52,7 @@ public class CreateAccountUseCase
             dto.AgencyId
         );
 
-        await _accountRepository.AddAsync(account, cancellationToken);
+        var result = await _accountRepository.AddAsync(account, cancellationToken);
+        return result.Id;
     }
 }

@@ -50,6 +50,9 @@ public class Account
         if (id == Guid.Empty)
             throw new ArgumentException("ID cannot be empty.", nameof(id));
 
+        if (agencyId == Guid.Empty)
+            throw new ArgumentException("Agency ID cannot be empty.", nameof(agencyId));
+
         if (!Enum.IsDefined(role))
             throw new ArgumentException("Invalid account role.", nameof(role));
 
