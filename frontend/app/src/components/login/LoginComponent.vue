@@ -23,8 +23,8 @@ type LoginMode = LoginRequestDto["mode"];
 
 const mode = ref<LoginMode>("agency");
 const agencyId = ref<string>(AGENCIES[0].id);
-const email = ref("");
-const password = ref("");
+const email = ref<string>("");
+const password = ref<string>("");
 const form = ref<HTMLFormElement | null>(null);
 
 function selectMode(value: LoginMode): void {

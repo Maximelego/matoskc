@@ -2,8 +2,9 @@
 import { ref } from "vue";
 import AdminHomeComponent from "./adminHomeComponent/AdminHomeComponent.vue";
 import MagaHomeComponent from "./magaHomeComponent/MagaHomeComponent.vue";
+import SuperAdminHomeComponent from "./superAdminHomeComponent/SuperAdminHomeComponent.vue";
 
-const viewMode = ref<"admin" | "user">("user");
+const viewMode = ref<"admin" | "user" | "super-admin">("user");
 </script>
 
 <template>
@@ -16,7 +17,7 @@ const viewMode = ref<"admin" | "user">("user");
         type="radio"
         value="user"
       />
-      <label for="user">User</label>
+      <label for="user">Agence</label>
       <input
         id="admin"
         v-model="viewMode"
@@ -24,11 +25,19 @@ const viewMode = ref<"admin" | "user">("user");
         value="admin"
       />
       <label for="admin">Admin</label>
+      <input
+        id="super-admin"
+        v-model="viewMode"
+        type="radio"
+        value="super-admin"
+      />
+      <label for="super-admin">Super Admin</label>
     </div>
 
     <div class="home">
       <MagaHomeComponent v-if="viewMode === 'user'" />
-      <AdminHomeComponent v-else />
+      <AdminHomeComponent v-else-if="viewMode === 'admin'" />
+      <SuperAdminHomeComponent v-else-if="viewMode === 'super-admin'" />
     </div>
   </div>
 </template>

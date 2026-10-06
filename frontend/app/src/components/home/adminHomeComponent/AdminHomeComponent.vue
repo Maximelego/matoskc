@@ -14,11 +14,6 @@ const menus: HomeTileProps[] = [
     icon: "clipboard",
     to: "/admin/inspections",
   },
-  {
-    title: "Gestion",
-    description: "Gestion des utilisateurs et des rôles.",
-    icon: "users",
-  },
 ];
 </script>
 
