@@ -77,3 +77,50 @@ export type InspectionRecord = {
   }[];
 };
 
+
+// Proposed backend contracts. Legacy types above remain for the current mock UI.
+export type InspectionTypeDto = "Departure" | "Return";
+export type InspectionStatusDto = "Draft" | "Validated";
+export type ConformityDto = "Compliant" | "NonCompliant" | "NotApplicable";
+export type InspectionAnswerDto = {
+  id: string;
+  templatePointId: string;
+  result: ConformityDto | null;
+  textValue: string | null;
+  numberValue: number | null;
+  choiceValue: string | null;
+  observation: string | null;
+  photoIds: string[];
+  existingDefectId: string | null;
+};
+export type SaveInspectionAnswerDto = Omit<InspectionAnswerDto, "id">;
+export type InspectionDto = {
+  id: string;
+  rentalId: string;
+  equipmentId: string;
+  templateVersionId: string;
+  type: InspectionTypeDto;
+  status: InspectionStatusDto;
+  operatorFirstName: string;
+  startedAt: string;
+  validatedAt: string | null;
+  answers: InspectionAnswerDto[];
+};
+export type CreateInspectionDto = {
+  rentalId: string;
+  type: InspectionTypeDto;
+  operatorFirstName: string;
+};
+export type SaveInspectionDraftDto = { answers: SaveInspectionAnswerDto[] };
+export type ValidateInspectionDto = {
+  submissionId: string;
+  acceptance?: {
+    signerName: string;
+    signerCapacity?: string | null;
+    acceptedTextVersion: string;
+    signatureId: string;
+  };
+};
+export type ListInspectionsDto = { inspections: InspectionDto[] };
+export type InspectionFiltersDto = { rentalId?: string; equipmentId?: string; type?: InspectionTypeDto; status?: InspectionStatusDto };
+export type InspectionMediaDto = { id: string; inspectionId: string; answerId: string | null; url: string; contentType: string; uploadedAt: string };

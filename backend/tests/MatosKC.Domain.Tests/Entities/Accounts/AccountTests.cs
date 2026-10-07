@@ -10,7 +10,7 @@ public class AccountTests
     private const string ValidHash = "test-password-hash";
 
     private static Agency CreateAgency() =>
-        new(Guid.NewGuid(), "Épinal", 83, true);
+        new(Guid.NewGuid(), "Épinal", 83);
 
     private static Account CreateAdmin() =>
         new(
@@ -303,4 +303,5 @@ public class AccountTests
         Assert.Equal(ValidHash, account.HashedPassword);
     }
 }
+
 

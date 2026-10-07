@@ -157,6 +157,7 @@ public class CreateAccountUseCaseTests
             Task.FromResult(Accounts.Any(account => account.Role == Role.Agency && account.AgencyId == agencyId));
         public Task<bool> ExistsByIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<Account?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<Account?> GetByAgencyIdAsync(Guid agencyId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<Account?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<Account>> ListByQueryAsync(ListAccountsQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<Account> UpdateAsync(Account account, CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -165,10 +166,12 @@ public class CreateAccountUseCaseTests
 
     private sealed class AgencyRepositoryStub : IAgencyRepository
     {
-        public Agency Agency { get; } = new("Épinal", 83, true);
+        public Agency Agency { get; } = new("Épinal", 83);
         public Task<bool> ExistsByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(id == Agency.Id);
+        public Task<Agency?> GetByCodeAsync(int code, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<Agency?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<Agency[]?> ListByQueryAsync(ListAgenciesQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<Agency> AddAsync(Agency agency, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }
+

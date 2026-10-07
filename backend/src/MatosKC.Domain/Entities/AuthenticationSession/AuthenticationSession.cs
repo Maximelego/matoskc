@@ -2,33 +2,49 @@ namespace MatosKC.Domain.Entities.AuthenticationSession;
 
 public class AuthenticationSession
 {
-
     public Guid Id { get; }
     public Guid AccountId { get; }
     public DateTime CreatedAt { get; }
     public DateTime ExpiresAt { get; }
-    public DateTime RevokedAt { get; set;}
+    public DateTime? RevokedAt { get; private set; }
 
     public AuthenticationSession(Guid accountId, TimeSpan sessionDuration)
+        : this(accountId, sessionDuration, DateTime.UtcNow) { }
+
+    public AuthenticationSession(Guid accountId, TimeSpan sessionDuration, DateTime now)
     {
         if (accountId == Guid.Empty)
             throw new ArgumentException("Account ID cannot be empty.", nameof(accountId));
         if (sessionDuration <= TimeSpan.Zero)
             throw new ArgumentException("Session duration must be greater than zero.", nameof(sessionDuration));
-
+        EnsureUtc(now);
         Id = Guid.NewGuid();
         AccountId = accountId;
-        CreatedAt = DateTime.UtcNow;
-        ExpiresAt = CreatedAt.Add(sessionDuration);
-        RevokedAt = DateTime.MinValue;
+        CreatedAt = now;
+        ExpiresAt = now.Add(sessionDuration);
     }
 
-    public bool IsValid() {
-        return CreatedAt != DateTime.MinValue && ExpiresAt > DateTime.UtcNow && RevokedAt == DateTime.MinValue;
-    }
+    public bool IsValid() => IsValid(DateTime.UtcNow);
 
-    public void Revoke()
+    public bool IsValid(DateTime now)
     {
-        RevokedAt = DateTime.UtcNow;
+        EnsureUtc(now);
+        return now >= CreatedAt && now < ExpiresAt && RevokedAt == null;
+    }
+
+    public void Revoke() => Revoke(DateTime.UtcNow);
+
+    public void Revoke(DateTime now)
+    {
+        EnsureUtc(now);
+        if (now < CreatedAt)
+            throw new ArgumentException("Revocation cannot precede creation.", nameof(now));
+        RevokedAt ??= now;
+    }
+
+    private static void EnsureUtc(DateTime now)
+    {
+        if (now.Kind != DateTimeKind.Utc)
+            throw new ArgumentException("Timestamp must use UTC.", nameof(now));
     }
 }

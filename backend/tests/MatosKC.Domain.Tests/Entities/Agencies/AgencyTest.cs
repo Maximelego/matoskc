@@ -5,26 +5,23 @@ namespace MatosKC.Domain.Tests.Entities.Agencies;
 
 public class AgencyTests
 {
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void Constructor_WithValidParameters_PreservesValues(bool isActive)
+    [Fact]
+    public void Constructor_WithValidParameters_PreservesValues()
     {
         Guid id = Guid.NewGuid();
 
-        var agency = new Agency(id, "Épinal", 83, isActive);
+        var agency = new Agency(id, "Épinal", 83);
 
         Assert.Equal(id, agency.Id);
         Assert.Equal("Épinal", agency.Name);
         Assert.Equal(83, agency.Code);
-        Assert.Equal(isActive, agency.IsActive);
     }
 
     [Fact]
     public void Constructor_WithoutId_GeneratesDistinctNonEmptyIds()
     {
-        var first = new Agency("Épinal", 83, true);
-        var second = new Agency("Nancy", 84, true);
+        var first = new Agency("Épinal", 83);
+        var second = new Agency("Nancy", 84);
 
         Assert.NotEqual(Guid.Empty, first.Id);
         Assert.NotEqual(Guid.Empty, second.Id);
@@ -35,7 +32,7 @@ public class AgencyTests
     public void Constructor_WithEmptyId_Throws()
     {
         Assert.Throws<ArgumentException>(() =>
-            new Agency(Guid.Empty, "Épinal", 83, true));
+            new Agency(Guid.Empty, "Épinal", 83));
     }
 
     [Theory]
@@ -45,7 +42,7 @@ public class AgencyTests
     public void Constructor_WithInvalidName_Throws(string? name)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Agency(Guid.NewGuid(), name!, 83, true));
+            new Agency(Guid.NewGuid(), name!, 83));
     }
 
     [Theory]
@@ -54,6 +51,7 @@ public class AgencyTests
     public void Constructor_WithInvalidCode_Throws(int code)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Agency(Guid.NewGuid(), "Épinal", code, true));
+            new Agency(Guid.NewGuid(), "Épinal", code));
     }
 }
+
