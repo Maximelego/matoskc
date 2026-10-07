@@ -8,6 +8,7 @@ public interface IAgencyRepository
 {
     public Task<Agency?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    public Task<Agency?> GetByCodeAsync(int code, CancellationToken cancellationToken = default);
     public Task<bool> ExistsByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     public Task<Agency[]?> ListByQueryAsync(ListAgenciesQuery query, CancellationToken cancellationToken = default);
