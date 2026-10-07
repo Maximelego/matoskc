@@ -19,7 +19,7 @@ public class AccountTests
             ValidHash,
             true,
             Role.Admin,
-            CreateAgency()
+            CreateAgency().Id
         );
 
     [Theory]
@@ -35,10 +35,10 @@ public class AccountTests
     {
         Guid id = Guid.NewGuid();
         string? email = role == Role.Agency ? null : ValidEmail;
-        Agency? agency = role == Role.SuperAdmin ? null : CreateAgency();
+        Guid? agencyId = role == Role.SuperAdmin ? null : CreateAgency().Id;
 
         var account = new Account(
-            id, "Compte test", email, ValidHash, isActive, role, agency);
+            id, "Compte test", email, ValidHash, isActive, role, agencyId);
 
         Assert.Equal(id, account.Id);
         Assert.Equal("Compte test", account.DisplayName);
@@ -46,7 +46,7 @@ public class AccountTests
         Assert.Equal(ValidHash, account.HashedPassword);
         Assert.Equal(role, account.Role);
         Assert.Equal(isActive, account.IsActive);
-        Assert.Same(agency, account.Agency);
+        Assert.Equal(agencyId, account.AgencyId);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class AccountTests
         Assert.Throws<ArgumentException>(() =>
             new Account(
                 Guid.Empty, "Maxime", ValidEmail,
-                ValidHash, true, Role.Admin, CreateAgency()));
+                ValidHash, true, Role.Admin, CreateAgency().Id));
     }
 
     [Theory]
@@ -77,7 +77,7 @@ public class AccountTests
         Assert.Throws<ArgumentException>(() =>
             new Account(
                 "Maxime", ValidEmail, ValidHash,
-                true, (Role)role, CreateAgency()));
+                true, (Role)role, CreateAgency().Id));
     }
 
     [Theory]
@@ -89,7 +89,7 @@ public class AccountTests
         Assert.Throws<ArgumentException>(() =>
             new Account(
                 name!, ValidEmail, ValidHash,
-                true, Role.Admin, CreateAgency()));
+                true, Role.Admin, CreateAgency().Id));
     }
 
     [Theory]
@@ -101,7 +101,18 @@ public class AccountTests
         Assert.Throws<ArgumentException>(() =>
             new Account(
                 "Maxime", ValidEmail, hash!,
-                true, Role.Admin, CreateAgency()));
+                true, Role.Admin, CreateAgency().Id));
+    }
+
+    [Theory]
+    [InlineData(Role.Admin)]
+    [InlineData(Role.Agency)]
+    public void Constructor_WithEmptyAgencyId_Throws(Role role)
+    {
+        string? email = role == Role.Agency ? null : ValidEmail;
+
+        Assert.Throws<ArgumentException>(() =>
+            new Account("Compte test", email, ValidHash, true, role, Guid.Empty));
     }
 
     [Theory]
@@ -121,7 +132,7 @@ public class AccountTests
         Assert.Throws<ArgumentException>(() =>
             new Account(
                 "Maxime", ValidEmail, ValidHash,
-                true, Role.SuperAdmin, CreateAgency()));
+                true, Role.SuperAdmin, CreateAgency().Id));
     }
 
     [Theory]
@@ -130,10 +141,10 @@ public class AccountTests
     public void Constructor_WithMissingEmailForIndividualAccount_Throws(
         Role role)
     {
-        Agency? agency = role == Role.Admin ? CreateAgency() : null;
+        Guid? agencyId = role == Role.Admin ? CreateAgency().Id : null;
 
         Assert.Throws<ArgumentException>(() =>
-            new Account("Maxime", null, ValidHash, true, role, agency));
+            new Account("Maxime", null, ValidHash, true, role, agencyId));
     }
 
     [Fact]
@@ -142,7 +153,7 @@ public class AccountTests
         Assert.Throws<ArgumentException>(() =>
             new Account(
                 "Agence Épinal", ValidEmail, ValidHash,
-                true, Role.Agency, CreateAgency()));
+                true, Role.Agency, CreateAgency().Id));
     }
 
     [Theory]
@@ -155,7 +166,7 @@ public class AccountTests
         Assert.Throws<ArgumentException>(() =>
             new Account(
                 "Maxime", email, ValidHash,
-                true, Role.Admin, CreateAgency()));
+                true, Role.Admin, CreateAgency().Id));
     }
 
     [Fact]
@@ -210,9 +221,9 @@ public class AccountTests
     [InlineData(Role.SuperAdmin)]
     public void UpdateEmail_WithValidEmail_UpdatesValue(Role role)
     {
-        Agency? agency = role == Role.Admin ? CreateAgency() : null;
+        Guid? agencyId = role == Role.Admin ? CreateAgency().Id : null;
         var account = new Account(
-            "Maxime", ValidEmail, ValidHash, true, role, agency);
+            "Maxime", ValidEmail, ValidHash, true, role, agencyId);
 
         account.UpdateEmail("nouveau@example.com");
 
@@ -232,9 +243,9 @@ public class AccountTests
         Role role,
         string? email)
     {
-        Agency? agency = role == Role.Admin ? CreateAgency() : null;
+        Guid? agencyId = role == Role.Admin ? CreateAgency().Id : null;
         var account = new Account(
-            "Maxime", ValidEmail, ValidHash, true, role, agency);
+            "Maxime", ValidEmail, ValidHash, true, role, agencyId);
 
         Assert.Throws<ArgumentException>(() =>
             account.UpdateEmail(email));
@@ -247,7 +258,7 @@ public class AccountTests
     {
         var account = new Account(
             "Agence Épinal", null, ValidHash,
-            true, Role.Agency, CreateAgency());
+            true, Role.Agency, CreateAgency().Id);
 
         Assert.Throws<ArgumentException>(() =>
             account.UpdateEmail(ValidEmail));
@@ -260,7 +271,7 @@ public class AccountTests
     {
         var account = new Account(
             "Agence Épinal", null, ValidHash,
-            true, Role.Agency, CreateAgency());
+            true, Role.Agency, CreateAgency().Id);
 
         account.UpdateEmail(null);
 
@@ -292,3 +303,4 @@ public class AccountTests
         Assert.Equal(ValidHash, account.HashedPassword);
     }
 }
+

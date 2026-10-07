@@ -1,6 +1,7 @@
 export type LoginRequestDto =
   | {
       mode: "agency";
+      agencyId: string;
       password: string;
     }
   | {

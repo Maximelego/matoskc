@@ -7,7 +7,9 @@ public interface IAccountRepository
 {
     public Task<Account?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    public Task<Account?> ListByQueryAsync(ListAccountsQuery query, CancellationToken cancellationToken = default);
+    public Task<Account?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    public Task<IReadOnlyList<Account>> ListByQueryAsync(ListAccountsQuery query, CancellationToken cancellationToken = default);
 
     public Task<Account> AddAsync(Account account, CancellationToken cancellationToken = default);
 

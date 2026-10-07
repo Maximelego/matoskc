@@ -13,26 +13,14 @@ import EquipmentCreateForm from "../equipmentCreate/EquipmentCreateForm.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentDetailsModal from "./EquipmentDetailsModal.vue";
 import EquipmentFiltersControl from "./EquipmentFilters.vue";
-
 const selectedEquipment = ref<EquipmentDto | null>(null);
 const detailsOpen = ref(false);
 const createContentVisible = ref(false);
-function openCreate(): void {
-  createContentVisible.value = true;
-  createOpen.value = true;
-}
-function closeCreate(): void {
-  createOpen.value = false;
-}
-function clearCreate(): void {
-  if (!createOpen.value) createContentVisible.value = false;
-}
-function closeDetails(): void {
-  detailsOpen.value = false;
-}
-function clearDetails(): void {
-  if (!detailsOpen.value) selectedEquipment.value = null;
-}
+function openCreate(): void { createContentVisible.value = true; createOpen.value = true; }
+function closeCreate(): void { createOpen.value = false; }
+function clearCreate(): void { if (!createOpen.value) createContentVisible.value = false; }
+function closeDetails(): void { detailsOpen.value = false; }
+function clearDetails(): void { if (!detailsOpen.value) selectedEquipment.value = null; }
 type SortKey = "name" | "serialNumber" | "equipmentCategoryId" | "status";
 type SortDirection = "asc" | "desc";
 const statusLabels: Record<string, string> = {
@@ -287,9 +275,9 @@ onUnmounted(() => {
       </p>
       <div
         v-if="!loading && !error && equipments.length > 0"
-        class="equipment-list__table-container"
+        class="equipment-list__table-container app-table-scroll"
       >
-        <div class="equipment-list__mobile-sort">
+        <div class="app-table__mobile-sort">
           <label for="equipment-sort">Trier par</label>
           <select
             id="equipment-sort"
@@ -311,7 +299,7 @@ onUnmounted(() => {
             {{ sortDirection === "asc" ? "↑" : "↓" }}
           </button>
         </div>
-        <table class="equipment-list__table">
+        <table class="equipment-list__table app-table">
           <thead>
             <tr>
               <th
@@ -320,6 +308,7 @@ onUnmounted(() => {
               >
                 <button
                   type="button"
+                  class="app-table__sort-button"
                   @click="toggleSort('name')"
                 >
                   Équipement
@@ -334,6 +323,7 @@ onUnmounted(() => {
               >
                 <button
                   type="button"
+                  class="app-table__sort-button"
                   @click="toggleSort('serialNumber')"
                 >
                   Numéro de série
@@ -348,6 +338,7 @@ onUnmounted(() => {
               >
                 <button
                   type="button"
+                  class="app-table__sort-button"
                   @click="toggleSort('equipmentCategoryId')"
                 >
                   Catégorie
@@ -368,6 +359,7 @@ onUnmounted(() => {
               >
                 <button
                   type="button"
+                  class="app-table__sort-button"
                   @click="toggleSort('status')"
                 >
                   État
@@ -441,299 +433,34 @@ onUnmounted(() => {
 </template>
 <style scoped lang="scss">
 .equipment-list {
-  display: grid;
-  gap: 1.25rem;
-  &__header,
-  &__header-actions,
-  &__panel-header,
-  &__row-actions {
-    display: flex;
-    align-items: center;
-  }
-  &__header {
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  &__header h1 {
-    margin: 0;
-  }
-  &__subtitle {
-    margin: 0.35rem 0 0;
-    color: var(--color-text-secondary);
-  }
-  &__header-actions {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-  &__notice {
-    margin: 0;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    background: var(--color-primary-soft);
-  }
-  &__error {
-    padding: 1rem;
-    border: 1px solid var(--color-danger);
-    border-radius: 0.5rem;
-    color: var(--color-danger);
-  }
-  &__error p {
-    margin-top: 0;
-  }
-  &__panel {
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-    background: var(--color-surface);
-  }
-  &__panel-header {
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-  &__panel-header h2 {
-    margin: 0;
-    font-size: 1rem;
-  }
-  &__count {
-    color: var(--color-text-secondary);
-    white-space: nowrap;
-  }
-  &__state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    min-height: 8rem;
-    margin: 0;
-    padding: 1rem;
-    color: var(--color-text-secondary);
-  }
-  &__table-container {
-    overflow-x: auto;
-  }
-  &__mobile-sort {
-    display: none;
-  }
-  &__table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-  }
-  &__table thead {
-    background: var(--color-surface-secondary);
-  }
-  &__table th,
-  &__table td {
-    padding: 0.875rem 1.25rem;
-    border-bottom: 1px solid var(--color-border);
-    vertical-align: middle;
-  }
-  &__table tr {
-    cursor: pointer;
-  }
-  &__table thead th {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    white-space: nowrap;
-  }
-  &__table thead button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0;
-    border: 0;
-    color: inherit;
-    background: none;
-    font: inherit;
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-  }
-  &__table thead button:hover {
-    color: var(--color-primary);
-  }
-  &__table thead button:focus-visible {
-    outline: 0.1875rem solid var(--color-focus);
-    outline-offset: 0.25rem;
-  }
-  &__table thead button span {
-    font-size: 0.7rem;
-  }
-  &__table tbody tr:last-child th,
-  &__table tbody tr:last-child td {
-    border-bottom: 0;
-  }
-  &__table tbody tr:nth-child(even) {
-    background: var(--color-surface-secondary);
-  }
-  &__table tbody tr:hover,
-  &__table tbody tr:focus-within {
-    background: var(--color-primary-soft);
-  }
-  &__name {
-    font-weight: var(--font-weight-semibold);
-  }
-  &__serial,
-  &__category {
-    color: var(--color-text-secondary);
-  }
-  &__actions-heading,
-  &__actions-cell {
-    width: 1%;
-    text-align: right;
-  }
-  &__row-actions {
-    justify-content: flex-end;
-    gap: 0.25rem;
-    opacity: 0;
-    transition: opacity 150ms ease;
-  }
-  tr:hover &__row-actions,
-  tr:focus-within &__row-actions {
-    opacity: 1;
-  }
-  &__icon-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    border: 1px solid transparent;
-    border-radius: 0.5rem;
-    color: var(--color-text-secondary);
-    background: transparent;
-    cursor: pointer;
-  }
-  &__icon-button:hover {
-    color: var(--color-primary);
-    background: var(--color-primary-soft);
-  }
-  &__icon-button:focus-visible {
-    outline: 0.1875rem solid var(--color-focus);
-    outline-offset: 0.125rem;
-  }
+  display: grid; gap: 1.25rem;
+  &__header, &__header-actions, &__panel-header { display: flex; align-items: center; }
+  &__header { justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  &__header h1 { margin: 0; }
+  &__subtitle { margin: .35rem 0 0; color: var(--color-text-secondary); }
+  &__header-actions { flex-wrap: wrap; gap: .75rem; }
+  &__notice { margin: 0; padding: .75rem 1rem; border-radius: .5rem; background: var(--color-primary-soft); }
+  &__error { padding: 1rem; border: 1px solid var(--color-danger); border-radius: .5rem; color: var(--color-danger); }
+  &__error p { margin-top: 0; }
+  &__panel { overflow: hidden; border: 1px solid var(--color-border); border-radius: .75rem; background: var(--color-surface); }
+  &__panel-header { justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-border); }
+  &__panel-header h2 { margin: 0; font-size: 1rem; }
+  &__count { color: var(--color-text-secondary); white-space: nowrap; }
+  &__state { display: flex; align-items: center; justify-content: center; gap: .75rem; min-height: 8rem; margin: 0; padding: 1rem; color: var(--color-text-secondary); }
+  &__clickable-row { cursor: pointer; }
+  &__name { font-weight: var(--font-weight-semibold); }
+  &__serial, &__category { color: var(--color-text-secondary); }
 }
-@media (hover: none) {
-  .equipment-list__row-actions {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .equipment-list__row-actions {
-    transition: none;
-  }
-}
-</style>
-<style scoped lang="scss">
 @media (max-width: 42rem) {
   .equipment-list {
-    min-width: 0;
-    gap: 1rem;
-    &__header,
-    &__header-actions {
-      display: grid;
-      width: 100%;
-    }
-    &__header-actions {
-      grid-template-columns: 1fr 1fr;
-    }
-    &__header-actions :deep(button) {
-      width: 100%;
-      min-height: 2.75rem;
-    }
-    &__panel-header {
-      padding: 0.875rem 1rem;
-      flex-wrap: wrap;
-    }
-    &__table-container {
-      overflow: visible;
-      padding: 0 0.75rem 0.75rem;
-    }
-    &__mobile-sort {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 0.5rem;
-      padding: 0.75rem 0.25rem;
-      align-items: center;
-    }
-    &__mobile-sort label {
-      grid-column: 1 / -1;
-    }
-    &__mobile-sort select,
-    &__mobile-sort button {
-      min-width: 0;
-      min-height: 2.75rem;
-      padding: 0.5rem;
-      border: 1px solid var(--color-border);
-      border-radius: 0.5rem;
-      color: var(--color-text);
-      background: var(--color-input-background);
-    }
-    &__mobile-sort button {
-      min-width: 2.75rem;
-      cursor: pointer;
-    }
-    &__table,
-    &__table tbody,
-    &__table tr {
-      display: block;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    &__table thead {
-      display: none;
-    }
-    &__table tbody {
-      display: grid;
-      gap: 0.75rem;
-    }
-    &__table tbody tr {
-      padding: 0.875rem;
-      border: 1px solid var(--color-border);
-      border-radius: 0.65rem;
-      background: var(--color-surface);
-    }
-    &__table tbody tr:nth-child(even) {
-      background: var(--color-surface-secondary);
-    }
-    &__table tbody tr:hover,
-    &__table tbody tr:focus-visible {
-      background: var(--color-primary-soft);
-    }
-    &__table tbody tr:focus-visible {
-      outline: 0.1875rem solid var(--color-focus);
-      outline-offset: 0.125rem;
-    }
-    &__table th,
-    &__table td {
-      display: block;
-      padding: 0;
-      border: 0;
-      overflow-wrap: anywhere;
-    }
-    &__table th {
-      margin-bottom: 0.75rem;
-      font-size: 1.05rem;
-    }
-    &__table td {
-      margin-top: 0.5rem;
-    }
-    &__table td::before {
-      content: attr(data-label);
-      display: block;
-      margin-bottom: 0.125rem;
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-semibold);
-    }
+    min-width: 0; gap: 1rem;
+    &__header, &__header-actions { display: grid; width: 100%; }
+    &__header-actions { grid-template-columns: 1fr 1fr; }
+    &__header-actions :deep(button) { width: 100%; min-height: 2.75rem; }
+    &__panel-header { padding: .875rem 1rem; flex-wrap: wrap; }
+    &__table-container { padding: 0 .75rem .75rem; }
+    &__name { margin-bottom: .5rem; font-size: 1.05rem; }
   }
 }
-@media (max-width: 23rem) {
-  .equipment-list__header-actions {
-    grid-template-columns: 1fr;
-  }
-}
+@media (max-width: 23rem) { .equipment-list__header-actions { grid-template-columns: 1fr; } }
 </style>
