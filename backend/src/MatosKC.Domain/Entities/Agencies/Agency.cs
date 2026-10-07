@@ -5,9 +5,8 @@ public class Agency
     public Guid Id { get; private set; }
     public int Code { get; private set; }
     public string Name { get; private set; }
-    public bool IsActive { get; private set; }
 
-    public Agency(Guid id, string name, int code, bool isActive)
+    public Agency(Guid id, string name, int code)
     {
         if (id == Guid.Empty)
             throw new ArgumentException("ID cannot be empty.", nameof(id));
@@ -21,11 +20,10 @@ public class Agency
         Id = id;
         Name = name;
         Code = code;
-        IsActive = isActive;
     }
 
-    public Agency(string name, int code, bool isActive)
-        : this(Guid.NewGuid(), name, code, isActive)
+    public Agency(string name, int code)
+        : this(Guid.NewGuid(), name, code)
     {
     }
 }
