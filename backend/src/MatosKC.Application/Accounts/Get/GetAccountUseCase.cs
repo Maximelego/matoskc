@@ -13,9 +13,9 @@ public class GetAccountUseCase
         _accountRepository = accountRepository;
     }
 
-    public async Task<Account> ExecuteAsync(Guid accountId)
+    public async Task<Account> ExecuteAsync(Guid accountId, CancellationToken cancellationToken = default)
     {
-        var account = await _accountRepository.GetByIdAsync(accountId);
-        return account ?? throw new InvalidOperationException($"Account with ID {accountId} not found.");
+        var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
+        return account ?? throw new MatosKC.Application.Administration.AdministrationException(404, $"Account with ID {accountId} not found.");
     }
 }

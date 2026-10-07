@@ -11,7 +11,7 @@ public sealed class EquipmentEndpointsTests
 
     public EquipmentEndpointsTests(MatosKCApiFactory factory)
     {
-        Client = factory.CreateClient();
+        Client = factory.CreateAuthenticatedClient();
     }
 
     [Fact]

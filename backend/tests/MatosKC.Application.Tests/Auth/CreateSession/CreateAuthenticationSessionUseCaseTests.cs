@@ -156,6 +156,17 @@ public class CreateAuthenticationSessionUseCaseTests
         Assert.Empty(_sessions.Sessions);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WhenRehashIsNeeded_UpdatesHashAndCreatesSession()
+    {
+        var account = SetAccount(Role.Admin);
+        _hasher.RequireRehash = true;
+        var session = await UseCase().ExecuteAsync(new(null, account.Email, "correct-password"));
+        Assert.Equal("renewed-hash", account.HashedPassword);
+        Assert.Equal(1, _accounts.UpdateCalls);
+        Assert.Same(session, Assert.Single(_sessions.Sessions));
+    }
+
     private sealed class FixedTimeProvider : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2026, 10, 7, 12, 0, 0, TimeSpan.Zero);
@@ -178,20 +189,22 @@ public class CreateAuthenticationSessionUseCaseTests
 
     private sealed class HasherStub : IPasswordHasher
     {
+        public bool RequireRehash { get; set; }
         public string? LastPassword { get; private set; }
         public string? LastHash { get; private set; }
-        public bool VerifyPassword(string password, string hashedPassword)
+        public HashVerificationResult VerifyPassword(string password, string hashedPassword)
         {
             LastPassword = password;
             LastHash = hashedPassword;
-            return password == "correct-password" && hashedPassword == "stored-hash";
+            return password == "correct-password" && hashedPassword == "stored-hash"
+                ? (RequireRehash ? HashVerificationResult.NeedsRehash : HashVerificationResult.Success) : HashVerificationResult.Failed;
         }
-        public string HashPassword(string password) => throw new NotSupportedException();
-        public bool NeedsRehash(string hashedPassword) => throw new NotSupportedException();
+        public string HashPassword(string password) => "renewed-hash";
     }
 
     private sealed class AccountsStub : IAccountRepository
     {
+        public int UpdateCalls { get; private set; }
         public Account? Account { get; set; }
         public bool ReturnAccountRegardlessOfAgency { get; set; }
         public string? LastEmail { get; private set; }
@@ -209,7 +222,8 @@ public class CreateAuthenticationSessionUseCaseTests
         public Task<Account?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<Account>> ListByQueryAsync(ListAccountsQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<Account> AddAsync(Account account, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-        public Task<Account> UpdateAsync(Account account, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<Account> UpdateAsync(Account account, CancellationToken cancellationToken = default)
+        { UpdateCalls++; return Task.FromResult(account); }
         public Task DeleteAsync(Account account, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> ExistsAgencyAccountAsync(Guid agencyId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default) => throw new NotSupportedException();

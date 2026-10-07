@@ -61,3 +61,6 @@ Desktop.ini
 *__pycache__
 
 *node_modules/
+# Authentication runtime secrets
+.matoskc-auth-keys/
+.env.auth

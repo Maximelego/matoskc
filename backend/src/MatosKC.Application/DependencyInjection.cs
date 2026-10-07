@@ -34,6 +34,15 @@ public static class DependencyInjection
         services.AddScoped<ReplaceEquipmentPhotoUseCase>();
         services.AddScoped<DeleteEquipmentPhotoUseCase>();
 
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<MatosKC.Application.Accounts.Create.CreateAccountUseCase>();
+        services.AddScoped<MatosKC.Application.Accounts.Get.GetAccountUseCase>();
+        services.AddScoped<MatosKC.Application.Accounts.List.ListAccountsUseCase>();
+        services.AddScoped<MatosKC.Application.Accounts.Update.UpdateAccountUseCase>();
+        services.AddScoped<MatosKC.Application.Accounts.Delete.DeleteAccountUseCase>();
+        services.AddScoped<MatosKC.Application.Agencies.Manage.ManageAgenciesUseCase>();
+        services.AddScoped<MatosKC.Application.Auth.VerifySession.VerifyAuthenticationSessionUseCase>();
+        services.AddScoped<MatosKC.Application.Auth.RevokeSession.RevokeAuthenticationSessionUseCase>();
         return services;
     }
 }

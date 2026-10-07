@@ -2,10 +2,12 @@ namespace MatosKC.Domain.Entities.AuthenticationSession;
 
 public class AuthenticationSession
 {
-    public Guid Id { get; }
-    public Guid AccountId { get; }
-    public DateTime CreatedAt { get; }
-    public DateTime ExpiresAt { get; }
+    private AuthenticationSession() { }
+
+    public Guid Id { get; private set; }
+    public Guid AccountId { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime ExpiresAt { get; private set; }
     public DateTime? RevokedAt { get; private set; }
 
     public AuthenticationSession(Guid accountId, TimeSpan sessionDuration)

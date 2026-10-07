@@ -2,6 +2,15 @@ namespace MatosKC.Domain.Entities.Agencies;
 
 public class Agency
 {
+    private Agency() { Name = null!; }
+
+    public void Update(string name, int code)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required.", nameof(name));
+        if (code <= 0) throw new ArgumentException("Code must be positive.", nameof(code));
+        Name = name; Code = code;
+    }
+
     public Guid Id { get; private set; }
     public int Code { get; private set; }
     public string Name { get; private set; }

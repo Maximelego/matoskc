@@ -139,8 +139,7 @@ public class CreateAccountUseCaseTests
             LastPassword = password;
             return Hash;
         }
-        public bool VerifyPassword(string password, string hashedPassword) => throw new NotSupportedException();
-        public bool NeedsRehash(string hashedPassword) => throw new NotSupportedException();
+        public HashVerificationResult VerifyPassword(string password, string hashedPassword) => throw new NotSupportedException();
     }
 
     private sealed class AccountRepositoryStub : IAccountRepository

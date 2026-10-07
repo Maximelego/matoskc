@@ -11,9 +11,9 @@ public class ListAccountsUseCase
         _accountRepository = accountRepository;
     }
 
-    public async Task ExecuteAsync(ListAccountsQuery query, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<MatosKC.Application.Accounts.Get.AccountResponse>> ExecuteAsync(ListAccountsQuery query, CancellationToken cancellationToken = default)
     {
-        // TODO: Implement the logic to list accounts based on the provided query parameters.
-        throw new NotImplementedException("ListAccountsUseCase is not implemented yet.");
+        var accounts = await _accountRepository.ListByQueryAsync(query, cancellationToken);
+        return accounts.Select(MatosKC.Application.Accounts.Get.AccountResponse.From).ToArray();
     }
 }

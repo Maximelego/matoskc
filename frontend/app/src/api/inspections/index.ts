@@ -27,11 +27,17 @@ export const inspectionHttpApi = {
   validate(id: string, dto: ValidateInspectionDto) {
     return api.post<InspectionDto, ValidateInspectionDto>(`${path(id)}/validation`, dto);
   },
-  uploadPhoto(id: string, file: File) {
-    return api.putFile<InspectionMediaDto>(`${path(id)}/photos`, file);
+  uploadPhoto(id: string, answerId: string, file: File) {
+    return api.putFile<InspectionMediaDto>(`${path(id)}/answers/${encodeURIComponent(answerId)}/photos`, file);
   },
   uploadSignature(id: string, file: File) {
     return api.putFile<InspectionMediaDto>(`${path(id)}/signature`, file);
+  },
+  getDeparture(rentalId: string) {
+    return api.get<InspectionDto | null>(`/api/rentals/${encodeURIComponent(rentalId)}/departure-inspection`);
+  },
+  getPhoto(id: string, photoId: string) {
+    return api.getBlob(`${path(id)}/photos/${encodeURIComponent(photoId)}`);
   },
   getReport(id: string) { return api.getBlob(`${path(id)}/report`); },
 };

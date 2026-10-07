@@ -36,6 +36,45 @@ public sealed class MatosKCApiFactory
         await dbContext.Database.MigrateAsync();
     }
 
+    public HttpClient CreateAuthenticatedClient() => CreateAuthenticatedClientAsync().GetAwaiter().GetResult();
+
+    public async Task<HttpClient> CreateAuthenticatedClientAsync(MatosKC.Domain.Entities.Accounts.Role role = MatosKC.Domain.Entities.Accounts.Role.SuperAdmin)
+    {
+        var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        string email = $"test-{Guid.NewGuid():N}@example.com";
+        const string password = "integration-test-password";
+        int? code = null;
+        using (var scope = Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
+            Guid? agencyId = null;
+            if (role != MatosKC.Domain.Entities.Accounts.Role.SuperAdmin)
+            {
+                var agency = new MatosKC.Domain.Entities.Agencies.Agency("Test", Random.Shared.Next(100000, int.MaxValue));
+                db.Agencies.Add(agency); agencyId = agency.Id; code = agency.Code;
+            }
+            var hasher = scope.ServiceProvider.GetRequiredService<MatosKC.Application.Accounts.Ports.IPasswordHasher>();
+            db.Accounts.Add(new MatosKC.Domain.Entities.Accounts.Account("Test", role == MatosKC.Domain.Entities.Accounts.Role.Agency ? null : email,
+                hasher.HashPassword(password), true, role, agencyId));
+            await db.SaveChangesAsync();
+        }
+        await RefreshCsrfAsync(client);
+        var response = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(client, "/api/auth/login",
+            new { agencyCode = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? code : null,
+                email = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? null : email, password });
+        response.EnsureSuccessStatusCode();
+        await RefreshCsrfAsync(client);
+        return client;
+    }
+
+    public static async Task RefreshCsrfAsync(HttpClient client)
+    {
+        var response = await client.GetAsync("/api/auth/csrf"); response.EnsureSuccessStatusCode();
+        using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", json.RootElement.GetProperty("token").GetString());
+    }
+
     public new async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
@@ -45,6 +84,7 @@ public sealed class MatosKCApiFactory
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("Authentication:LoginPermitLimit", "100000");
 
         string connectionString =
             PostgreSqlContainer.GetConnectionString();

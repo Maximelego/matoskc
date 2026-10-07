@@ -20,7 +20,114 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Accounts.Account", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("citext")
+                        .HasColumnName("email");
+
+                    b.Property<string>("HashedPassword")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("hashed_password");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("role");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgencyId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_accounts_shared_agency")
+                        .HasFilter("role = 'Agency'");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ux_accounts_email");
+
+                    b.ToTable("accounts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_accounts_role_agency_email", "(role = 'SuperAdmin' AND agency_id IS NULL AND email IS NOT NULL) OR (role = 'Admin' AND agency_id IS NOT NULL AND email IS NOT NULL) OR (role = 'Agency' AND agency_id IS NOT NULL AND email IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Agencies.Agency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Code")
+                        .HasColumnType("integer")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_agencies_code");
+
+                    b.ToTable("agencies", (string)null);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.AuthenticationSession.AuthenticationSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.ToTable("authentication_sessions", (string)null);
+                });
 
             modelBuilder.Entity("MatosKC.Domain.Equipments.Equipment", b =>
                 {
@@ -87,6 +194,7 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("MatosKC.Domain.Equipments.EquipmentPhoto", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -134,6 +242,23 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_equipment_photos_object_key");
 
                     b.ToTable("equipment_photos", (string)null);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Accounts.Account", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Entities.Agencies.Agency", null)
+                        .WithMany()
+                        .HasForeignKey("AgencyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.AuthenticationSession.AuthenticationSession", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Equipments.Equipment", b =>

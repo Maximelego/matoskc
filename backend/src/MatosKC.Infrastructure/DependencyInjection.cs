@@ -44,6 +44,11 @@ public static class DependencyInjection
             EquipmentPhotoRepository
         >();
 
+        services.AddScoped<MatosKC.Application.Accounts.Ports.IAccountRepository, AccountRepository>();
+        services.AddScoped<MatosKC.Application.Agencies.Ports.IAgencyRepository, AgencyRepository>();
+        services.AddScoped<MatosKC.Application.Administration.IAdministrationRepository, AgencyRepository>();
+        services.AddScoped<MatosKC.Application.Auth.Ports.IAuthenticationSessionRepository, AuthenticationSessionRepository>();
+        services.AddSingleton<MatosKC.Application.Accounts.Ports.IPasswordHasher, MatosKC.Infrastructure.Hash.IdentityPasswordHasher>();
         services.AddScoped<DevelopmentDataSeeder>();
 
         return services;

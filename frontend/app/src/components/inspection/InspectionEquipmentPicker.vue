@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { EquipmentDto } from "../../api/equipments/dto";
-import BaseIcon from "../common/icon/BaseIcon.vue";
+import EquipmentThumbnail from "./EquipmentThumbnail.vue";
 const props = defineProps<{ equipment: EquipmentDto[] }>();
 const search = ref("");
 const matches = computed(() => props.equipment.filter(item => `${item.name} ${item.serialNumber}`.toLocaleLowerCase("fr").includes(search.value.trim().toLocaleLowerCase("fr"))));
@@ -13,7 +13,7 @@ const matches = computed(() => props.equipment.filter(item => `${item.name} ${it
     <p v-if="!matches.length">Aucun équipement ne correspond à votre recherche.</p>
     <div class="inspection-picker__grid">
       <RouterLink v-for="item in matches" :key="item.id" :to="`/inspections/${item.id}`" class="inspection-picker__card">
-        <span class="inspection-picker__photo"><BaseIcon name="equipment" :size="48" /><small>Photo à venir</small></span>
+        <EquipmentThumbnail :equipment-id="item.id" />
         <strong>{{ item.name }}</strong><small>N° {{ item.serialNumber }}</small>
         <span>{{ item.status === "Borrowed" ? "Retour" : "Départ" }}</span>
       </RouterLink>

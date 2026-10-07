@@ -10,6 +10,9 @@ export const inspectionTemplatesApi = {
   getCurrentForCategory(categoryId: string) {
     return api.get<InspectionTemplateVersionDto>(`/api/equipment-categories/${encodeURIComponent(categoryId)}/inspection-template`);
   },
+  getVersionById(versionId: string) {
+    return api.get<InspectionTemplateVersionDto>(`/api/inspection-template-versions/${encodeURIComponent(versionId)}`);
+  },
   getVersion(templateId: string, versionId: string) {
     return api.get<InspectionTemplateVersionDto>(`${path(templateId)}/versions/${encodeURIComponent(versionId)}`);
   },

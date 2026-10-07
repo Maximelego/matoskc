@@ -7,6 +7,7 @@ const props = defineProps<{ question: InspectionQuestion; answer?: InspectionAns
 const emit = defineEmits<{ update: [answer: InspectionAnswer] }>();
 const current = computed(() => props.answer ?? emptyAnswer(props.question));
 const condition = computed(() => current.value.kind === "condition" ? current.value : null);
+const choice = computed(() => current.value.kind === "choice" ? current.value : null);
 const text = computed(() => current.value.kind === "text" ? current.value : null);
 const number = computed(() => current.value.kind === "number" ? current.value : null);
 const fieldId = computed(() => `inspection-${props.question.id}`);
@@ -63,6 +64,14 @@ function setNumber(value: string): void {
         </ul>
       </div>
     </fieldset>
+    <div v-else-if="question.kind === 'choice' && choice" class="inspection-question__detail">
+      <label :for="fieldId">{{ question.label }} <span v-if="question.required" aria-label="obligatoire">*</span></label>
+      <p v-if="question.help" class="inspection-question__help">{{ question.help }}</p>
+      <select :id="fieldId" :value="choice.value" @change="emit('update', { ...choice, value: ($event.target as HTMLSelectElement).value })">
+        <option value="">Choisir une réponse</option>
+        <option v-for="option in question.choices" :key="option" :value="option">{{ option }}</option>
+      </select>
+    </div>
     <div v-else-if="question.kind === 'text' && text" class="inspection-question__detail">
       <label :for="fieldId">{{ question.label }} <span v-if="question.required" aria-label="obligatoire">*</span></label>
       <p v-if="question.help" class="inspection-question__help">{{ question.help }}</p>
@@ -96,7 +105,7 @@ function setNumber(value: string): void {
   &__choices { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
   &__choices label { display: flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0.5rem 0.75rem; border: 1px solid var(--color-border); border-radius: 0.5rem; cursor: pointer; }
   &__detail { display: grid; gap: 0.5rem; margin-top: 0.75rem; min-width: 0; }
-  textarea, input[type="number"], input[type="file"] { box-sizing: border-box; width: 100%; min-width: 0; padding: 0.65rem; color: var(--color-text); background: var(--color-input-background); border: 1px solid var(--color-border); border-radius: 0.5rem; font: inherit; }
+  textarea, select, input[type="number"], input[type="file"] { box-sizing: border-box; width: 100%; min-width: 0; padding: 0.65rem; color: var(--color-text); background: var(--color-input-background); border: 1px solid var(--color-border); border-radius: 0.5rem; font: inherit; }
   input[type="number"] { min-height: 2.75rem; }
   &__number { display: flex; align-items: center; gap: 0.5rem; }
   &__photos { padding-left: 1.25rem; overflow-wrap: anywhere; }

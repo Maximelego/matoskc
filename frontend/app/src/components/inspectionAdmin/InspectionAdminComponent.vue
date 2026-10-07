@@ -1,6 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { adminInspectionsApi, type InspectionRecord } from "../../api/inspections";
+import { inspectionHttpApi, type InspectionRecord, type InspectionDto } from "../../api/inspections";
+import { equipmentsApi } from "../../api/equipments";
+import { inspectionTemplatesApi } from "../../api/inspection-templates";
+
+async function displayRecord(item: InspectionDto): Promise<InspectionRecord> {
+  const [equipment, version] = await Promise.all([
+    equipmentsApi.getById(item.equipmentId), inspectionTemplatesApi.getVersionById(item.templateVersionId),
+  ]);
+  return {
+    id: item.id, equipmentId: item.equipmentId, equipmentName: equipment.name,
+    serialNumber: equipment.serialNumber, direction: item.type === "Return" ? "return" : "departure",
+    performedAt: item.validatedAt ?? item.startedAt, operatorFirstName: item.operatorFirstName,
+    templateVersion: version.versionNumber,
+    sections: version.steps.slice().sort((a, b) => a.position - b.position).map(step => ({
+      id: step.id, title: step.title,
+      answers: step.points.slice().sort((a, b) => a.position - b.position).map(point => {
+        const answer = item.answers.find(a => a.templatePointId === point.id);
+        return { questionId: point.id, label: point.label,
+          value: answer?.result === "Compliant" ? "compliant" as const :
+            answer?.result === "NonCompliant" ? "nonCompliant" as const :
+            answer?.result === "NotApplicable" ? "Sans objet" :
+            answer?.textValue ?? answer?.choiceValue ?? answer?.numberValue ?? "Non renseigné",
+          observation: answer?.observation ?? undefined,
+          photoUrls: (answer?.photoIds ?? []).map(photoId => `/api/inspections/${encodeURIComponent(item.id)}/photos/${encodeURIComponent(photoId)}`),
+        };
+      }),
+    })),
+  };
+}
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
@@ -30,7 +58,8 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    inspections.value = await adminInspectionsApi.list();
+    const result = await inspectionHttpApi.list({ status: "Validated" });
+    inspections.value = await Promise.all(result.inspections.map(displayRecord));
   } catch {
     error.value = "Impossible de charger les états des lieux. Veuillez réessayer.";
   } finally {
@@ -59,9 +88,7 @@ onMounted(() => { void load(); });
       </BaseButton>
     </header>
 
-    <p class="inspection-admin__demo" role="note">
-      Données de démonstration : les inspections saisies dans le formulaire ne sont pas encore enregistrées.
-    </p>
+
 
     <div v-if="error" class="inspection-admin__error" role="alert">
       <p>{{ error }}</p>
@@ -92,16 +119,16 @@ onMounted(() => { void load(); });
       <p class="inspection-admin__count" role="status">{{ filtered.length }} état{{ filtered.length > 1 ? "s" : "" }} des lieux</p>
       <p v-if="!filtered.length" class="inspection-admin__empty">Aucun état des lieux ne correspond à ces critères.</p>
 
-      <div v-else class="inspection-admin__table-scroll app-table-scroll">
-        <table class="app-table">
+      <div v-else class="inspection-admin__table-scroll">
+        <table class="inspection-admin__table">
           <thead><tr><th scope="col">Équipement</th><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Opérateur</th><th scope="col">Défauts</th><th scope="col">Détails</th></tr></thead>
           <tbody>
             <tr v-for="item in filtered" :key="item.id">
               <th scope="row"><strong>{{ item.equipmentName }}</strong><small>{{ item.serialNumber }}</small></th>
-              <td data-label="Date">{{ formatDate.format(new Date(item.performedAt)) }}</td>
-              <td data-label="Type">{{ item.direction === "return" ? "Retour" : "Départ" }}</td>
-              <td data-label="Opérateur">{{ item.operatorFirstName }}</td>
-              <td data-label="Défauts">{{ item.sections.flatMap(section => section.answers).filter(answer => answer.value === "nonCompliant").length }}</td>
+              <td>{{ formatDate.format(new Date(item.performedAt)) }}</td>
+              <td>{{ item.direction === "return" ? "Retour" : "Départ" }}</td>
+              <td>{{ item.operatorFirstName }}</td>
+              <td>{{ item.sections.flatMap(section => section.answers).filter(answer => answer.value === "nonCompliant").length }}</td>
               <td><button type="button" class="inspection-admin__view" :aria-label="`Consulter l’état des lieux de ${item.equipmentName}`" @click="showDetail(item)"><BaseIcon name="view" :size="18" /><span>Consulter</span></button></td>
             </tr>
           </tbody>
@@ -127,15 +154,24 @@ onMounted(() => { void load(); });
 .inspection-admin__filters input, .inspection-admin__filters select { box-sizing: border-box; width: 100%; min-height: 2.75rem; padding: .55rem; border: 1px solid var(--color-border); border-radius: .5rem; color: var(--color-text); background: var(--color-surface); font: inherit; }
 .inspection-admin__count { margin: 0; color: var(--color-text-secondary); }
 .inspection-admin__empty { padding: 2rem; text-align: center; color: var(--color-text-secondary); }
-.inspection-admin__table-scroll { border: 1px solid var(--color-border); border-radius: .75rem; background: var(--color-surface); }
-.app-table tbody th small { display: block; margin-top: .2rem; color: var(--color-text-secondary); font-weight: normal; }
+.inspection-admin__table-scroll { overflow-x: auto; border: 1px solid var(--color-border); border-radius: .75rem; background: var(--color-surface); }
+.inspection-admin__table { width: 100%; border-collapse: collapse; text-align: left; }
+.inspection-admin__table th, .inspection-admin__table td { padding: .85rem 1rem; border-bottom: 1px solid var(--color-border); }
+.inspection-admin__table thead { background: var(--color-surface-secondary); }
+.inspection-admin__table tbody tr:nth-child(even) { background: var(--color-surface-secondary); }
+.inspection-admin__table tbody tr:hover, .inspection-admin__table tbody tr:focus-within { background: var(--color-primary-soft); }
+.inspection-admin__table tbody th small { display: block; margin-top: .2rem; color: var(--color-text-secondary); font-weight: normal; }
 .inspection-admin__view { display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; border: 0; color: var(--color-primary); background: transparent; font: inherit; cursor: pointer; }
 .inspection-admin__view:focus-visible { outline: .1875rem solid var(--color-focus); outline-offset: .125rem; }
 @media(max-width: 48rem) {
   .inspection-admin__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .inspection-admin__filters label:first-child { grid-column: 1 / -1; }
-  .inspection-admin__table-scroll { border: 0; background: transparent; }
-  .app-table tbody tr { margin-bottom: 0; }
+  .inspection-admin__table-scroll { overflow: visible; border: 0; background: transparent; }
+  .inspection-admin__table, .inspection-admin__table tbody, .inspection-admin__table tr { display: block; }
+  .inspection-admin__table thead { display: none; }
+  .inspection-admin__table tbody tr { display: grid; gap: .25rem; margin-bottom: .75rem; padding: .75rem; border: 1px solid var(--color-border); border-radius: .75rem; background: var(--color-surface); }
+  .inspection-admin__table th, .inspection-admin__table td { padding: .2rem; border: 0; }
+  .inspection-admin__table td:last-child { justify-self: start; }
 }
 @media(max-width: 24rem) { .inspection-admin__filters { grid-template-columns: 1fr; } .inspection-admin__filters label:first-child { grid-column: auto; } }
 </style>

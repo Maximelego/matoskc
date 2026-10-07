@@ -9,6 +9,7 @@ type QuestionBase = {
 
 export type InspectionQuestion =
   | (QuestionBase & { kind: "condition"; photoRequiredWhen: PhotoRule })
+  | (QuestionBase & { kind: "choice"; choices: string[] })
   | (QuestionBase & { kind: "text"; maxLength?: number })
   | (QuestionBase & { kind: "number"; unit?: string; min?: number; max?: number });
 
@@ -29,6 +30,7 @@ export type InspectionTemplateDto = {
 
 export type InspectionAnswer =
   | { questionId: string; kind: "condition"; value: "compliant" | "nonCompliant" | null; observation: string; photos: File[] }
+  | { questionId: string; kind: "choice"; value: string }
   | { questionId: string; kind: "text"; value: string }
   | { questionId: string; kind: "number"; value: number | null };
 
@@ -124,3 +126,4 @@ export type ValidateInspectionDto = {
 export type ListInspectionsDto = { inspections: InspectionDto[] };
 export type InspectionFiltersDto = { rentalId?: string; equipmentId?: string; type?: InspectionTypeDto; status?: InspectionStatusDto };
 export type InspectionMediaDto = { id: string; inspectionId: string; answerId: string | null; url: string; contentType: string; uploadedAt: string };
+export type InspectionPhotoUploadDto = { answerId: string; file: File };

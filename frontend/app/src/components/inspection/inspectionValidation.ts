@@ -3,6 +3,7 @@ import type { InspectionAnswer, InspectionQuestion, InspectionSection } from "..
 export function emptyAnswer(question: InspectionQuestion): InspectionAnswer {
   switch (question.kind) {
     case "condition": return { questionId: question.id, kind: "condition", value: null, observation: "", photos: [] };
+    case "choice": return { questionId: question.id, kind: "choice", value: "" };
     case "text": return { questionId: question.id, kind: "text", value: "" };
     case "number": return { questionId: question.id, kind: "number", value: null };
   }
@@ -16,10 +17,14 @@ export function answerErrors(question: InspectionQuestion, answer: InspectionAns
       const errors: string[] = [];
       if (question.required && answer.value === null) errors.push("Veuillez indiquer l’état de cet élément.");
       if (answer.value === "nonCompliant" && !answer.observation.trim()) errors.push("Décrivez la non-conformité.");
-      const requiresPhoto = question.photoRequiredWhen === "always" ||
-        (question.photoRequiredWhen === "nonCompliant" && answer.value === "nonCompliant");
+      const requiresPhoto = question.photoRequiredWhen === "always" || answer.value === "nonCompliant";
       if (requiresPhoto && answer.photos.length === 0) errors.push("Ajoutez une photographie.");
       return errors;
+    }
+    case "choice": {
+      if (answer.kind !== "choice") return ["Réponse invalide."];
+      if (question.required && !answer.value) return ["Veuillez choisir une réponse."];
+      return answer.value && !question.choices.includes(answer.value) ? ["Choix invalide."] : [];
     }
     case "text": {
       if (answer.kind !== "text") return ["Réponse invalide."];

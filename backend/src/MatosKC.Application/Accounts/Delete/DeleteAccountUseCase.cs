@@ -11,15 +11,15 @@ public class DeleteAccountUseCase
         _accountRepository = accountRepository;
     }
 
-    public async Task ExecuteAsync(Guid accountId)
+    public async Task ExecuteAsync(Guid accountId, CancellationToken cancellationToken = default)
     {
-        var account = await _accountRepository.GetByIdAsync(accountId);
+        var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
 
         if (account is null)
         {
-            throw new InvalidOperationException($"Account with ID {accountId} not found.");
+            throw new MatosKC.Application.Administration.AdministrationException(404, $"Account with ID {accountId} not found.");
         }
 
-        await _accountRepository.DeleteAsync(account);
+        await _accountRepository.DeleteAsync(account, cancellationToken);
     }
 }

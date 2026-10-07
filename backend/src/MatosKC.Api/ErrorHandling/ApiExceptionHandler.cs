@@ -18,6 +18,9 @@ public sealed class ApiExceptionHandler : IExceptionHandler
         (int statusCode, string title, string detail) =
             exception switch
             {
+                MatosKC.Application.Administration.AdministrationException administration =>
+                    (administration.StatusCode, "Cannot complete operation", administration.Message),
+
                 BadHttpRequestException =>
                     (
                         StatusCodes.Status400BadRequest,

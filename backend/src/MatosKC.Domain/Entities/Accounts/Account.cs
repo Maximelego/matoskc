@@ -4,13 +4,15 @@ namespace MatosKC.Domain.Entities.Accounts;
 
 public class Account
 {
-    public readonly Guid Id;
+    private Account() { DisplayName = null!; HashedPassword = null!; }
+
+    public Guid Id { get; private set; }
     public string DisplayName { get; private set; }
     public string? Email { get; private set; }
     public string HashedPassword { get; private set; }
-    public readonly Role Role;
+    public Role Role { get; private set; }
     public bool IsActive { get; private set; }
-    public readonly Guid? AgencyId;
+    public Guid? AgencyId { get; private set; }
 
     public Account(
         Guid id,

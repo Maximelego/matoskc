@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MatosKC.Api.Authentication;
 using MatosKC.Api.Endpoints;
 using MatosKC.Api.ErrorHandling;
 using MatosKC.Application;
@@ -18,6 +19,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         new JsonStringEnumConverter()
     );
 });
+
+builder.Services.AddSessionAuthentication(builder.Configuration);
 
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -57,13 +60,25 @@ if (app.Environment.IsDevelopment())
     await dataSeeder.SeedAsync();
 }
 
+await BootstrapAdministrator.EnsureAsync(app.Services, builder.Configuration);
+
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
+app.UseMiddleware<CsrfMiddleware>();
+app.UseAntiforgery();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference("/docs");
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference("/docs").AllowAnonymous();
 }
+
+app.MapAuthenticationEndpoints();
+app.MapAccountEndpoints();
+app.MapAgencyEndpoints();
 
 app.MapEquipmentCategoryEndpoints();
 app.MapEquipmentEndpoints();
