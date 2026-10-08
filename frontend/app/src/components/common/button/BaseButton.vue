@@ -7,6 +7,7 @@ type ButtonSize = "small" | "medium" | "large";
 
 const props = withDefaults(
   defineProps<{
+    type?: "button" | "submit" | "reset";
     variant?: ButtonVariant;
     size?: ButtonSize;
     disabled?: boolean;
@@ -14,6 +15,7 @@ const props = withDefaults(
     fullWidth?: boolean;
   }>(),
   {
+    type: "button",
     variant: "primary",
     size: "medium",
     disabled: false,
@@ -37,7 +39,7 @@ function handleClick(event: MouseEvent): void {
 
 <template>
   <button
-    type="button"
+    :type="type"
     class="base-button"
     :class="[
       `base-button--${variant}`,

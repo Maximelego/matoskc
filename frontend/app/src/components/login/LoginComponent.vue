@@ -25,7 +25,6 @@ const mode = ref<LoginMode>("agency");
 const agencyId = ref<string>(AGENCIES[0].id);
 const email = ref<string>("");
 const password = ref<string>("");
-const form = ref<HTMLFormElement | null>(null);
 
 function selectMode(value: LoginMode): void {
   if (props.busy || mode.value === value) return;
@@ -34,24 +33,30 @@ function selectMode(value: LoginMode): void {
   password.value = "";
 }
 
-function submit(): void {
-  if (props.busy || !password.value) return;
+function submit(event: Event): void {
+  if (props.busy) return;
+
+  const form = event.target as HTMLFormElement;
+  const fields = new FormData(form);
+  const enteredPassword = String(fields.get("password") ?? "");
+  if (!enteredPassword) return;
 
   if (mode.value === "admin") {
-    if (!email.value.trim()) return;
+    const enteredEmail = String(fields.get("username") ?? "").trim();
+    if (!enteredEmail) return;
 
     emit("submit", {
       mode: "admin",
-      email: email.value.trim(),
-      password: password.value,
+      email: enteredEmail,
+      password: enteredPassword,
     });
     return;
   }
 
   emit("submit", {
     mode: "agency",
-    agencyId: agencyId.value,
-    password: password.value,
+    agencyId: String(fields.get("agency") ?? agencyId.value),
+    password: enteredPassword,
   });
 }
 </script>
@@ -103,7 +108,6 @@ function submit(): void {
       </div>
 
       <form
-        ref="form"
         class="login__form"
         :aria-busy="busy"
         @submit.prevent="submit"
@@ -149,7 +153,7 @@ function submit(): void {
           <input
             id="login-email"
             v-model="email"
-            name="email"
+            name="username"
             type="email"
             inputmode="email"
             autocomplete="username"
@@ -182,9 +186,9 @@ function submit(): void {
         </p>
 
         <BaseButton
+          type="submit"
           full-width
           :loading="busy"
-          @click="form?.requestSubmit()"
         >
           Se connecter
         </BaseButton>

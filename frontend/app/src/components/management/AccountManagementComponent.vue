@@ -155,7 +155,7 @@ async function toggleActive(account: AccountDto): Promise<void> {
   busy.value = true;
   error.value = "";
   try {
-    await accountsApi.setActive(account.id, !account.isActive);
+    await accountsApi.setActive(account, !account.isActive);
     notice.value = account.isActive ? "Le compte a été désactivé." : "Le compte a été activé.";
     await load();
   } catch {
@@ -450,7 +450,6 @@ onMounted(() => {
               v-for="agency in agencies"
               :key="agency.id"
               :value="agency.id"
-              :disabled="!agency.isActive"
             >
               {{ agency.name }} ({{ agency.code }})
             </option>

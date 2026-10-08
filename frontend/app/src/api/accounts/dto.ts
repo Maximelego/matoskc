@@ -1,6 +1,5 @@
 export type AccountRole = "SuperAdmin" | "Admin" | "Agency";
 
-// Champs publics de MatosKC.Domain.Entities.Accounts.Account, sans HashedPassword.
 export type AccountDto = {
   id: string;
   displayName: string;
@@ -13,5 +12,8 @@ export type AccountDto = {
 export type CreateAccountDto = Pick<AccountDto, "displayName" | "email" | "role" | "agencyId"> & {
   password: string;
 };
-export type UpdateAccountDto = Pick<AccountDto, "displayName" | "email">;
+export type UpdateAccountDto = Pick<AccountDto, "displayName" | "email"> & {
+  isActive?: boolean | null;
+  password?: string | null;
+};
 export type ListAccountsDto = { accounts: AccountDto[] };
