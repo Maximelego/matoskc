@@ -1,23 +1,81 @@
+using MatosKC.Api.Authentication;
 using MatosKC.Application.Agencies.List;
 using MatosKC.Application.Agencies.Manage;
 using MatosKC.Application.Agencies.Ports;
+
 namespace MatosKC.Api.Endpoints;
 
 public static class AgencyEndpoints
 {
     public static void MapAgencyEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/agencies").WithTags("Agencies").RequireAuthorization("ManageAgencies");
-        group.MapGet("/", async (string? name, string? code, IAgencyRepository repository, CancellationToken ct) =>
-            Results.Ok(new { agencies = await repository.ListByQueryAsync(new ListAgenciesQuery { Name = name, Code = code }, ct) }));
-        group.MapGet("/{id:guid}", async (Guid id, ManageAgenciesUseCase useCase, CancellationToken ct) => Results.Ok(await useCase.GetAsync(id, ct)));
-        group.MapPost("/", async (AgencyDto dto, ManageAgenciesUseCase useCase, CancellationToken ct) =>
-        {
-            var agency = await useCase.CreateAsync(dto, ct);
-            return Results.Created($"/api/agencies/{agency.Id}", agency);
-        });
-        group.MapPut("/{id:guid}", async (Guid id, AgencyDto dto, ManageAgenciesUseCase useCase, CancellationToken ct) => Results.Ok(await useCase.UpdateAsync(id, dto, ct)));
-        group.MapDelete("/{id:guid}", async (Guid id, ManageAgenciesUseCase useCase, CancellationToken ct) =>
-        { await useCase.DeleteAsync(id, ct); return Results.NoContent(); });
+        RouteGroupBuilder group = app.MapGroup("/agencies")
+            .WithTags("Agencies")
+            .RequireAuthorization("ManageAgencies")
+            .WithMetadata(new RequireCsrfValidation());
+
+        group.MapGet("/", ListAsync);
+        group.MapGet("/{id:guid}", GetAsync);
+        group.MapPost("/", CreateAsync);
+        group.MapPut("/{id:guid}", UpdateAsync);
+        group.MapDelete("/{id:guid}", DeleteAsync);
+    }
+
+    private static async Task<IResult> ListAsync(
+        string? name,
+        string? code,
+        IAgencyRepository repository,
+        CancellationToken cancellationToken
+    )
+    {
+        var query = new ListAgenciesQuery { Name = name, Code = code };
+        var agencies = await repository.ListByQueryAsync(query, cancellationToken);
+
+        return Results.Ok(new { agencies });
+    }
+
+    private static async Task<IResult> GetAsync(
+        Guid id,
+        ManageAgenciesUseCase useCase,
+        CancellationToken cancellationToken
+    )
+    {
+        var agency = await useCase.GetAsync(id, cancellationToken);
+
+        return Results.Ok(agency);
+    }
+
+    private static async Task<IResult> CreateAsync(
+        AgencyDto dto,
+        ManageAgenciesUseCase useCase,
+        CancellationToken cancellationToken
+    )
+    {
+        var agency = await useCase.CreateAsync(dto, cancellationToken);
+
+        return Results.Created($"/agencies/{agency.Id}", agency);
+    }
+
+    private static async Task<IResult> UpdateAsync(
+        Guid id,
+        AgencyDto dto,
+        ManageAgenciesUseCase useCase,
+        CancellationToken cancellationToken
+    )
+    {
+        var agency = await useCase.UpdateAsync(id, dto, cancellationToken);
+
+        return Results.Ok(agency);
+    }
+
+    private static async Task<IResult> DeleteAsync(
+        Guid id,
+        ManageAgenciesUseCase useCase,
+        CancellationToken cancellationToken
+    )
+    {
+        await useCase.DeleteAsync(id, cancellationToken);
+
+        return Results.NoContent();
     }
 }

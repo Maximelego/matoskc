@@ -1,4 +1,12 @@
 export type EquipmentPhotoUploadDto = File;
-
-// GET renvoie les octets de la photographie et non un objet JSON.
 export type EquipmentPhotoDto = Blob;
+
+export interface EquipmentPhotoMetadataDto {
+  id: string;
+  equipmentId: string;
+  fileName: string;
+  contentType: string;
+  contentLength: number;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+}

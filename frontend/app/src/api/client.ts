@@ -32,6 +32,20 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
+  url(path: string): string {
+    const base = this.baseUrl.replace(/\/+$/, "");
+    const relativePath = path.replace(/^\/+/, "");
+
+    return new URL(`${base}/${relativePath}`, window.location.origin).toString();
+  }
+
+  postFile<T>(path: string, file: File, options?: Options): Promise<T> {
+    const form = new FormData();
+    form.append("file", file);
+
+    return this.request<T>("POST", path, form, options);
+  }
+
   get<T>(path: string, options?: Options): Promise<T> {
     return this.request<T>("GET", path, undefined, options);
   }
@@ -93,7 +107,7 @@ class ApiClient {
     retriedCsrf = false,
   ): Promise<T> {
     const { query, headers: customHeaders, ...init } = options;
-    const url = new URL(`${this.baseUrl}/${path.replace(/^\/+/, "")}`, window.location.origin);
+    const url = new URL(this.url(path));
 
     for (const [key, value] of Object.entries(query ?? {})) {
       if (value !== null && value !== undefined) url.searchParams.set(key, String(value));
@@ -124,7 +138,7 @@ class ApiClient {
         this.clearCsrf();
         return this.request<T>(method, path, body, options, responseType, true);
       }
-      if (response.status === 401 && path !== "/api/auth/login" && path !== "/api/auth/me") {
+      if (response.status === 401 && path !== "/auth/login" && path !== "/auth/me") {
         window.dispatchEvent(new Event("matoskc:unauthorized"));
       }
       throw new ApiError(response.status, problem);
@@ -140,6 +154,6 @@ function isProblemDetails(value: unknown): value is ProblemDetails {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-// One shared instance. A same-origin /api path works with the Vite development proxy.
+// NGINX forwards /backend/ to the backend without changing resource paths.
 const env = import.meta.env;
-export const api = new ApiClient(env.VITE_API_BASE_URL ?? "http://localhost:8000/backend");
+export const api = new ApiClient(env.VITE_API_BASE_URL ?? "/backend");

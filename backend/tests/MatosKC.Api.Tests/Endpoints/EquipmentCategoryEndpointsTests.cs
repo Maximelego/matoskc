@@ -27,7 +27,7 @@ public sealed class EquipmentCategoryEndpointsTests
         };
 
         HttpResponseMessage response = await Client.PostAsJsonAsync(
-            "/api/equipment-categories",
+            "/equipment-categories",
             request,
             TestContext.Current.CancellationToken
         );
@@ -65,7 +65,7 @@ public sealed class EquipmentCategoryEndpointsTests
         );
 
         HttpResponseMessage response = await Client.GetAsync(
-            $"/api/equipment-categories/{id}",
+            $"/equipment-categories/{id}",
             TestContext.Current.CancellationToken
         );
 
@@ -106,7 +106,7 @@ public sealed class EquipmentCategoryEndpointsTests
     public async Task GetCategory_WithUnknownId_ShouldReturnNotFound()
     {
         HttpResponseMessage response = await Client.GetAsync(
-            $"/api/equipment-categories/{Guid.NewGuid()}",
+            $"/equipment-categories/{Guid.NewGuid()}",
             TestContext.Current.CancellationToken
         );
 
@@ -131,7 +131,7 @@ public sealed class EquipmentCategoryEndpointsTests
         };
 
         HttpResponseMessage response = await Client.PostAsJsonAsync(
-            "/api/equipment-categories",
+            "/equipment-categories",
             request,
             TestContext.Current.CancellationToken
         );
@@ -157,7 +157,7 @@ public sealed class EquipmentCategoryEndpointsTests
         await CreateCategoryAsync(name2, null);
 
         HttpResponseMessage response = await Client.GetAsync(
-            "/api/equipment-categories",
+            "/equipment-categories",
             TestContext.Current.CancellationToken
         );
 
@@ -192,7 +192,7 @@ public sealed class EquipmentCategoryEndpointsTests
     {
         HttpResponseMessage response =
             await Client.PostAsJsonAsync(
-                "/api/equipment-categories",
+                "/equipment-categories",
                 new
                 {
                     name,

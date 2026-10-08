@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import QrcodeVue from "qrcode.vue";
-import { computed, defineProps, nextTick, onBeforeUnmount, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref } from "vue";
 
 const props = defineProps<{
   equipmentId: string;

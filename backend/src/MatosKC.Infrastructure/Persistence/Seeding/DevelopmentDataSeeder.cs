@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 namespace MatosKC.Infrastructure.Persistence.Seeding;
 
 using MatosKC.Application.Files.Ports;

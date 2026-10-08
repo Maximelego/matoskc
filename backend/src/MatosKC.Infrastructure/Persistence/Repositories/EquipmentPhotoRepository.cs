@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 namespace MatosKC.Infrastructure.Persistence.Repositories;
 
 using MatosKC.Application.EquipmentPhotos.Ports;

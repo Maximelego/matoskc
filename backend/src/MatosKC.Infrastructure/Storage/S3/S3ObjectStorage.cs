@@ -1,3 +1,6 @@
+using Amazon.S3.Util;
+using Amazon.S3.Model;
+using Amazon.S3;
 namespace MatosKC.Infrastructure.Storage.S3;
 
 using MatosKC.Application.Files.Ports;

@@ -1,5 +1,7 @@
 namespace MatosKC.Api.Endpoints;
 
+using MatosKC.Api.Authentication;
+
 using MatosKC.Application.EquipmentPhotos;
 using MatosKC.Application.EquipmentPhotos.Delete;
 using MatosKC.Application.EquipmentPhotos.Download;
@@ -14,7 +16,8 @@ public static class EquipmentPhotoEndpoints
     )
     {
         RouteGroupBuilder group = endpoints
-            .MapGroup("/api/equipments/{equipmentId:guid}/photos")
+            .MapGroup("/equipments/{equipmentId:guid}/photos")
+            .WithMetadata(new RequireCsrfValidation())
             .WithTags("Equipment photos");
 
         group.MapPost("", UploadAsync)
@@ -24,6 +27,7 @@ public static class EquipmentPhotoEndpoints
             .Produces<EquipmentPhotoResult>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
+            // Header validation is handled by CsrfMiddleware, including uploads.
             .DisableAntiforgery();
 
         group.MapGet("", ListAsync)
@@ -45,6 +49,7 @@ public static class EquipmentPhotoEndpoints
             .Produces<EquipmentPhotoResult>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
+            // Header validation is handled by CsrfMiddleware, including uploads.
             .DisableAntiforgery();
 
         group.MapDelete("/{photoId:guid}", DeleteAsync)
@@ -74,7 +79,7 @@ public static class EquipmentPhotoEndpoints
         );
 
         return Results.Created(
-            $"/api/equipments/{equipmentId}/photos/{result.Id}",
+            $"/equipments/{equipmentId}/photos/{result.Id}",
             result
         );
     }

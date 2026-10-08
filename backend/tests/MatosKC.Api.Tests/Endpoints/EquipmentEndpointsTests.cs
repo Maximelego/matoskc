@@ -26,7 +26,7 @@ public sealed class EquipmentEndpointsTests
         };
 
         HttpResponseMessage response = await Client.PostAsJsonAsync(
-            "/api/equipments",
+            "/equipments",
             request,
             TestContext.Current.CancellationToken
         );
@@ -54,7 +54,7 @@ public sealed class EquipmentEndpointsTests
         };
 
         HttpResponseMessage response = await Client.PostAsJsonAsync(
-            "/api/equipments",
+            "/equipments",
             request,
             TestContext.Current.CancellationToken
         );
@@ -69,7 +69,7 @@ public sealed class EquipmentEndpointsTests
     private async Task<Guid> CreateCategoryAsync()
     {
         HttpResponseMessage response = await Client.PostAsJsonAsync(
-            "/api/equipment-categories",
+            "/equipment-categories",
             new
             {
                 name = $"Category-{Guid.NewGuid():N}",

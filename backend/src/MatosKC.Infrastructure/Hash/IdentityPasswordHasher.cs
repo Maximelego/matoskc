@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 namespace MatosKC.Infrastructure.Hash;
 
 using MatosKC.Application.Accounts.Ports;

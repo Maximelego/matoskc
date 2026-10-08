@@ -1,3 +1,8 @@
+using Amazon.Runtime;
+using Amazon.S3;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 namespace MatosKC.Infrastructure;
 
 using MatosKC.Application.EquipmentCategories.Ports;

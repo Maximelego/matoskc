@@ -1,7 +1,7 @@
 import { readonly, shallowRef } from "vue";
 import { ApiError } from "../client";
-import { authApi } from "./index";
 import type { AuthAccountDto, LoginRequestDto } from "./dto";
+import { authApi } from "./index";
 
 const account = shallowRef<AuthAccountDto | null>(null);
 let initialized = false;
@@ -26,7 +26,10 @@ export const authSession = {
   account: readonly(account),
   async ensure(): Promise<AuthAccountDto | null> {
     if (initialized) return account.value;
-    if (!pending) pending = restore().finally(() => { pending = null; });
+    if (!pending)
+      pending = restore().finally(() => {
+        pending = null;
+      });
     return pending;
   },
   async login(credentials: LoginRequestDto): Promise<AuthAccountDto> {

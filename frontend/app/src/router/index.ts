@@ -7,7 +7,7 @@ export const router = createRouter({
   routes,
 });
 
-router.beforeEach(async to => {
+router.beforeEach(async (to) => {
   try {
     const account = await authSession.ensure();
     if (to.meta.public) {

@@ -1,5 +1,7 @@
 namespace MatosKC.Api.Endpoints;
 
+using MatosKC.Api.Authentication;
+
 using MatosKC.Api.Contracts;
 using MatosKC.Application.EquipmentCategories.Create;
 using MatosKC.Application.EquipmentCategories.Get;
@@ -12,7 +14,8 @@ public static class EquipmentCategoryEndpoints
         this IEndpointRouteBuilder endpoints)
     {
         RouteGroupBuilder group = endpoints
-            .MapGroup("/api/equipment-categories")
+            .MapGroup("/equipment-categories")
+            .WithMetadata(new RequireCsrfValidation())
             .WithTags("Equipment categories");
 
         group.MapPost("/", CreateAsync)
@@ -64,7 +67,7 @@ public static class EquipmentCategoryEndpoints
             new CreatedResourceResponse(categoryId);
 
         return TypedResults.Created(
-            $"/api/equipment-categories/{categoryId}",
+            $"/equipment-categories/{categoryId}",
             response
         );
     }

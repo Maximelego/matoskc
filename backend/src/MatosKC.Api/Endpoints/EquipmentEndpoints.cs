@@ -1,5 +1,7 @@
 namespace MatosKC.Api.Endpoints;
 
+using MatosKC.Api.Authentication;
+
 using MatosKC.Api.Contracts;
 using MatosKC.Application.Equipments.Create;
 using MatosKC.Application.Equipments.Get;
@@ -12,7 +14,8 @@ public static class EquipmentEndpoints
         this IEndpointRouteBuilder endpoints)
     {
         RouteGroupBuilder group = endpoints
-            .MapGroup("/api/equipments")
+            .MapGroup("/equipments")
+            .WithMetadata(new RequireCsrfValidation())
             .WithTags("Equipment");
 
         group.MapPost("", CreateAsync)
@@ -64,7 +67,7 @@ public static class EquipmentEndpoints
             new CreatedResourceResponse(equipmentId);
 
         return TypedResults.Created(
-            $"/api/equipments/{equipmentId}",
+            $"/equipments/{equipmentId}",
             response
         );
     }

@@ -1,3 +1,5 @@
+using Scalar.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using MatosKC.Api.Authentication;
 using MatosKC.Api.Endpoints;
@@ -62,6 +64,7 @@ await BootstrapAdministrator.EnsureAsync(app.Services, builder.Configuration);
 
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

@@ -21,33 +21,33 @@ public sealed class EquipmentPhotoEndpointsTests
         Guid photoId = await UploadAsync(equipmentId, [1, 2, 3], "first.png", "image/png");
 
         JsonElement[] photos = await Client.GetFromJsonAsync<JsonElement[]>(
-            $"/api/equipments/{equipmentId}/photos",
+            $"/equipments/{equipmentId}/photos",
             TestContext.Current.CancellationToken
         ) ?? [];
         Assert.Contains(photos, photo => photo.GetProperty("id").GetGuid() == photoId);
 
         byte[] downloaded = await Client.GetByteArrayAsync(
-            $"/api/equipments/{equipmentId}/photos/{photoId}",
+            $"/equipments/{equipmentId}/photos/{photoId}",
             TestContext.Current.CancellationToken
         );
         Assert.Equal([1, 2, 3], downloaded);
 
         using var putContent = CreateMultipart([7, 8], "replacement.webp", "image/webp");
         HttpResponseMessage putResponse = await Client.PutAsync(
-            $"/api/equipments/{equipmentId}/photos/{photoId}",
+            $"/equipments/{equipmentId}/photos/{photoId}",
             putContent,
             TestContext.Current.CancellationToken
         );
         Assert.Equal(HttpStatusCode.OK, putResponse.StatusCode);
 
         HttpResponseMessage deleteResponse = await Client.DeleteAsync(
-            $"/api/equipments/{equipmentId}/photos/{photoId}",
+            $"/equipments/{equipmentId}/photos/{photoId}",
             TestContext.Current.CancellationToken
         );
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
         HttpResponseMessage missingResponse = await Client.GetAsync(
-            $"/api/equipments/{equipmentId}/photos/{photoId}",
+            $"/equipments/{equipmentId}/photos/{photoId}",
             TestContext.Current.CancellationToken
         );
         Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
@@ -60,7 +60,7 @@ public sealed class EquipmentPhotoEndpointsTests
         using var content = CreateMultipart([1], "notes.txt", "text/plain");
 
         HttpResponseMessage response = await Client.PostAsync(
-            $"/api/equipments/{equipmentId}/photos",
+            $"/equipments/{equipmentId}/photos",
             content,
             TestContext.Current.CancellationToken
         );
@@ -75,7 +75,7 @@ public sealed class EquipmentPhotoEndpointsTests
         using var content = CreateMultipart([1], "photo.png", "image/png");
 
         HttpResponseMessage response = await Client.PostAsync(
-            $"/api/equipments/{Guid.NewGuid()}/photos",
+            $"/equipments/{Guid.NewGuid()}/photos",
             content,
             TestContext.Current.CancellationToken
         );
@@ -92,7 +92,7 @@ public sealed class EquipmentPhotoEndpointsTests
     {
         using var content = CreateMultipart(bytes, fileName, contentType);
         HttpResponseMessage response = await Client.PostAsync(
-            $"/api/equipments/{equipmentId}/photos",
+            $"/equipments/{equipmentId}/photos",
             content,
             TestContext.Current.CancellationToken
         );
@@ -107,7 +107,7 @@ public sealed class EquipmentPhotoEndpointsTests
     private async Task<Guid> CreateEquipmentAsync()
     {
         HttpResponseMessage categoryResponse = await Client.PostAsJsonAsync(
-            "/api/equipment-categories",
+            "/equipment-categories",
             new { name = $"Photos-{Guid.NewGuid():N}", description = (string?)null },
             TestContext.Current.CancellationToken
         );
@@ -118,7 +118,7 @@ public sealed class EquipmentPhotoEndpointsTests
         Guid categoryId = categoryBody.RootElement.GetProperty("id").GetGuid();
 
         HttpResponseMessage equipmentResponse = await Client.PostAsJsonAsync(
-            "/api/equipments",
+            "/equipments",
             new
             {
                 name = "Equipment with photos",

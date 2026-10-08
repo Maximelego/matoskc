@@ -9,8 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 
-public sealed class MatosKCApiFactory
-    : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class MatosKCApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer PostgreSqlContainer =
         new PostgreSqlBuilder("postgres:16-alpine")
@@ -30,17 +29,21 @@ public sealed class MatosKCApiFactory
         // 3. Applique les migrations avec le vrai conteneur DI de l'API.
         using IServiceScope scope = Services.CreateScope();
 
-        MatosKCDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
+        MatosKCDbContext dbContext = scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
 
         await dbContext.Database.MigrateAsync();
     }
 
-    public HttpClient CreateAuthenticatedClient() => CreateAuthenticatedClientAsync().GetAwaiter().GetResult();
+    public HttpClient CreateAuthenticatedClient() =>
+        CreateAuthenticatedClientAsync().GetAwaiter().GetResult();
 
-    public async Task<HttpClient> CreateAuthenticatedClientAsync(MatosKC.Domain.Entities.Accounts.Role role = MatosKC.Domain.Entities.Accounts.Role.SuperAdmin)
+    public async Task<HttpClient> CreateAuthenticatedClientAsync(
+        MatosKC.Domain.Entities.Accounts.Role role =
+            MatosKC.Domain.Entities.Accounts.Role.SuperAdmin)
     {
-        var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        var client = CreateClient(
+            new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"),
+                AllowAutoRedirect = false });
         string email = $"test-{Guid.NewGuid():N}@example.com";
         const string password = "integration-test-password";
         int? code = null;
@@ -50,22 +53,26 @@ public sealed class MatosKCApiFactory
             Guid? agencyId = null;
             if (role != MatosKC.Domain.Entities.Accounts.Role.SuperAdmin)
             {
-                var agency = new MatosKC.Domain.Entities.Agencies.Agency("Test", Random.Shared.Next(100000, int.MaxValue));
-                db.Agencies.Add(agency); agencyId = agency.Id; code = agency.Code;
+                var agency = new MatosKC.Domain.Entities.Agencies.Agency(
+                    "Test", Random.Shared.Next(100000, int.MaxValue));
+                db.Agencies.Add(agency);
+                agencyId = agency.Id;
+                code = agency.Code;
             }
-            var hasher = scope.ServiceProvider.GetRequiredService<MatosKC.Application.Accounts.Ports.IPasswordHasher>();
-            db.Accounts.Add(new MatosKC.Domain.Entities.Accounts.Account("Test", role == MatosKC.Domain.Entities.Accounts.Role.Agency ? null : email,
+            var hasher =
+                scope.ServiceProvider
+                    .GetRequiredService<MatosKC.Application.Accounts.Ports.IPasswordHasher>();
+            db.Accounts.Add(new MatosKC.Domain.Entities.Accounts.Account("Test",
+                role == MatosKC.Domain.Entities.Accounts.Role.Agency ? null : email,
                 hasher.HashPassword(password), true, role, agencyId));
             await db.SaveChangesAsync();
         }
         await RefreshCsrfAsync(client);
-        var response = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(client, "/api/auth/login",
-            new
-            {
-                agencyCode = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? code : null,
+        var response = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(client,
+            "/auth/login",
+            new { agencyCode = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? code : null,
                 email = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? null : email,
-                password
-            });
+                password });
         response.EnsureSuccessStatusCode();
         await RefreshCsrfAsync(client);
         return client;
@@ -73,10 +80,13 @@ public sealed class MatosKCApiFactory
 
     public static async Task RefreshCsrfAsync(HttpClient client)
     {
-        var response = await client.GetAsync("/api/auth/csrf"); response.EnsureSuccessStatusCode();
-        using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var response = await client.GetAsync("/auth/csrf");
+        response.EnsureSuccessStatusCode();
+        using var json =
+            System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
-        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", json.RootElement.GetProperty("token").GetString());
+        client.DefaultRequestHeaders.Add(
+            "X-CSRF-TOKEN", json.RootElement.GetProperty("token").GetString());
     }
 
     public new async ValueTask DisposeAsync()
@@ -90,14 +100,10 @@ public sealed class MatosKCApiFactory
         builder.UseEnvironment("Testing");
         builder.UseSetting("Authentication:LoginPermitLimit", "100000");
 
-        string connectionString =
-            PostgreSqlContainer.GetConnectionString();
+        string connectionString = PostgreSqlContainer.GetConnectionString();
 
         // Rend la connexion disponible au Program.cs.
-        builder.UseSetting(
-            "ConnectionStrings:MatosKCDatabase",
-            connectionString
-        );
+        builder.UseSetting("ConnectionStrings:MatosKCDatabase", connectionString);
         builder.UseSetting("S3:ServiceUrl", "http://unused.test");
         builder.UseSetting("S3:Region", "us-east-1");
         builder.UseSetting("S3:AccessKey", "test");
@@ -114,12 +120,10 @@ public sealed class MatosKCApiFactory
 
                 // La remplace par la base PostgreSQL du conteneur de test.
                 services.AddDbContext<MatosKCDbContext>(
-                    options => options.UseNpgsql(connectionString)
-                );
+                    options => options.UseNpgsql(connectionString));
 
                 services.RemoveAll<IObjectStorage>();
                 services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
-            }
-        );
+            });
     }
 }
