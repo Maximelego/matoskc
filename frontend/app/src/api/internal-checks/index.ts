@@ -1,12 +1,12 @@
 import { api } from "../client";
 import type { CreateInternalCheckDto, InternalCheckDto, InternalCheckPhotoDto, ListInternalChecksDto, SaveInternalCheckDraftDto, ValidateInternalCheckDto } from "./dto";
-const path = (id: string) => `/api/internal-checks/${encodeURIComponent(id)}`;
+const path = (id: string) => `/internal-checks/${encodeURIComponent(id)}`;
 export const internalChecksApi = {
   list(equipmentId?: string) {
-    return api.get<ListInternalChecksDto>("/api/internal-checks", { query: { equipmentId } });
+    return api.get<ListInternalChecksDto>("/internal-checks", { query: { equipmentId } });
   },
   getById(id: string) { return api.get<InternalCheckDto>(path(id)); },
-  create(dto: CreateInternalCheckDto) { return api.post<InternalCheckDto, CreateInternalCheckDto>("/api/internal-checks", dto); },
+  create(dto: CreateInternalCheckDto) { return api.post<InternalCheckDto, CreateInternalCheckDto>("/internal-checks", dto); },
   saveDraft(id: string, dto: SaveInternalCheckDraftDto) {
     return api.put<InternalCheckDto, SaveInternalCheckDraftDto>(`${path(id)}/draft`, dto);
   },

@@ -69,13 +69,17 @@ class ApiClient {
   private async getCsrfToken(): Promise<string> {
     if (this.csrfToken) return this.csrfToken;
     if (!this.csrfPromise) {
-      this.csrfPromise = this.request<{ token: string }>("GET", "/api/auth/csrf", undefined, { cache: "no-store" })
+      this.csrfPromise = this.request<{ token: string }>("GET", "/auth/csrf", undefined, {
+        cache: "no-store",
+      })
         .then(({ token }) => {
           if (!token) throw new Error("Le jeton de sécurité est absent.");
           this.csrfToken = token;
           return token;
         })
-        .finally(() => { this.csrfPromise = null; });
+        .finally(() => {
+          this.csrfPromise = null;
+        });
     }
     return this.csrfPromise;
   }
@@ -100,14 +104,17 @@ class ApiClient {
     if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
       headers.set("X-CSRF-TOKEN", await this.getCsrfToken());
     }
-    if (body !== undefined && !(body instanceof FormData)) headers.set("Content-Type", "application/json");
+    if (body !== undefined && !(body instanceof FormData))
+      headers.set("Content-Type", "application/json");
 
     const response = await fetch(url, {
       ...init,
       method,
       credentials: "same-origin",
       headers,
-      ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }),
+      ...(body === undefined
+        ? {}
+        : { body: body instanceof FormData ? body : JSON.stringify(body) }),
     });
 
     if (!response.ok) {
@@ -134,4 +141,5 @@ function isProblemDetails(value: unknown): value is ProblemDetails {
 }
 
 // One shared instance. A same-origin /api path works with the Vite development proxy.
-export const api = new ApiClient(import.meta.env.VITE_API_BASE_URL ?? "");
+const env = import.meta.env;
+export const api = new ApiClient(env.VITE_API_BASE_URL ?? "http://localhost:8000/backend");

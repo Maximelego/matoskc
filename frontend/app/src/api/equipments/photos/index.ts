@@ -2,7 +2,7 @@ import { api } from "../../client";
 import type { EquipmentPhotoDto, EquipmentPhotoUploadDto } from "./dto";
 
 function path(equipmentId: string): string {
-  return `/api/equipments/${encodeURIComponent(equipmentId)}/photo`;
+  return `/equipments/${encodeURIComponent(equipmentId)}/photo`;
 }
 
 export const equipmentPhotosApi = {

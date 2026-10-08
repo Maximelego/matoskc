@@ -8,17 +8,14 @@ import type {
 
 export const equipmentCategoriesApi = {
   list() {
-    return api.get<ListEquipmentCategoriesDto>("/api/equipment-categories/");
+    return api.get<ListEquipmentCategoriesDto>("/equipment-categories/");
   },
 
   getById(id: string) {
-    return api.get<EquipmentCategoryDto>(`/api/equipment-categories/${encodeURIComponent(id)}`);
+    return api.get<EquipmentCategoryDto>(`/equipment-categories/${encodeURIComponent(id)}`);
   },
 
   create(dto: CreateEquipmentCategoryDto) {
-    return api.post<CreatedResourceDto, CreateEquipmentCategoryDto>(
-      "/api/equipment-categories/",
-      dto,
-    );
+    return api.post<CreatedResourceDto, CreateEquipmentCategoryDto>("/equipment-categories/", dto);
   },
 };
