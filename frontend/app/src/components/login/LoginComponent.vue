@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineEmits, defineProps, ref, withDefaults } from "vue";
+import { ref } from "vue";
 import type { LoginRequestDto } from "../../api/auth";
 import { AGENCIES } from "../../api/auth";
 import BaseButton from "../common/button/BaseButton.vue";

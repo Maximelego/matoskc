@@ -25,6 +25,8 @@ type Options = Omit<RequestInit, "method" | "body"> & { query?: Query };
 
 class ApiClient {
   private readonly baseUrl: string;
+  private csrfToken: string | null = null;
+  private csrfPromise: Promise<string> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -60,12 +62,31 @@ class ApiClient {
     return this.request<T>("DELETE", path, undefined, options);
   }
 
+  clearCsrf(): void {
+    this.csrfToken = null;
+  }
+
+  private async getCsrfToken(): Promise<string> {
+    if (this.csrfToken) return this.csrfToken;
+    if (!this.csrfPromise) {
+      this.csrfPromise = this.request<{ token: string }>("GET", "/api/auth/csrf", undefined, { cache: "no-store" })
+        .then(({ token }) => {
+          if (!token) throw new Error("Le jeton de sécurité est absent.");
+          this.csrfToken = token;
+          return token;
+        })
+        .finally(() => { this.csrfPromise = null; });
+    }
+    return this.csrfPromise;
+  }
+
   private async request<T>(
     method: string,
     path: string,
     body?: unknown,
     options: Options = {},
     responseType: "json" | "blob" = "json",
+    retriedCsrf = false,
   ): Promise<T> {
     const { query, headers: customHeaders, ...init } = options;
     const url = new URL(`${this.baseUrl}/${path.replace(/^\/+/, "")}`, window.location.origin);
@@ -76,11 +97,15 @@ class ApiClient {
 
     const headers = new Headers(customHeaders);
     headers.set("Accept", "application/json");
+    if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+      headers.set("X-CSRF-TOKEN", await this.getCsrfToken());
+    }
     if (body !== undefined && !(body instanceof FormData)) headers.set("Content-Type", "application/json");
 
     const response = await fetch(url, {
       ...init,
       method,
+      credentials: "same-origin",
       headers,
       ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }),
     });
@@ -88,6 +113,13 @@ class ApiClient {
     if (!response.ok) {
       const errorBody: unknown = await response.json().catch(() => undefined);
       const problem = isProblemDetails(errorBody) ? errorBody : undefined;
+      if (response.status === 400 && problem?.title === "Invalid CSRF token" && !retriedCsrf) {
+        this.clearCsrf();
+        return this.request<T>(method, path, body, options, responseType, true);
+      }
+      if (response.status === 401 && path !== "/api/auth/login" && path !== "/api/auth/me") {
+        window.dispatchEvent(new Event("matoskc:unauthorized"));
+      }
       throw new ApiError(response.status, problem);
     }
 

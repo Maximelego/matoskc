@@ -23,7 +23,8 @@ services:
         command: sh -c "npm install && npm run dev -- --host"
         environment:
             NODE_ENV: development
-            VITE_API_PROXY_TARGET: http://backend:8000
+            VITE_API_PROXY_TARGET: https://matoskc.hexenis.fr
+            VITE_API_BASE_URL: "/backend"
             VITE_PUBLIC_APP_URL: "https://matoskc.hexenis.fr"
             __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: matoskc.hexenis.fr
 

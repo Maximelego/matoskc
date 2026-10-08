@@ -35,6 +35,7 @@ start_services() {
 
     docker compose \
         -f "${COMPOSE_FILE}" \
+        --env-file .env.auth \
         up --detach --build
 }
 
