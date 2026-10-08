@@ -1,8 +1,8 @@
 namespace MatosKC.Application.EquipmentPhotos.List;
 
+using MatosKC.Application.EquipmentPhotos.Ports;
 using MatosKC.Application.Equipments.Get.Exceptions;
 using MatosKC.Application.Equipments.Ports;
-using MatosKC.Application.EquipmentPhotos.Ports;
 using MatosKC.Domain.Equipments;
 
 public sealed class ListEquipmentPhotosUseCase

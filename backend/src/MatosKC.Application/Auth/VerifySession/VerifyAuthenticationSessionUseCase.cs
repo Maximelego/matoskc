@@ -3,6 +3,7 @@ using MatosKC.Application.Agencies.Ports;
 using MatosKC.Application.Auth.Ports;
 using MatosKC.Domain.Entities.Accounts;
 namespace MatosKC.Application.Auth.VerifySession;
+
 public sealed class VerifyAuthenticationSessionUseCase(IAuthenticationSessionRepository sessions,
     IAccountRepository accounts, IAgencyRepository agencies, TimeProvider clock)
 {

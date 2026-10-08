@@ -3,9 +3,9 @@ namespace MatosKC.Api.ErrorHandling;
 using System.Text.Json;
 using MatosKC.Application.EquipmentCategories.Create.Exceptions;
 using MatosKC.Application.EquipmentCategories.Get.Exceptions;
+using MatosKC.Application.EquipmentPhotos.Exceptions;
 using MatosKC.Application.Equipments.Create.Exceptions;
 using MatosKC.Application.Equipments.Get.Exceptions;
-using MatosKC.Application.EquipmentPhotos.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 
 public sealed class ApiExceptionHandler : IExceptionHandler

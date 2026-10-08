@@ -1,9 +1,9 @@
 using System.Security.Claims;
 using MatosKC.Application.Auth.VerifySession;
-using MatosKC.Domain.Entities.Accounts;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 namespace MatosKC.Api.Authentication;
+
 public sealed class SessionCookieEvents(VerifyAuthenticationSessionUseCase verify) : CookieAuthenticationEvents
 {
     public const string SessionClaim = "session_id";

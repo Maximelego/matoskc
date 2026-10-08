@@ -1,7 +1,6 @@
 namespace MatosKC.Infrastructure.Hash;
 
 using MatosKC.Application.Accounts.Ports;
-using Microsoft.AspNetCore.Identity;
 
 public sealed class IdentityPasswordHasher : IPasswordHasher
 {

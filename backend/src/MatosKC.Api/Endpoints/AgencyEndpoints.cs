@@ -2,6 +2,7 @@ using MatosKC.Application.Agencies.List;
 using MatosKC.Application.Agencies.Manage;
 using MatosKC.Application.Agencies.Ports;
 namespace MatosKC.Api.Endpoints;
+
 public static class AgencyEndpoints
 {
     public static void MapAgencyEndpoints(this WebApplication app)

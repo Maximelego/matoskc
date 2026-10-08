@@ -1,6 +1,7 @@
 using MatosKC.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 namespace MatosKC.Infrastructure.Tests.Persistence;
+
 public sealed class AuthenticationModelTests
 {
     [Fact]

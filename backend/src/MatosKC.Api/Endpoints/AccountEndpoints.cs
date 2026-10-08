@@ -6,13 +6,23 @@ using MatosKC.Application.Accounts.List;
 using MatosKC.Application.Accounts.Update;
 using MatosKC.Domain.Entities.Accounts;
 namespace MatosKC.Api.Endpoints;
+
 public static class AccountEndpoints
 {
     public static void MapAccountEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/accounts").WithTags("Accounts").RequireAuthorization("ManageAccounts");
-        group.MapGet("/", async (string? displayName, string? email, Role? role, ListAccountsUseCase useCase, CancellationToken ct) =>
-            Results.Ok(new { accounts = await useCase.ExecuteAsync(new() { DisplayName = displayName, Email = email, Role = role }, ct) }));
+
+        group.MapGet("/", async (string? displayName,
+                                 string? email,
+                                 Role? role,
+                                 ListAccountsUseCase useCase,
+                                 CancellationToken ct) => Results.Ok(
+                new {
+                    accounts = await useCase.ExecuteAsync(new() {
+                        DisplayName = displayName, Email = email, Role = role
+                    }, ct)
+                }));
         group.MapGet("/{id:guid}", async (Guid id, GetAccountUseCase useCase, CancellationToken ct) =>
             Results.Ok(AccountResponse.From(await useCase.ExecuteAsync(id, ct))));
         group.MapPost("/", async (CreateAccountDto dto, CreateAccountUseCase useCase, GetAccountUseCase getAccount, CancellationToken ct) =>
@@ -20,7 +30,7 @@ public static class AccountEndpoints
             try
             {
                 Guid id = await useCase.ExecuteAsync(dto, ct);
-                return Results.Created($"/api/accounts/{id}", AccountResponse.From(await getAccount.ExecuteAsync(id, ct)));
+                return Results.Created($"/accounts/{id}", AccountResponse.From(await getAccount.ExecuteAsync(id, ct)));
             }
             catch (InvalidOperationException e)
             {

@@ -3,16 +3,14 @@ namespace MatosKC.Application;
 using MatosKC.Application.EquipmentCategories.Create;
 using MatosKC.Application.EquipmentCategories.Get;
 using MatosKC.Application.EquipmentCategories.List;
-using MatosKC.Application.Equipments.Create;
-using MatosKC.Application.Equipments.Get;
-using MatosKC.Application.Equipments.List;
 using MatosKC.Application.EquipmentPhotos.Delete;
 using MatosKC.Application.EquipmentPhotos.Download;
 using MatosKC.Application.EquipmentPhotos.List;
 using MatosKC.Application.EquipmentPhotos.Replace;
 using MatosKC.Application.EquipmentPhotos.Upload;
-
-using Microsoft.Extensions.DependencyInjection;
+using MatosKC.Application.Equipments.Create;
+using MatosKC.Application.Equipments.Get;
+using MatosKC.Application.Equipments.List;
 
 public static class DependencyInjection
 {

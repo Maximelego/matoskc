@@ -1,5 +1,4 @@
 using MatosKC.Domain.Entities.Agencies;
-using Xunit;
 
 namespace MatosKC.Domain.Tests.Entities.Agencies;
 

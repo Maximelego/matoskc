@@ -1,7 +1,7 @@
 namespace MatosKC.Api.Tests;
 
-using MatosKC.Infrastructure.Persistence;
 using MatosKC.Application.Files.Ports;
+using MatosKC.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -60,8 +60,12 @@ public sealed class MatosKCApiFactory
         }
         await RefreshCsrfAsync(client);
         var response = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(client, "/api/auth/login",
-            new { agencyCode = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? code : null,
-                email = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? null : email, password });
+            new
+            {
+                agencyCode = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? code : null,
+                email = role == MatosKC.Domain.Entities.Accounts.Role.Agency ? null : email,
+                password
+            });
         response.EnsureSuccessStatusCode();
         await RefreshCsrfAsync(client);
         return client;

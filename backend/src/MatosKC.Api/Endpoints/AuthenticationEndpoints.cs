@@ -8,11 +8,12 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 namespace MatosKC.Api.Endpoints;
+
 public static class AuthenticationEndpoints
 {
     public static void MapAuthenticationEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/auth").WithTags("Authentication");
+        var group = app.MapGroup("/auth").WithTags("Authentication");
         group.MapGet("/csrf", (HttpContext context, IAntiforgery antiforgery) =>
         {
             context.Response.Headers.CacheControl = "no-store";

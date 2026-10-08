@@ -2,8 +2,6 @@ namespace MatosKC.Infrastructure.Persistence;
 
 using MatosKC.Domain.Equipments;
 
-using Microsoft.EntityFrameworkCore;
-
 public sealed class MatosKCDbContext : DbContext
 {
     public DbSet<MatosKC.Domain.Entities.Accounts.Account> Accounts => Set<MatosKC.Domain.Entities.Accounts.Account>();

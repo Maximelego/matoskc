@@ -1,5 +1,6 @@
 using MatosKC.Application.Auth.Ports;
 namespace MatosKC.Application.Auth.RevokeSession;
+
 public sealed class RevokeAuthenticationSessionUseCase(IAuthenticationSessionRepository sessions, TimeProvider clock)
 {
     public async Task ExecuteAsync(Guid sessionId, CancellationToken ct = default)

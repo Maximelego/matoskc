@@ -1,7 +1,3 @@
-using MatosKC.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
-
 #nullable disable
 
 namespace MatosKC.Infrastructure.Persistence.Migrations

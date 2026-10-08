@@ -1,10 +1,10 @@
 namespace MatosKC.Application.Auth.CreateSession;
 
-using MatosKC.Domain.Entities.AuthenticationSession;
 using MatosKC.Application.Accounts.Ports;
 using MatosKC.Application.Agencies.Ports;
 using MatosKC.Application.Auth.Ports;
 using MatosKC.Domain.Entities.Accounts;
+using MatosKC.Domain.Entities.AuthenticationSession;
 
 public class CreateAuthenticationSessionUseCase
 {

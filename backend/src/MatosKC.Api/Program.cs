@@ -6,8 +6,6 @@ using MatosKC.Application;
 using MatosKC.Infrastructure;
 using MatosKC.Infrastructure.Persistence;
 using MatosKC.Infrastructure.Persistence.Seeding;
-using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore;
 
 
 var builder = WebApplication.CreateBuilder(args);

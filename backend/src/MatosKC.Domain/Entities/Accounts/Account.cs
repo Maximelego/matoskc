@@ -1,5 +1,3 @@
-using MatosKC.Domain.Entities.Agencies;
-
 namespace MatosKC.Domain.Entities.Accounts;
 
 public class Account
@@ -43,7 +41,7 @@ public class Account
         bool isActive,
         Role role,
         Guid? agencyId
-    ): this(Guid.NewGuid(), displayName, email, hashedPassword, isActive, role, agencyId)
+    ) : this(Guid.NewGuid(), displayName, email, hashedPassword, isActive, role, agencyId)
     {
     }
 

@@ -1,7 +1,7 @@
 namespace MatosKC.Application.Agencies.Ports;
 
-using MatosKC.Domain.Entities.Agencies;
 using MatosKC.Application.Agencies.List;
+using MatosKC.Domain.Entities.Agencies;
 
 
 public interface IAgencyRepository

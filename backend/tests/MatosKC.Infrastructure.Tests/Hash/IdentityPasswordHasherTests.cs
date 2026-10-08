@@ -3,6 +3,7 @@ using MatosKC.Infrastructure.Hash;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 namespace MatosKC.Infrastructure.Tests.Hash;
+
 public sealed class IdentityPasswordHasherTests
 {
     [Fact]

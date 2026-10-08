@@ -4,8 +4,6 @@ using MatosKC.Application.EquipmentCategories.List;
 using MatosKC.Application.EquipmentCategories.Ports;
 using MatosKC.Domain.Equipments;
 
-using Microsoft.EntityFrameworkCore;
-
 public sealed class EquipmentCategoryRepository
     : IEquipmentCategoryRepository
 {

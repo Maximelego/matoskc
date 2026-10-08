@@ -4,6 +4,7 @@ using MatosKC.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Session = MatosKC.Domain.Entities.AuthenticationSession.AuthenticationSession;
 namespace MatosKC.Infrastructure.Tests.Persistence;
+
 [Collection(InfrastructureTestCollection.Name)]
 public sealed class AuthenticationPersistenceTests(PostgreSqlFixture fixture)
 {

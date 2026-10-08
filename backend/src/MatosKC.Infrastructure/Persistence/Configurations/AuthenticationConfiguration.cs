@@ -1,9 +1,8 @@
 using MatosKC.Domain.Entities.Accounts;
 using MatosKC.Domain.Entities.Agencies;
 using MatosKC.Domain.Entities.AuthenticationSession;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace MatosKC.Infrastructure.Persistence.Configurations;
+
 public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
     public void Configure(EntityTypeBuilder<Account> b)

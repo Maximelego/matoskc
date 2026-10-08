@@ -1,18 +1,13 @@
 namespace MatosKC.Infrastructure;
 
-using Amazon.Runtime;
-using Amazon.S3;
 using MatosKC.Application.EquipmentCategories.Ports;
-using MatosKC.Application.Equipments.Ports;
 using MatosKC.Application.EquipmentPhotos.Ports;
+using MatosKC.Application.Equipments.Ports;
 using MatosKC.Application.Files.Ports;
 using MatosKC.Infrastructure.Persistence;
 using MatosKC.Infrastructure.Persistence.Repositories;
 using MatosKC.Infrastructure.Persistence.Seeding;
 using MatosKC.Infrastructure.Storage.S3;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 public static class DependencyInjection
 {

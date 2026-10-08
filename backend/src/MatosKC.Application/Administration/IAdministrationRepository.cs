@@ -1,6 +1,6 @@
-using MatosKC.Domain.Entities.Accounts;
 using MatosKC.Domain.Entities.Agencies;
 namespace MatosKC.Application.Administration;
+
 public interface IAdministrationRepository
 {
     Task<Agency> UpdateAgencyAsync(Agency agency, CancellationToken ct);

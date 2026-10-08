@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 namespace MatosKC.Api.Tests.Endpoints;
+
 [Collection(ApiTestCollection.Name)]
 public sealed class AdministrationEndpointsTests(MatosKCApiFactory factory)
 {
@@ -49,16 +50,21 @@ public sealed class AdministrationEndpointsTests(MatosKCApiFactory factory)
         using var user = await factory.CreateAuthenticatedClientAsync(MatosKC.Domain.Entities.Accounts.Role.Admin);
         using var me = JsonDocument.Parse(await user.GetStringAsync("/api/auth/me", TestContext.Current.CancellationToken));
         Guid id = me.RootElement.GetProperty("id").GetGuid();
-        var response = await administrator.PutAsJsonAsync($"/api/accounts/{id}", new {
-            displayName = "Updated", email = me.RootElement.GetProperty("email").GetString(), password = "new-password"
+        var response = await administrator.PutAsJsonAsync($"/api/accounts/{id}", new
+        {
+            displayName = "Updated",
+            email = me.RootElement.GetProperty("email").GetString(),
+            password = "new-password"
         }, TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
         using var updated = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.True(updated.RootElement.GetProperty("isActive").GetBoolean());
         Assert.Equal(HttpStatusCode.Unauthorized, (await user.GetAsync("/api/auth/me", TestContext.Current.CancellationToken)).StatusCode);
         await MatosKCApiFactory.RefreshCsrfAsync(user);
-        Assert.Equal(HttpStatusCode.OK, (await user.PostAsJsonAsync("/api/auth/login", new {
-            email = me.RootElement.GetProperty("email").GetString(), password = "new-password"
+        Assert.Equal(HttpStatusCode.OK, (await user.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = me.RootElement.GetProperty("email").GetString(),
+            password = "new-password"
         }, TestContext.Current.CancellationToken)).StatusCode);
     }
 

@@ -4,9 +4,9 @@ using MatosKC.Application.Agencies.List;
 using MatosKC.Application.Agencies.Ports;
 using MatosKC.Application.Auth.CreateSession;
 using MatosKC.Application.Auth.Ports;
-using Session = MatosKC.Domain.Entities.AuthenticationSession.AuthenticationSession;
 using MatosKC.Domain.Entities.Accounts;
 using MatosKC.Domain.Entities.Agencies;
+using Session = MatosKC.Domain.Entities.AuthenticationSession.AuthenticationSession;
 
 namespace MatosKC.Application.Tests.Auth.CreateSession;
 

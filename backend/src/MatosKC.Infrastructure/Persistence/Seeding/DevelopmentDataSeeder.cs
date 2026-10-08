@@ -1,9 +1,7 @@
 namespace MatosKC.Infrastructure.Persistence.Seeding;
 
-using MatosKC.Domain.Equipments;
 using MatosKC.Application.Files.Ports;
-
-using Microsoft.EntityFrameworkCore;
+using MatosKC.Domain.Equipments;
 
 public sealed class DevelopmentDataSeeder
 {

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Antiforgery;
 namespace MatosKC.Api.Authentication;
+
 public sealed class CsrfMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context, IAntiforgery antiforgery)

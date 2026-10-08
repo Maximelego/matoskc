@@ -3,12 +3,13 @@ using MatosKC.Application.Accounts.Ports;
 using MatosKC.Application.Agencies.List;
 using MatosKC.Application.Agencies.Ports;
 using MatosKC.Application.Auth.Ports;
-using MatosKC.Application.Auth.VerifySession;
 using MatosKC.Application.Auth.RevokeSession;
+using MatosKC.Application.Auth.VerifySession;
 using MatosKC.Domain.Entities.Accounts;
 using MatosKC.Domain.Entities.Agencies;
 using Session = MatosKC.Domain.Entities.AuthenticationSession.AuthenticationSession;
 namespace MatosKC.Application.Tests.Auth;
+
 public sealed class SessionLifecycleTests
 {
     private sealed class Clock : TimeProvider
@@ -28,7 +29,9 @@ public sealed class SessionLifecycleTests
         return session;
     }
     [Theory]
-    [InlineData(Role.SuperAdmin)] [InlineData(Role.Admin)] [InlineData(Role.Agency)]
+    [InlineData(Role.SuperAdmin)]
+    [InlineData(Role.Admin)]
+    [InlineData(Role.Agency)]
     public async Task ValidSession_ReturnsCurrentAccount(Role role)
     {
         var session = Add(role);

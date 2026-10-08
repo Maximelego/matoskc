@@ -1,8 +1,7 @@
 using MatosKC.Application.Accounts.Ports;
-using MatosKC.Domain.Entities.Accounts;
 using MatosKC.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 namespace MatosKC.Api.Authentication;
+
 public static class BootstrapAdministrator
 {
     public static async Task EnsureAsync(IServiceProvider services, IConfiguration configuration)

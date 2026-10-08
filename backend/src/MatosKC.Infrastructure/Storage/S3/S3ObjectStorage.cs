@@ -1,8 +1,5 @@
 namespace MatosKC.Infrastructure.Storage.S3;
 
-using Amazon.S3;
-using Amazon.S3.Model;
-using Amazon.S3.Util;
 using MatosKC.Application.Files.Ports;
 
 public sealed class S3ObjectStorage : IObjectStorage

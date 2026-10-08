@@ -8,14 +8,15 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.RateLimiting;
+
 namespace MatosKC.Api.Authentication;
+
 public static class AuthenticationSetup
 {
     public static IServiceCollection AddSessionAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         double hours = configuration.GetValue<double?>("Authentication:SessionHours") ?? 8;
-        if (hours <= 0 || hours > 168) throw new InvalidOperationException("SessionHours must be between 0 and 168.");
+        if (hours is <= 0 or > 168) throw new InvalidOperationException("SessionHours must be between 0 and 168.");
         services.AddScoped(sp => new CreateAuthenticationSessionUseCase(
             sp.GetRequiredService<IAccountRepository>(), sp.GetRequiredService<IAgencyRepository>(),
             sp.GetRequiredService<IPasswordHasher>(), sp.GetRequiredService<IAuthenticationSessionRepository>(),

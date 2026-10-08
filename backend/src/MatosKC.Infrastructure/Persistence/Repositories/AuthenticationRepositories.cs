@@ -7,9 +7,8 @@ using MatosKC.Application.Auth.Ports;
 using MatosKC.Domain.Entities.Accounts;
 using MatosKC.Domain.Entities.Agencies;
 using MatosKC.Domain.Entities.AuthenticationSession;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 namespace MatosKC.Infrastructure.Persistence.Repositories;
+
 internal static class AuthenticationPersistence
 {
     public static async Task SaveAsync(MatosKCDbContext db, CancellationToken ct)

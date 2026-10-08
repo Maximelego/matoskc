@@ -5,7 +5,6 @@ using MatosKC.Application.Agencies.List;
 using MatosKC.Application.Agencies.Ports;
 using MatosKC.Domain.Entities.Accounts;
 using MatosKC.Domain.Entities.Agencies;
-using Xunit;
 
 namespace MatosKC.Application.Tests.Accounts.Create;
 

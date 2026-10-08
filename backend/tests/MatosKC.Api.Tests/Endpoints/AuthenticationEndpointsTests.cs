@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 namespace MatosKC.Api.Tests.Endpoints;
+
 [Collection(ApiTestCollection.Name)]
 public sealed class AuthenticationEndpointsTests(MatosKCApiFactory factory)
 {
@@ -27,7 +28,9 @@ public sealed class AuthenticationEndpointsTests(MatosKCApiFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/auth/login", new { email = "missing@example.com", password = "incorrect" }, TestContext.Current.CancellationToken)).StatusCode);
     }
     [Theory]
-    [InlineData(Role.SuperAdmin)] [InlineData(Role.Admin)] [InlineData(Role.Agency)]
+    [InlineData(Role.SuperAdmin)]
+    [InlineData(Role.Admin)]
+    [InlineData(Role.Agency)]
     public async Task LoginAndMe_ContainPublicAccountOnly(Role role)
     {
         using var client = await factory.CreateAuthenticatedClientAsync(role);
@@ -46,7 +49,8 @@ public sealed class AuthenticationEndpointsTests(MatosKCApiFactory factory)
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken)).StatusCode);
     }
     [Theory]
-    [InlineData(Role.Admin)] [InlineData(Role.Agency)]
+    [InlineData(Role.Admin)]
+    [InlineData(Role.Agency)]
     public async Task NonSuperAdmin_CannotManageAccountsOrAgencies(Role role)
     {
         using var client = await factory.CreateAuthenticatedClientAsync(role);
@@ -100,8 +104,10 @@ public sealed class AuthenticationEndpointsTests(MatosKCApiFactory factory)
     {
         using var client = await factory.CreateAuthenticatedClientAsync();
         using var me = JsonDocument.Parse(await client.GetStringAsync("/api/auth/me", TestContext.Current.CancellationToken));
-        var login = await client.PostAsJsonAsync("/api/auth/login", new {
-            email = me.RootElement.GetProperty("email").GetString(), password = "integration-test-password"
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = me.RootElement.GetProperty("email").GetString(),
+            password = "integration-test-password"
         }, TestContext.Current.CancellationToken);
         login.EnsureSuccessStatusCode();
         string cookie = Assert.Single(login.Headers.GetValues("Set-Cookie"), value => value.StartsWith("__Host-MatosKC.Session="));

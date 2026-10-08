@@ -2,6 +2,7 @@ using MatosKC.Application.Administration;
 using MatosKC.Application.Agencies.Ports;
 using MatosKC.Domain.Entities.Agencies;
 namespace MatosKC.Application.Agencies.Manage;
+
 public sealed record AgencyDto(string Name, int Code);
 public sealed class ManageAgenciesUseCase(IAgencyRepository agencies, IAdministrationRepository administration)
 {
