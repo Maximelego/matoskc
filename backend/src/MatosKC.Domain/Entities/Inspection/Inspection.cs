@@ -87,17 +87,13 @@ public class Inspection : BaseEntity {
         {
             throw new ArgumentException("Answer ID cannot be empty.", nameof(answerId));
         }
-        if (photoId == Guid.Empty)
-        {
-            throw new ArgumentException("Photo ID cannot be empty.", nameof(photoId));
-        }
 
         if(!_answers.Any(a => a.Id == answerId))
         {
             throw new ArgumentException("Answer not found.", nameof(answerId));
         }
 
-        _answers.First(a => a.Id == answerId).PhotosIds.Add(photoId);
+        _answers.First(a => a.Id == answerId).AddPhoto(photoId);
     }
 
     public void RemoveAnswerPhoto(Guid answerId, Guid photoId) {
@@ -107,17 +103,13 @@ public class Inspection : BaseEntity {
         {
             throw new ArgumentException("Answer ID cannot be empty.", nameof(answerId));
         }
-        if (photoId == Guid.Empty)
-        {
-            throw new ArgumentException("Photo ID cannot be empty.", nameof(photoId));
-        }
 
         if(!_answers.Any(a => a.Id == answerId))
         {
             throw new ArgumentException("Answer not found.", nameof(answerId));
         }
 
-        _answers.First(a => a.Id == answerId).PhotosIds.Remove(photoId);
+        _answers.First(a => a.Id == answerId).RemovePhoto(photoId);
     }
 
     public void UpdateOperatorFirstName(string firstName) {
