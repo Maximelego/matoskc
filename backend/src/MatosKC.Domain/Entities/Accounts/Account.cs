@@ -1,10 +1,9 @@
 namespace MatosKC.Domain.Entities.Accounts;
 
-public class Account
+public class Account: BaseEntity
 {
-    private Account() { DisplayName = null!; HashedPassword = null!; }
+    private Account(): base(Guid.NewGuid()) { DisplayName = null!; HashedPassword = null!; }
 
-    public Guid Id { get; private set; }
     public string DisplayName { get; private set; }
     public string? Email { get; private set; }
     public string HashedPassword { get; private set; }
@@ -20,7 +19,8 @@ public class Account
         bool isActive,
         Role role,
         Guid? agencyId
-    )
+    ) :
+    base(id)
     {
         // Integrity checks
         CheckParameterIntegrity(id, displayName, email, hashedPassword, role, agencyId);

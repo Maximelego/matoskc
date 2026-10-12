@@ -14,7 +14,8 @@ public static class AgencyEndpoints
             .RequireAuthorization("ManageAgencies")
             .WithMetadata(new RequireCsrfValidation());
 
-        group.MapGet("/", ListAsync);
+        group.MapGet("/", ListAsync)
+             .AllowAnonymous();
         group.MapGet("/{id:guid}", GetAsync);
         group.MapPost("/", CreateAsync);
         group.MapPut("/{id:guid}", UpdateAsync);

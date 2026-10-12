@@ -1,12 +1,14 @@
 namespace MatosKC.Domain.Equipments;
 
-public class EquipmentCategory
+using MatosKC.Domain.Entities;
+
+public class EquipmentCategory : BaseEntity
 {
-    public Guid Id { get; }
     public string Name { get; }
     public string? Description { get; }
 
     public EquipmentCategory(Guid id, string name, string? description)
+    : base(id)
     {
         if (id == Guid.Empty)
         {

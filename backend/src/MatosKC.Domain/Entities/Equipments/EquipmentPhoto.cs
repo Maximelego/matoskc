@@ -1,8 +1,9 @@
+using MatosKC.Domain.Entities;
+
 namespace MatosKC.Domain.Equipments;
 
-public sealed class EquipmentPhoto
+public sealed class EquipmentPhoto: BaseEntity
 {
-    public Guid Id { get; }
     public Guid EquipmentId { get; }
     public string ObjectKey { get; }
     public string OriginalFileName { get; private set; } = null!;
@@ -20,6 +21,7 @@ public sealed class EquipmentPhoto
         long contentLength,
         DateTimeOffset createdAtUtc
     )
+    : base(id)
     {
         if (id == Guid.Empty)
         {

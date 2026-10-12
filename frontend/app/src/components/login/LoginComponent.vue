@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { defineEmits, defineProps, onMounted, ref, withDefaults } from "vue";
+import { agenciesApi } from "../../api/agencies";
+import type { AgencyDto } from "../../api/agencies/dto";
 import type { LoginRequestDto } from "../../api/auth";
-import { AGENCIES } from "../../api/auth";
+import { ApiError } from "../../api/client";
 import BaseButton from "../common/button/BaseButton.vue";
 
 const props = withDefaults(
@@ -22,9 +24,42 @@ const emit = defineEmits<{
 type LoginMode = LoginRequestDto["mode"];
 
 const mode = ref<LoginMode>("agency");
-const agencyId = ref<string>(AGENCIES[0].id);
-const email = ref<string>("");
-const password = ref<string>("");
+const agencyId = ref("");
+const agencies = ref<AgencyDto[]>([]);
+const agenciesLoading = ref(false);
+const agenciesError = ref("");
+const email = ref("");
+const password = ref("");
+
+async function loadAgencies(): Promise<void> {
+  agenciesLoading.value = true;
+  agenciesError.value = "";
+
+  try {
+    const result = await agenciesApi.list();
+    agencies.value = result.agencies;
+
+    if (!agencies.value.some((agency) => String(agency.code) === agencyId.value)) {
+      agencyId.value = String(
+        agencies.value.find((agency) => agency.code === 83)?.code ?? agencies.value[0]?.code ?? "",
+      );
+    }
+  } catch (cause: unknown) {
+    agencies.value = [];
+    agencyId.value = "";
+
+    agenciesError.value =
+      cause instanceof ApiError && cause.status >= 500
+        ? "Le serveur ne peut pas fournir la liste des agences pour le moment."
+        : "Impossible de charger les agences. Veuillez réessayer.";
+  } finally {
+    agenciesLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  void loadAgencies();
+});
 
 function selectMode(value: LoginMode): void {
   if (props.busy || mode.value === value) return;
@@ -39,10 +74,12 @@ function submit(event: Event): void {
   const form = event.target as HTMLFormElement;
   const fields = new FormData(form);
   const enteredPassword = String(fields.get("password") ?? "");
+
   if (!enteredPassword) return;
 
   if (mode.value === "admin") {
     const enteredEmail = String(fields.get("username") ?? "").trim();
+
     if (!enteredEmail) return;
 
     emit("submit", {
@@ -50,12 +87,20 @@ function submit(event: Event): void {
       email: enteredEmail,
       password: enteredPassword,
     });
+
+    return;
+  }
+
+  if (
+    agenciesLoading.value ||
+    !agencies.value.some((agency) => String(agency.code) === agencyId.value)
+  ) {
     return;
   }
 
   emit("submit", {
     mode: "agency",
-    agencyId: String(fields.get("agency") ?? agencyId.value),
+    agencyId: agencyId.value,
     password: enteredPassword,
   });
 }
@@ -128,21 +173,53 @@ function submit(event: Event): void {
           class="login__field"
         >
           <label for="login-agency">Agence</label>
+
           <select
             id="login-agency"
             v-model="agencyId"
             name="agency"
             required
-            :disabled="busy"
+            :disabled="busy || agenciesLoading || agencies.length === 0"
           >
             <option
-              v-for="agency in AGENCIES"
+              v-for="agency in agencies"
               :key="agency.id"
-              :value="agency.id"
+              :value="String(agency.code)"
             >
-              {{ agency.label }}
+              {{ agency.name }} ({{ agency.code }})
             </option>
           </select>
+
+          <p
+            v-if="agenciesLoading"
+            class="login__hint"
+            role="status"
+          >
+            Chargement des agences…
+          </p>
+
+          <div
+            v-else-if="agenciesError"
+            class="login__agency-error"
+            role="alert"
+          >
+            <span>{{ agenciesError }}</span>
+            <button
+              type="button"
+              :disabled="busy"
+              @click="loadAgencies"
+            >
+              Réessayer
+            </button>
+          </div>
+
+          <p
+            v-else-if="agencies.length === 0"
+            class="login__agency-error"
+            role="status"
+          >
+            Aucune agence disponible.
+          </p>
         </div>
 
         <div
@@ -189,6 +266,7 @@ function submit(event: Event): void {
           type="submit"
           full-width
           :loading="busy"
+          :disabled="mode === 'agency' && (agenciesLoading || agencies.length === 0)"
         >
           Se connecter
         </BaseButton>
@@ -380,6 +458,37 @@ function submit(event: Event): void {
   border: 1px solid var(--color-danger);
   border-radius: 0.55rem;
   color: var(--color-danger);
+}
+
+.login__hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.login__agency-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.login__agency-error button {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.login__agency-error button:focus-visible {
+  outline: 0.1875rem solid var(--color-focus);
 }
 
 @media (max-width: 36rem) {

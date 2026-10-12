@@ -1,10 +1,11 @@
 namespace MatosKC.Domain.Entities.AuthenticationSession;
 
-public class AuthenticationSession
-{
-    private AuthenticationSession() { }
+using MatosKC.Domain.Entities;
 
-    public Guid Id { get; private set; }
+public class AuthenticationSession: BaseEntity
+{
+    private AuthenticationSession(): base(Guid.NewGuid()) { }
+
     public Guid AccountId { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime ExpiresAt { get; private set; }
@@ -13,7 +14,8 @@ public class AuthenticationSession
     public AuthenticationSession(Guid accountId, TimeSpan sessionDuration)
         : this(accountId, sessionDuration, DateTime.UtcNow) { }
 
-    public AuthenticationSession(Guid accountId, TimeSpan sessionDuration, DateTime now)
+    public AuthenticationSession(Guid accountId, TimeSpan sessionDuration, DateTime now) :
+    base(Guid.NewGuid())
     {
         if (accountId == Guid.Empty)
             throw new ArgumentException("Account ID cannot be empty.", nameof(accountId));

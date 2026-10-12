@@ -1,23 +1,17 @@
 namespace MatosKC.Domain.Equipments;
 
-public class Equipment
+using MatosKC.Domain.Entities;
+
+public class Equipment: BaseEntity
 {
-    public Guid Id { get; }
     public string Name { get; }
     public Guid CategoryId { get; }
     public string SerialNumber { get; }
     public EquipmentStatus Status { get; private set; }
 
     public Equipment(Guid id, string name, Guid categoryId, string serialNumber)
+    : base(id)
     {
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException(
-                "Equipment Identifier cannot be Empty",
-                nameof(id)
-            );
-        }
-
         if (categoryId == Guid.Empty)
         {
             throw new ArgumentException(
