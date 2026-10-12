@@ -5,7 +5,7 @@ using MatosKC.Domain.Entities;
 public class Inspection : BaseEntity {
 
     public Guid RentalId { get; private set; }
-    public Guid TemplateVersionId { get; private set; }
+    public Guid TemplateId { get; private set; }
     public InspectionType Type { get; private set; }
     public InspectionStatus Status { get; private set; }
     public Guid CreatedByAccountId { get; private set; }
@@ -37,7 +37,7 @@ public class Inspection : BaseEntity {
             throw new ArgumentException("Invalid inspection type.", nameof(type));
 
         RentalId = rentalId;
-        TemplateVersionId = templateVersionId;
+        TemplateId = templateVersionId;
         Type = type;
         Status = InspectionStatus.Draft;
         CreatedByAccountId = createdByAccountId;
@@ -45,10 +45,21 @@ public class Inspection : BaseEntity {
         StartedAt = startedAt;
     }
 
-    public void Validate(DateTimeOffset validatedAt) {
-        if (Status == InspectionStatus.Validated)
+    public void Validate(
+        InspectionTemplate template,
+        DateTimeOffset validatedAt
+    )
+    {
+        EnsureDraft();
+
+        ArgumentNullException.ThrowIfNull(template);
+
+        if (template.Id != TemplateId)
         {
-            throw new InvalidOperationException("Inspection is already validated.");
+            throw new ArgumentException(
+                "Template does not match this inspection.",
+                nameof(template)
+            );
         }
 
         if (validatedAt < StartedAt)
@@ -57,6 +68,46 @@ public class Inspection : BaseEntity {
                 "Validation date cannot be earlier than the start date.",
                 nameof(validatedAt)
             );
+        }
+
+        HashSet<Guid> expectedPointIds = [.. template.Points.Select(point => point.Id)];
+
+        HashSet<Guid> answeredPointIds = [.. _answers.Select(answer => answer.TemplatePointId)];
+
+        if (_answers.Count != answeredPointIds.Count)
+        {
+            throw new InvalidOperationException(
+                "Each inspection point must have only one answer."
+            );
+        }
+
+        if (!expectedPointIds.SetEquals(answeredPointIds))
+        {
+            throw new InvalidOperationException(
+                "Every template point must be answered, without additional points."
+            );
+        }
+
+        foreach (InspectionAnswer answer in _answers)
+        {
+            if (answer.Result != InspectionResult.NonCompliant)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(answer.Comment))
+            {
+                throw new InvalidOperationException(
+                    "A non-compliant answer requires a comment."
+                );
+            }
+
+            if (answer.PhotosIds.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "A non-compliant answer requires at least one photo."
+                );
+            }
         }
 
         Status = InspectionStatus.Validated;
