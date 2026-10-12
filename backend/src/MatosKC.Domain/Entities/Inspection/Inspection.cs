@@ -33,12 +33,15 @@ public class Inspection : BaseEntity {
         if (createdByAccountId == Guid.Empty)
             throw new ArgumentException("Created by account ID cannot be empty.", nameof(createdByAccountId));
 
+        if (!Enum.IsDefined(type))
+            throw new ArgumentException("Invalid inspection type.", nameof(type));
+
         RentalId = rentalId;
         TemplateVersionId = templateVersionId;
         Type = type;
         Status = InspectionStatus.Draft;
         CreatedByAccountId = createdByAccountId;
-        OperatorFirstName = operatorFirstName;
+        OperatorFirstName = operatorFirstName.Trim();
         StartedAt = startedAt;
     }
 
@@ -77,7 +80,9 @@ public class Inspection : BaseEntity {
             throw new ArgumentException("Comment is required for non-compliant results.", nameof(comment));
         }
 
-        _answers.Add(new InspectionAnswer(Guid.NewGuid(), Id, templatePointId, result, comment));
+        InspectionAnswer? existingAnswer = _answers.FirstOrDefault(a => a.TemplatePointId == templatePointId);
+
+        _answers.Add(new InspectionAnswer(existingAnswer?.Id ?? Guid.NewGuid(), Id, templatePointId, result, comment));
     }
 
     public void AddAnswerPhoto(Guid answerId, Guid photoId) {
@@ -114,7 +119,12 @@ public class Inspection : BaseEntity {
 
     public void UpdateOperatorFirstName(string firstName) {
         EnsureDraft();
-        OperatorFirstName = firstName;
+        if (string.IsNullOrWhiteSpace(firstName))
+        {
+            throw new ArgumentException("Operator first name cannot be null or whitespace.", nameof(firstName));
+        }
+
+        OperatorFirstName = firstName.Trim();
     }
 
     private void EnsureDraft()

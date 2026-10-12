@@ -16,5 +16,4 @@ public enum InspectionResult
 {
     Compliant,
     NonCompliant,
-    NotApplicable
 }

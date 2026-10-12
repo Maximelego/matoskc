@@ -6,9 +6,12 @@ public class InspectionAnswer: BaseEntity
     public Guid TemplatePointId { get; private set; }
     public InspectionResult Result { get; private set; }
     public string? Comment { get; private set; }
-    public List<Guid> PhotosIds { get; private set; }
 
-    public InspectionAnswer(Guid id, Guid inspectionId, Guid templatePointId, InspectionResult result, string? comment, List<Guid> photosIds) :
+    private readonly List<Guid> _photos = [];
+    public IReadOnlyList<Guid> PhotosIds =>
+        _photos.AsReadOnly();
+
+    public InspectionAnswer(Guid id, Guid inspectionId, Guid templatePointId, InspectionResult result, string? comment) :
     base(id) {
         if (inspectionId == Guid.Empty)
             throw new ArgumentException("Inspection ID cannot be empty.", nameof(inspectionId));
@@ -26,20 +29,19 @@ public class InspectionAnswer: BaseEntity
         TemplatePointId = templatePointId;
         Result = result;
         Comment = comment;
-        PhotosIds = photosIds;
     }
 
-    public void AddPhoto(Guid photoId) {
+    internal void AddPhoto(Guid photoId) {
         if (photoId == Guid.Empty)
             throw new ArgumentException("Photo ID cannot be empty.", nameof(photoId));
 
-        PhotosIds.Add(photoId);
+        _photos.Add(photoId);
     }
 
-    public void RemovePhoto(Guid photoId) {
+    internal void RemovePhoto(Guid photoId) {
         if (photoId == Guid.Empty)
             throw new ArgumentException("Photo ID cannot be empty.", nameof(photoId));
 
-        PhotosIds.Remove(photoId);
+        _photos.Remove(photoId);
     }
 }
