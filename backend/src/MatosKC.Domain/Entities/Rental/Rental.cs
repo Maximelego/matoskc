@@ -8,7 +8,7 @@ public class Rental: BaseEntity
     public Guid EquipmentId { get; private set; }
     public RentalStatus? Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
-    public Guid DepartureInspectionId { get; private set; }
+    public Guid? DepartureInspectionId { get; private set; }
     public Guid? ReturnInspectionId { get; private set; }
     public DateTimeOffset? DepartedAt { get; private set; }
     public DateTimeOffset? ReturnedAt { get; private set; }
@@ -19,7 +19,7 @@ public class Rental: BaseEntity
         Guid equipmentId,
         RentalStatus? status,
         DateTimeOffset createdAt,
-        Guid departureInspectionId,
+        Guid? departureInspectionId,
         Guid? returnInspectionId
     ) : base(id)
     {
@@ -37,6 +37,12 @@ public class Rental: BaseEntity
 
         if (returnInspectionId != null && returnInspectionId == Guid.Empty)
             throw new ArgumentException("Return inspection ID cannot be empty.", nameof(returnInspectionId));
+
+        if (status == RentalStatus.Active && departureInspectionId == null)
+            throw new ArgumentException("Departure inspection ID must be provided for active rentals.", nameof(departureInspectionId));
+
+        if (status == RentalStatus.Completed && (departureInspectionId == null || returnInspectionId == null))
+            throw new ArgumentException("Both departure and return inspection IDs must be provided for completed rentals.", nameof(departureInspectionId));
 
         ClientId = clientId;
         EquipmentId = equipmentId;
@@ -66,6 +72,7 @@ public class Rental: BaseEntity
         if (departureInspection.Status != InspectionStatus.Validated)
             throw new ArgumentException("Departure inspection must be validated.", nameof(departureInspection));
 
+        DepartureInspectionId = departureInspection.Id;
         Status = RentalStatus.Active;
         DepartedAt = departedAt;
     }
@@ -93,6 +100,7 @@ public class Rental: BaseEntity
         if (returnedAt < DepartedAt)
             throw new ArgumentException("Return date cannot be earlier than the departure date.", nameof(returnedAt));
 
+        ReturnInspectionId = returnInspection.Id;
         ReturnedAt = returnedAt;
         Status = RentalStatus.Completed;
     }
