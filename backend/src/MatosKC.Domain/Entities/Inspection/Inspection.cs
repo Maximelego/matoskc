@@ -132,7 +132,6 @@ public class Inspection : BaseEntity {
         }
 
         InspectionAnswer? existingAnswer = _answers.FirstOrDefault(a => a.TemplatePointId == templatePointId);
-
         _answers.Add(new InspectionAnswer(existingAnswer?.Id ?? Guid.NewGuid(), Id, templatePointId, result, comment));
     }
 
