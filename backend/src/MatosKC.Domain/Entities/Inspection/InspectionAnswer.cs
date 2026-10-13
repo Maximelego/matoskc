@@ -1,46 +1,75 @@
 namespace MatosKC.Domain.Entities.Inspection;
 
-public class InspectionAnswer: BaseEntity
+public class InspectionAnswer : BaseEntity
 {
     public Guid InspectionId { get; private set; }
+
     public Guid TemplatePointId { get; private set; }
+
     public InspectionResult Result { get; private set; }
+
     public string? Comment { get; private set; }
 
     private readonly List<Guid> _photos = [];
-    public IReadOnlyList<Guid> PhotosIds =>
-        _photos.AsReadOnly();
 
-    public InspectionAnswer(Guid id, Guid inspectionId, Guid templatePointId, InspectionResult result, string? comment) :
-    base(id) {
+    public IReadOnlyList<Guid> PhotosIds => _photos.AsReadOnly();
+
+    public InspectionAnswer(
+        Guid id,
+        Guid inspectionId,
+        Guid templatePointId,
+        InspectionResult result,
+        string? comment
+    ) : base(id)
+    {
         if (inspectionId == Guid.Empty)
+        {
             throw new ArgumentException("Inspection ID cannot be empty.", nameof(inspectionId));
+        }
 
         if (templatePointId == Guid.Empty)
-            throw new ArgumentException("Template Point ID cannot be empty.", nameof(templatePointId));
-
-        if (!Enum.IsDefined(result))
-            throw new ArgumentException("Invalid inspection result.", nameof(result));
-
-        if (result == InspectionResult.NonCompliant && string.IsNullOrWhiteSpace(comment))
-            throw new ArgumentException("Comment is required for non-compliant results.", nameof(comment));
+        {
+            throw new ArgumentException("Template point ID cannot be empty.", nameof(templatePointId));
+        }
 
         InspectionId = inspectionId;
         TemplatePointId = templatePointId;
-        Result = result;
-        Comment = comment;
+
+        UpdateResult(result, comment);
     }
 
-    internal void AddPhoto(Guid photoId) {
+    internal void UpdateResult(InspectionResult result, string? comment)
+    {
+        if (!Enum.IsDefined(result))
+        {
+            throw new ArgumentException("Invalid inspection result.", nameof(result));
+        }
+
+        Result = result;
+        Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+    }
+
+    internal void AddPhoto(Guid photoId)
+    {
         if (photoId == Guid.Empty)
+        {
             throw new ArgumentException("Photo ID cannot be empty.", nameof(photoId));
+        }
+
+        if (_photos.Contains(photoId))
+        {
+            throw new InvalidOperationException("Photo is already attached to this answer.");
+        }
 
         _photos.Add(photoId);
     }
 
-    internal void RemovePhoto(Guid photoId) {
+    internal void RemovePhoto(Guid photoId)
+    {
         if (photoId == Guid.Empty)
+        {
             throw new ArgumentException("Photo ID cannot be empty.", nameof(photoId));
+        }
 
         _photos.Remove(photoId);
     }

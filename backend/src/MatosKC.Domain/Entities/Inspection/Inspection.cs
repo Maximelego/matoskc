@@ -2,7 +2,8 @@ namespace MatosKC.Domain.Entities.Inspection;
 
 using MatosKC.Domain.Entities;
 
-public class Inspection : BaseEntity {
+public class Inspection : BaseEntity
+{
 
     public Guid RentalId { get; private set; }
     public Guid TemplateId { get; private set; }
@@ -18,14 +19,21 @@ public class Inspection : BaseEntity {
     public IReadOnlyList<InspectionAnswer> Answers =>
         _answers.AsReadOnly();
 
-    public Inspection(Guid id, Guid rentalId, Guid templateVersionId, InspectionType type, Guid createdByAccountId, string operatorFirstName, DateTimeOffset startedAt) :
-    base(id) {
-
+    public Inspection(
+        Guid id,
+        Guid rentalId,
+        Guid templateId,
+        InspectionType type,
+        Guid createdByAccountId,
+        string operatorFirstName,
+        DateTimeOffset startedAt
+    ) : base(id)
+    {
         if (rentalId == Guid.Empty)
             throw new ArgumentException("Rental ID cannot be empty.", nameof(rentalId));
 
-        if (templateVersionId == Guid.Empty)
-            throw new ArgumentException("Template Version ID cannot be empty.", nameof(templateVersionId));
+        if (templateId == Guid.Empty)
+            throw new ArgumentException("Template ID cannot be empty.", nameof(templateId));
 
         if (string.IsNullOrWhiteSpace(operatorFirstName))
             throw new ArgumentException("Operator first name cannot be null or whitespace.", nameof(operatorFirstName));
@@ -37,7 +45,7 @@ public class Inspection : BaseEntity {
             throw new ArgumentException("Invalid inspection type.", nameof(type));
 
         RentalId = rentalId;
-        TemplateId = templateVersionId;
+        TemplateId = templateId;
         Type = type;
         Status = InspectionStatus.Draft;
         CreatedByAccountId = createdByAccountId;
@@ -114,32 +122,46 @@ public class Inspection : BaseEntity {
         ValidatedAt = validatedAt;
     }
 
-    public void SetAnswer(Guid templatePointId, InspectionResult result, string? comment) {
+    public void SetAnswer(
+        Guid templatePointId,
+        InspectionResult result,
+        string? comment
+    )
+    {
         EnsureDraft();
 
         if (templatePointId == Guid.Empty)
         {
             throw new ArgumentException("Template point ID cannot be empty.", nameof(templatePointId));
         }
+
         if (!Enum.IsDefined(result))
         {
             throw new ArgumentException("Invalid inspection result.", nameof(result));
         }
 
-        if (result == InspectionResult.NonCompliant && string.IsNullOrWhiteSpace(comment))
+        InspectionAnswer? existingAnswer = _answers.SingleOrDefault(
+            answer => answer.TemplatePointId == templatePointId
+        );
+
+        if (existingAnswer is not null)
         {
-            throw new ArgumentException("Comment is required for non-compliant results.", nameof(comment));
+            existingAnswer.UpdateResult(result, comment);
+
+            return;
         }
 
-        InspectionAnswer? existingAnswer = _answers.FirstOrDefault(a => a.TemplatePointId == templatePointId);
-        if (existingAnswer != null)
-        {
-            _answers.Remove(existingAnswer);
-        }
-        _answers.Add(new InspectionAnswer(Guid.NewGuid(), Id, templatePointId, result, comment));
+        _answers.Add(new InspectionAnswer(
+            Guid.NewGuid(),
+            Id,
+            templatePointId,
+            result,
+            comment
+        ));
     }
 
-    public void AddAnswerPhoto(Guid answerId, Guid photoId) {
+    public void AddAnswerPhoto(Guid answerId, Guid photoId)
+    {
         EnsureDraft();
 
         if (answerId == Guid.Empty)
@@ -147,7 +169,7 @@ public class Inspection : BaseEntity {
             throw new ArgumentException("Answer ID cannot be empty.", nameof(answerId));
         }
 
-        if(!_answers.Any(a => a.Id == answerId))
+        if (!_answers.Any(a => a.Id == answerId))
         {
             throw new ArgumentException("Answer not found.", nameof(answerId));
         }
@@ -155,7 +177,8 @@ public class Inspection : BaseEntity {
         _answers.First(a => a.Id == answerId).AddPhoto(photoId);
     }
 
-    public void RemoveAnswerPhoto(Guid answerId, Guid photoId) {
+    public void RemoveAnswerPhoto(Guid answerId, Guid photoId)
+    {
         EnsureDraft();
 
         if (answerId == Guid.Empty)
@@ -163,7 +186,7 @@ public class Inspection : BaseEntity {
             throw new ArgumentException("Answer ID cannot be empty.", nameof(answerId));
         }
 
-        if(!_answers.Any(a => a.Id == answerId))
+        if (!_answers.Any(a => a.Id == answerId))
         {
             throw new ArgumentException("Answer not found.", nameof(answerId));
         }
@@ -171,7 +194,8 @@ public class Inspection : BaseEntity {
         _answers.First(a => a.Id == answerId).RemovePhoto(photoId);
     }
 
-    public void UpdateOperatorFirstName(string firstName) {
+    public void UpdateOperatorFirstName(string firstName)
+    {
         EnsureDraft();
         if (string.IsNullOrWhiteSpace(firstName))
         {
