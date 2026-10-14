@@ -43,6 +43,11 @@ internal sealed class FakeEquipmentRepository : IEquipmentRepository
         );
     }
 
+    public Task UpdateAsync(Equipment equipment, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task<Equipment?> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return Task.FromResult(AddedEquipments.FirstOrDefault(equipment => equipment.Id == id));

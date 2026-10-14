@@ -38,6 +38,8 @@ public sealed class EquipmentConfiguration
             .HasMaxLength(32)
             .IsRequired();
 
+        builder.Property<uint>("xmin").IsRowVersion();
+
         builder.HasIndex(equipment => equipment.SerialNumber)
             .IsUnique()
             .HasDatabaseName(

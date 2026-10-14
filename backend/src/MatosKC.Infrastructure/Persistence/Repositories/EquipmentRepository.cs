@@ -49,6 +49,16 @@ public sealed class EquipmentRepository
         );
     }
 
+    public Task UpdateAsync(Equipment equipment, CancellationToken cancellationToken = default)
+    {
+        if (_dbContext.Entry(equipment).State == EntityState.Detached)
+        {
+            _dbContext.Equipments.Update(equipment);
+        }
+
+        return Task.CompletedTask;
+    }
+
     public Task<Equipment?> RetrieveByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return _dbContext.Equipments

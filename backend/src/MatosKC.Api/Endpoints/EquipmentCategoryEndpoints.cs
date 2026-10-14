@@ -19,6 +19,7 @@ public static class EquipmentCategoryEndpoints
             .WithTags("Equipment categories");
 
         group.MapPost("/", CreateAsync)
+            .RequireAuthorization("ManageEquipment")
             .WithName("CreateEquipmentCategory")
             .WithSummary("Create an equipment category")
             .Produces<CreatedResourceResponse>(

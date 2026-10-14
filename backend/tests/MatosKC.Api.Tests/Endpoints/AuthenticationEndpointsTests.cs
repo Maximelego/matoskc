@@ -204,7 +204,20 @@ public sealed class AuthenticationEndpointsTests(MatosKCApiFactory factory)
         using var client = await factory.CreateAuthenticatedClientAsync();
         client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
 
-        var response = await client.PostAsJsonAsync(path, new { }, TestContext.Current.CancellationToken);
+        HttpResponseMessage response;
+
+        if (path.EndsWith("/photos", StringComparison.Ordinal))
+        {
+            using var form = new MultipartFormDataContent();
+            var file = new ByteArrayContent([1, 2, 3]);
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+            form.Add(file, "file", "test.png");
+            response = await client.PostAsync(path, form, TestContext.Current.CancellationToken);
+        }
+        else
+        {
+            response = await client.PostAsJsonAsync(path, new { }, TestContext.Current.CancellationToken);
+        }
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 

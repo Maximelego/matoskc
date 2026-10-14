@@ -42,6 +42,16 @@ public static class DependencyInjection
         services.AddScoped<MatosKC.Application.Agencies.Manage.ManageAgenciesUseCase>();
         services.AddScoped<MatosKC.Application.Auth.VerifySession.VerifyAuthenticationSessionUseCase>();
         services.AddScoped<MatosKC.Application.Auth.RevokeSession.RevokeAuthenticationSessionUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.InspectionWorkflowContext>();
+        services.AddScoped<MatosKC.Application.Inspections.CreateDepartureInspectionUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.CreateReturnInspectionUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.SaveInspectionDraftUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.ValidateDepartureInspectionUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.ValidateReturnInspectionUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.QueryInspectionsUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.ManageInspectionTemplatesUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.ManageInspectionPhotosUseCase>();
+        services.AddScoped<MatosKC.Application.Inspections.ChangeEquipmentStatusUseCase>();
         return services;
     }
 }

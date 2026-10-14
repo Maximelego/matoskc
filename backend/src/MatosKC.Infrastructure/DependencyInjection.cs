@@ -49,6 +49,12 @@ public static class DependencyInjection
         services.AddScoped<MatosKC.Application.Administration.IAdministrationRepository, AgencyRepository>();
         services.AddScoped<MatosKC.Application.Auth.Ports.IAuthenticationSessionRepository, AuthenticationSessionRepository>();
         services.AddSingleton<MatosKC.Application.Accounts.Ports.IPasswordHasher, MatosKC.Infrastructure.Hash.IdentityPasswordHasher>();
+        services.AddScoped<MatosKC.Application.Persistence.IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<MatosKC.Application.Clients.Ports.IClientRepository, ClientRepository>();
+        services.AddScoped<MatosKC.Application.Rentals.Ports.IRentalRepository, RentalRepository>();
+        services.AddScoped<MatosKC.Application.Inspections.Ports.IInspectionsRepository, InspectionsRepository>();
+        services.AddScoped<MatosKC.Application.Inspections.Ports.IInspectionTemplateRepository, InspectionTemplateRepository>();
+        services.AddScoped<MatosKC.Application.Inspections.Ports.IInspectionMediaRepository, InspectionMediaRepository>();
         services.AddScoped<DevelopmentDataSeeder>();
 
         return services;

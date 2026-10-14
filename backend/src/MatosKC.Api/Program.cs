@@ -77,6 +77,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference("/docs").AllowAnonymous();
 }
 
+app.MapInspectionEndpoints();
 app.MapAuthenticationEndpoints();
 app.MapAccountEndpoints();
 app.MapAgencyEndpoints();

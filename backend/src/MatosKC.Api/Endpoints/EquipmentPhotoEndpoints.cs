@@ -21,6 +21,7 @@ public static class EquipmentPhotoEndpoints
             .WithTags("Equipment photos");
 
         group.MapPost("", UploadAsync)
+            .RequireAuthorization("ManageEquipment")
             .WithName("UploadEquipmentPhoto")
             .WithSummary("Upload a photo for an equipment")
             .Accepts<IFormFile>("multipart/form-data")
@@ -43,6 +44,7 @@ public static class EquipmentPhotoEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPut("/{photoId:guid}", ReplaceAsync)
+            .RequireAuthorization("ManageEquipment")
             .WithName("ReplaceEquipmentPhoto")
             .WithSummary("Replace an equipment photo")
             .Accepts<IFormFile>("multipart/form-data")
@@ -53,6 +55,7 @@ public static class EquipmentPhotoEndpoints
             .DisableAntiforgery();
 
         group.MapDelete("/{photoId:guid}", DeleteAsync)
+            .RequireAuthorization("ManageEquipment")
             .WithName("DeleteEquipmentPhoto")
             .WithSummary("Delete an equipment photo")
             .Produces(StatusCodes.Status204NoContent)

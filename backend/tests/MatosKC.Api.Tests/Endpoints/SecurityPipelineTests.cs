@@ -70,7 +70,7 @@ public sealed class SecurityPipelineTests
     [Theory]
     [InlineData("/auth/me")]
     [InlineData("/accounts")]
-    [InlineData("/agencies")]
+    [InlineData("/agencies/11111111-1111-1111-1111-111111111111")]
     [InlineData("/equipments")]
     public async Task ProtectedEndpoints_RequireAuthentication(string path)
     {
@@ -145,4 +145,61 @@ public sealed class SecurityPipelineTests
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await client.GetAsync("/auth/me", TestContext.Current.CancellationToken)).StatusCode);
     }
+    [Theory]
+    [InlineData("/inspections")]
+    [InlineData("/inspection-templates/11111111-1111-1111-1111-111111111111")]
+    [InlineData("/rentals/11111111-1111-1111-1111-111111111111")]
+    public async Task InspectionQueries_RequireAuthentication(string path)
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.GetAsync(path, TestContext.Current.CancellationToken)).StatusCode);
+    }
+
+    [Fact]
+    public async Task AgencyList_AllowsAnonymousAccessWithoutDatabase()
+    {
+        await using var factory = CreateFactory().WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions
+                    .RemoveAll<MatosKC.Application.Agencies.Ports.IAgencyRepository>(services);
+                services.AddSingleton<MatosKC.Application.Agencies.Ports.IAgencyRepository, PublicAgencies>();
+            }));
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        var response = await client.GetAsync("/agencies", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(83, json.RootElement.GetProperty("agencies")[0].GetProperty("code").GetInt32());
+    }
+
+    private sealed class PublicAgencies : MatosKC.Application.Agencies.Ports.IAgencyRepository
+    {
+        private readonly MatosKC.Domain.Entities.Agencies.Agency agency = new("Epinal", 83);
+
+        public Task<MatosKC.Domain.Entities.Agencies.Agency[]?> ListByQueryAsync(
+            MatosKC.Application.Agencies.List.ListAgenciesQuery query, CancellationToken ct = default) =>
+            Task.FromResult<MatosKC.Domain.Entities.Agencies.Agency[]?>([agency]);
+
+        public Task<MatosKC.Domain.Entities.Agencies.Agency?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+            Task.FromResult<MatosKC.Domain.Entities.Agencies.Agency?>(id == agency.Id ? agency : null);
+
+        public Task<MatosKC.Domain.Entities.Agencies.Agency?> GetByCodeAsync(int code, CancellationToken ct = default) =>
+            Task.FromResult<MatosKC.Domain.Entities.Agencies.Agency?>(code == 83 ? agency : null);
+
+        public Task<bool> ExistsByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult(id == agency.Id);
+
+        public Task<MatosKC.Domain.Entities.Agencies.Agency> AddAsync(
+            MatosKC.Domain.Entities.Agencies.Agency value, CancellationToken ct = default) => Task.FromResult(value);
+    }
+
+    [Fact]
+    public void EquipmentDecision_RequiresAnExplicitStatus()
+    {
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<
+            MatosKC.Api.Endpoints.InspectionEndpoints.ChangeEquipmentStatusRequest>("{}"));
+    }
+
 }

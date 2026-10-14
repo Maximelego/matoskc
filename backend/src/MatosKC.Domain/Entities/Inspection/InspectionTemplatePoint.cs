@@ -4,9 +4,11 @@ public class InspectionTemplatePoint: BaseEntity
 {
     public Guid TemplateId { get; private set; }
     public string Description { get; private set; }
+    public int Position { get; private set; }
+
     public Guid? PhotoId { get; private set; }
 
-    public InspectionTemplatePoint(Guid id, Guid templateId, string description, Guid? photoId) : base(id)
+    public InspectionTemplatePoint(Guid id, Guid templateId, string description, Guid? photoId, int position = 0) : base(id)
     {
         if (templateId == Guid.Empty)
             throw new ArgumentException("Template ID cannot be empty.", nameof(templateId));
@@ -17,6 +19,10 @@ public class InspectionTemplatePoint: BaseEntity
         if (photoId.HasValue && photoId.Value == Guid.Empty)
             throw new ArgumentException("Photo ID cannot be empty if provided.", nameof(photoId));
 
+        if (position < 0)
+            throw new ArgumentOutOfRangeException(nameof(position));
+
+        Position = position;
         TemplateId = templateId;
         Description = description;
         PhotoId = photoId;

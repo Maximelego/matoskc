@@ -4,6 +4,11 @@ using MatosKC.Domain.Entities;
 
 public class Inspection : BaseEntity
 {
+    private Inspection()
+    {
+        OperatorFirstName = null!;
+    }
+
 
     public Guid RentalId { get; private set; }
     public Guid TemplateId { get; private set; }

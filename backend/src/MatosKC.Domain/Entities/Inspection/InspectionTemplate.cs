@@ -4,6 +4,11 @@ using MatosKC.Domain.Entities;
 
 public class InspectionTemplate : BaseEntity
 {
+    private InspectionTemplate()
+    {
+        _points = [];
+    }
+
     private readonly List<InspectionTemplatePoint> _points;
     public IReadOnlyList<InspectionTemplatePoint> Points =>
         _points.AsReadOnly();

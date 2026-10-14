@@ -47,6 +47,8 @@ public static class AuthenticationSetup
                 .RequireAuthenticatedUser()
                 .Build();
 
+            options.AddPolicy("PerformInspections", policy => policy.RequireRole("Agency", "SuperAdmin"));
+            options.AddPolicy("ManageEquipment", policy => policy.RequireRole("Admin", "SuperAdmin"));
             options.AddPolicy("ManageAccounts", policy => policy.RequireRole("SuperAdmin"));
             options.AddPolicy("ManageAgencies", policy => policy.RequireRole("SuperAdmin"));
         });

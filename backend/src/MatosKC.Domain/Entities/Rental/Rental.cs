@@ -6,6 +6,8 @@ public class Rental : BaseEntity
 {
     public Guid ClientId { get; private set; }
 
+    public Guid? AgencyId { get; private set; }
+
     public Guid EquipmentId { get; private set; }
 
     public RentalStatus Status { get; private set; }
@@ -24,7 +26,8 @@ public class Rental : BaseEntity
         Guid id,
         Guid clientId,
         Guid equipmentId,
-        DateTimeOffset createdAt
+        DateTimeOffset createdAt,
+        Guid? agencyId = null
     ) : base(id)
     {
         if (clientId == Guid.Empty)
@@ -37,6 +40,12 @@ public class Rental : BaseEntity
             throw new ArgumentException("Equipment ID cannot be empty.", nameof(equipmentId));
         }
 
+        if (agencyId == Guid.Empty)
+        {
+            throw new ArgumentException("Agency ID cannot be empty.", nameof(agencyId));
+        }
+
+        AgencyId = agencyId;
         ClientId = clientId;
         EquipmentId = equipmentId;
         CreatedAt = createdAt;

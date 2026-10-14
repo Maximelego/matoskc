@@ -21,9 +21,12 @@ public sealed class ApiExceptionHandler : IExceptionHandler
                 MatosKC.Application.Administration.AdministrationException administration =>
                     (administration.StatusCode, "Cannot complete operation", administration.Message),
 
-                BadHttpRequestException =>
+                MatosKC.Application.Inspections.InspectionOperationException operation =>
+                    (operation.StatusCode, "Cannot complete inspection operation", operation.Message),
+
+                BadHttpRequestException request =>
                     (
-                        StatusCodes.Status400BadRequest,
+                        request.StatusCode,
                         "Invalid request",
                         "The request body is malformed or contains a value with an invalid type."
                     ),

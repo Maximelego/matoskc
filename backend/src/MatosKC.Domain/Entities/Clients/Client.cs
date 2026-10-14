@@ -2,6 +2,14 @@ namespace MatosKC.Domain.Entities.Clients;
 
 public sealed class Client : BaseEntity
 {
+    private Client()
+    {
+        DisplayName = null!;
+        Email = null!;
+        Phone = null!;
+        CommandNumber = null!;
+    }
+
     public string DisplayName { get; private set; }
 
     public string Email { get; private set; }
