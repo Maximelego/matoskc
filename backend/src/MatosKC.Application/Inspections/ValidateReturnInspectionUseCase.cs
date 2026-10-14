@@ -42,6 +42,7 @@ public sealed class ValidateReturnInspectionUseCase(InspectionWorkflowContext co
                 ?? throw new InspectionOperationException(404, "Template not found.");
             var now = context.Time.GetUtcNow();
             inspection.Validate(template, now);
+            inspection.AttachReport(await context.Reports.GenerateAsync(inspection, rental, template, ct));
             rental.ConfirmReturn(inspection, now);
 
             EquipmentStatus nextStatus = inspection.Answers.Any(answer => answer.Result == InspectionResult.NonCompliant)

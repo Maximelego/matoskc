@@ -66,9 +66,14 @@ public sealed class InspectionConfiguration : IEntityTypeConfiguration<Inspectio
     public void Configure(EntityTypeBuilder<InspectionEntity> builder)
     {
         builder.ToTable("inspections");
+        builder.Ignore(inspection => inspection.HasReport);
         builder.Property(inspection => inspection.Type).HasConversion<string>().HasMaxLength(32);
         builder.Property(inspection => inspection.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(inspection => inspection.OperatorFirstName).IsRequired();
+        builder.Property(inspection => inspection.SignaturePng).HasField("_signaturePng")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Property(inspection => inspection.ReportPdf).HasField("_reportPdf")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.HasOne<Rental>().WithMany().HasForeignKey(inspection => inspection.RentalId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<InspectionTemplate>().WithMany().HasForeignKey(inspection => inspection.TemplateId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Account>().WithMany().HasForeignKey(inspection => inspection.CreatedByAccountId).OnDelete(DeleteBehavior.Restrict);

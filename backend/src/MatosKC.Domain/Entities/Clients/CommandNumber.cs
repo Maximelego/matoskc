@@ -19,7 +19,7 @@ public sealed record CommandNumber
 
         if (value.Length < 6)
         {
-            throw new ArgumentException("Command number must be 6 characters long.", nameof(value));
+            throw new ArgumentException("Command number must contain at least 6 characters.", nameof(value));
         }
 
         AgencyCode = agencyCode;

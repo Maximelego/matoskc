@@ -17,7 +17,8 @@ using MatosKC.Domain.Equipments;
 using InspectionEntity = MatosKC.Domain.Entities.Inspection.Inspection;
 
 internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInspectionsRepository,
-    IInspectionTemplateRepository, IInspectionMediaRepository, IUnitOfWork, IAgencyRepository
+    IInspectionTemplateRepository, IInspectionMediaRepository, IUnitOfWork, IAgencyRepository,
+    IInspectionReportGenerator, IInspectionSignatureValidator
 {
     internal List<Client> Clients { get; } = [];
     internal List<Rental> Rentals { get; } = [];
@@ -44,7 +45,7 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
         EquipmentRepository.AddedEquipments.Add(Equipment);
         AddTemplate();
         Context = new(this, this, this, this, this, EquipmentRepository, Categories,
-            this, Storage, this, Clock);
+            this, Storage, this, Clock, this, this);
     }
 
     internal InspectionTemplate AddTemplate()
@@ -66,6 +67,8 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
         var inspection = Inspections.Single(value => value.Id == response.Id);
         inspection.SetAnswer(Templates[0].Points[0].Id, InspectionResult.Compliant, null);
 
+        inspection.Sign("Client", [1], Clock.Now);
+
         if (validate)
         {
             await new ValidateDepartureInspectionUseCase(Context).ExecuteAsync(inspection.Id, Actor);
@@ -73,6 +76,11 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
 
         return inspection;
     }
+
+    public void Validate(byte[] png) { }
+
+    public Task<byte[]> GenerateAsync(InspectionEntity inspection, Rental rental, InspectionTemplate template,
+        CancellationToken ct = default) => Task.FromResult<byte[]>([37, 80, 68, 70]);
 
     public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken ct = default)
     {

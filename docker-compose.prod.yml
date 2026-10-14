@@ -1,0 +1,138 @@
+name: matoskc-prod
+
+x-backend-environment: &backend-environment
+    ASPNETCORE_ENVIRONMENT: Production
+    ASPNETCORE_URLS: http://+:8000
+    ConnectionStrings__MatosKCDatabase: "Host=database;Port=5432;Database=matoskc;Username=matoskc;Password=${MATOSKC_DB_PASSWORD:?Set MATOSKC_DB_PASSWORD}"
+    S3__ServiceUrl: http://object-storage:3900
+    S3__Region: garage
+    S3__AccessKey: ${MATOSKC_S3_ACCESS_KEY:?Set MATOSKC_S3_ACCESS_KEY}
+    S3__SecretKey: ${MATOSKC_S3_SECRET_KEY:?Set MATOSKC_S3_SECRET_KEY}
+    S3__BucketName: ${MATOSKC_S3_BUCKET:-matoskc}
+    S3__ForcePathStyle: "true"
+    AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+    AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
+    ReverseProxy__KnownProxies__0: ${MATOSKC_PROXY_IP:-172.30.83.2}
+
+services:
+    reverse-proxy:
+        image: nginx:stable-alpine
+        ports:
+            - "80:80"
+            - "443:443"
+        environment:
+            MATOSKC_DOMAIN: ${MATOSKC_DOMAIN:?Set MATOSKC_DOMAIN}
+            NGINX_ENVSUBST_FILTER: "^MATOSKC_DOMAIN$"
+        volumes:
+            - ./docker/nginx/prod.conf.template:/etc/nginx/templates/default.conf.template:ro
+            - ${MATOSKC_TLS_CERTS_DIR:?Set MATOSKC_TLS_CERTS_DIR}:/etc/nginx/certs:ro
+        networks:
+            app:
+                ipv4_address: ${MATOSKC_PROXY_IP:-172.30.83.2}
+        depends_on:
+            frontend:
+                condition: service_healthy
+            backend:
+                condition: service_started
+        restart: unless-stopped
+
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+            args:
+                VITE_API_BASE_URL: /backend
+                VITE_PUBLIC_APP_URL: ${VITE_PUBLIC_APP_URL:?Set VITE_PUBLIC_APP_URL}
+        expose:
+            - "80"
+        networks:
+            - app
+        restart: unless-stopped
+
+    migrations:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+            target: migrations
+        environment: *backend-environment
+        networks:
+            - app
+        depends_on:
+            database:
+                condition: service_healthy
+        restart: "no"
+
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+            target: runtime
+        environment:
+            <<: *backend-environment
+            Authentication__DataProtectionKeysPath: /app/.auth-keys
+            Authentication__BootstrapAdmin__Email: ${MATOSKC_BOOTSTRAP_ADMIN_EMAIL:-}
+            Authentication__BootstrapAdmin__Password: ${MATOSKC_BOOTSTRAP_ADMIN_PASSWORD:-}
+            Authentication__BootstrapAdmin__DisplayName: ${MATOSKC_BOOTSTRAP_ADMIN_NAME:-Super administrateur}
+            Authentication__SessionHours: ${MATOSKC_SESSION_HOURS:-8}
+        volumes:
+            - matoskc_auth_keys:/app/.auth-keys
+        expose:
+            - "8000"
+        networks:
+            - app
+        depends_on:
+            migrations:
+                condition: service_completed_successfully
+            object-storage:
+                condition: service_healthy
+        restart: unless-stopped
+
+    object-storage:
+        image: dxflrs/garage:v2.4.1
+        command: ["/garage", "server", "--single-node", "--default-bucket"]
+        environment:
+            GARAGE_DEFAULT_ACCESS_KEY: ${MATOSKC_S3_ACCESS_KEY:?Set MATOSKC_S3_ACCESS_KEY}
+            GARAGE_DEFAULT_SECRET_KEY: ${MATOSKC_S3_SECRET_KEY:?Set MATOSKC_S3_SECRET_KEY}
+            GARAGE_DEFAULT_BUCKET: ${MATOSKC_S3_BUCKET:-matoskc}
+        volumes:
+            - ${MATOSKC_GARAGE_CONFIG:?Set MATOSKC_GARAGE_CONFIG}:/etc/garage.toml:ro
+            - matoskc_garage_metadata:/var/lib/garage/meta
+            - matoskc_garage_data:/var/lib/garage/data
+        networks:
+            - app
+        healthcheck:
+            test: ["CMD", "/garage", "status"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+        restart: unless-stopped
+
+    database:
+        image: postgres:16-alpine
+        environment:
+            POSTGRES_DB: matoskc
+            POSTGRES_USER: matoskc
+            POSTGRES_PASSWORD: ${MATOSKC_DB_PASSWORD:?Set MATOSKC_DB_PASSWORD}
+        volumes:
+            - matoskc_postgres_data:/var/lib/postgresql/data
+        networks:
+            - app
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U matoskc -d matoskc"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+        restart: unless-stopped
+
+networks:
+    app:
+        ipam:
+            config:
+                - subnet: ${MATOSKC_NETWORK_SUBNET:-172.30.83.0/24}
+
+volumes:
+    matoskc_auth_keys:
+    matoskc_postgres_data:
+    matoskc_garage_metadata:
+    matoskc_garage_data:

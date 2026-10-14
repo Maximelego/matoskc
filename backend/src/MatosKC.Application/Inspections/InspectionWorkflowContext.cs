@@ -25,7 +25,9 @@ public sealed class InspectionWorkflowContext(
     IAgencyRepository agencies,
     IObjectStorage storage,
     IUnitOfWork unitOfWork,
-    TimeProvider time
+    TimeProvider time,
+    IInspectionReportGenerator reports,
+    IInspectionSignatureValidator signatureValidator
 )
 {
     public IClientRepository Clients { get; } = clients;
@@ -39,6 +41,8 @@ public sealed class InspectionWorkflowContext(
     public IObjectStorage Storage { get; } = storage;
     public IUnitOfWork UnitOfWork { get; } = unitOfWork;
     public TimeProvider Time { get; } = time;
+    public IInspectionReportGenerator Reports { get; } = reports;
+    public IInspectionSignatureValidator SignatureValidator { get; } = signatureValidator;
 
     public static void RequireReader(InspectionActor actor)
     {
@@ -110,7 +114,11 @@ public sealed class InspectionWorkflowContext(
         inspection.ValidatedAt,
         inspection.Answers.Select(answer => new InspectionAnswerResponse(
             answer.Id, answer.TemplatePointId, answer.Result, answer.Comment, answer.PhotosIds.ToArray()
-        )).ToArray()
+        )).ToArray(),
+        inspection.SignerName,
+        inspection.SignedAt,
+        inspection.AcceptanceText,
+        inspection.HasReport
     );
 
     public async Task<RentalResponse> RentalResponseAsync(Rental rental, CancellationToken ct)

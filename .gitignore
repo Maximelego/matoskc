@@ -64,3 +64,7 @@ Desktop.ini
 # Authentication runtime secrets
 .matoskc-auth-keys/
 .env.auth
+
+# Production template and TLS files
+!.env.prod.example
+/docker/nginx/certs/

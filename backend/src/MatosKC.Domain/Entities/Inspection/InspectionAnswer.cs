@@ -45,6 +45,11 @@ public class InspectionAnswer : BaseEntity
             throw new ArgumentException("Invalid inspection result.", nameof(result));
         }
 
+        if (result == InspectionResult.Compliant && !string.IsNullOrWhiteSpace(comment))
+        {
+            throw new ArgumentException("A compliant answer cannot have an observation.", nameof(comment));
+        }
+
         Result = result;
         Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
     }

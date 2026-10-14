@@ -19,6 +19,54 @@ public class Inspection : BaseEntity
     public DateTimeOffset StartedAt { get; private set; }
     public DateTimeOffset? ValidatedAt { get; private set; }
 
+    public string? SignerName { get; private set; }
+    public DateTimeOffset? SignedAt { get; private set; }
+    public string? AcceptanceText { get; private set; }
+
+    private byte[]? _signaturePng;
+    private byte[]? _reportPdf;
+
+    public byte[]? SignaturePng => _signaturePng?.ToArray();
+    public byte[]? ReportPdf => _reportPdf?.ToArray();
+    public bool HasReport => _reportPdf is not null;
+
+    public void Sign(string signerName, byte[] png, DateTimeOffset signedAt)
+    {
+        EnsureDraft();
+        ArgumentException.ThrowIfNullOrWhiteSpace(signerName);
+        ArgumentNullException.ThrowIfNull(png);
+
+        if (png.Length == 0 || signedAt < StartedAt)
+        {
+            throw new ArgumentException("A signature and a valid signing date are required.");
+        }
+
+        SignerName = signerName.Trim();
+        SignedAt = signedAt;
+        AcceptanceText = "Je reconnais avoir pris connaissance du présent état des lieux et en accepte le contenu.";
+        _signaturePng = png.ToArray();
+    }
+
+    public void AttachReport(byte[] pdf)
+    {
+        ArgumentNullException.ThrowIfNull(pdf);
+
+        if (Status != InspectionStatus.Validated || _reportPdf is not null || pdf.Length == 0)
+        {
+            throw new InvalidOperationException("A report can only be attached once, after validation.");
+        }
+
+        _reportPdf = pdf.ToArray();
+    }
+
+    private void InvalidateSignature()
+    {
+        SignerName = null;
+        SignedAt = null;
+        AcceptanceText = null;
+        _signaturePng = null;
+    }
+
     private readonly List<InspectionAnswer> _answers = [];
 
     public IReadOnlyList<InspectionAnswer> Answers =>
@@ -123,6 +171,11 @@ public class Inspection : BaseEntity
             }
         }
 
+        if (_signaturePng is null || SignedAt is null || SignedAt > validatedAt)
+        {
+            throw new InvalidOperationException("A signed inspection is required before validation.");
+        }
+
         Status = InspectionStatus.Validated;
         ValidatedAt = validatedAt;
     }
@@ -152,6 +205,7 @@ public class Inspection : BaseEntity
         if (existingAnswer is not null)
         {
             existingAnswer.UpdateResult(result, comment);
+            InvalidateSignature();
 
             return;
         }
@@ -163,6 +217,7 @@ public class Inspection : BaseEntity
             result,
             comment
         ));
+        InvalidateSignature();
     }
 
     public void AddAnswerPhoto(Guid answerId, Guid photoId)
@@ -180,6 +235,7 @@ public class Inspection : BaseEntity
         }
 
         _answers.First(a => a.Id == answerId).AddPhoto(photoId);
+        InvalidateSignature();
     }
 
     public void RemoveAnswerPhoto(Guid answerId, Guid photoId)
@@ -197,6 +253,7 @@ public class Inspection : BaseEntity
         }
 
         _answers.First(a => a.Id == answerId).RemovePhoto(photoId);
+        InvalidateSignature();
     }
 
     public void UpdateOperatorFirstName(string firstName)
@@ -208,6 +265,7 @@ public class Inspection : BaseEntity
         }
 
         OperatorFirstName = firstName.Trim();
+        InvalidateSignature();
     }
 
     private void EnsureDraft()

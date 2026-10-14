@@ -162,6 +162,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AcceptanceText")
+                        .HasColumnType("text")
+                        .HasColumnName("acceptance_text");
+
                     b.Property<Guid>("CreatedByAccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_account_id");
@@ -174,6 +178,22 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("RentalId")
                         .HasColumnType("uuid")
                         .HasColumnName("rental_id");
+
+                    b.Property<byte[]>("ReportPdf")
+                        .HasColumnType("bytea")
+                        .HasColumnName("report_pdf");
+
+                    b.Property<byte[]>("SignaturePng")
+                        .HasColumnType("bytea")
+                        .HasColumnName("signature_png");
+
+                    b.Property<DateTimeOffset?>("SignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("signed_at");
+
+                    b.Property<string>("SignerName")
+                        .HasColumnType("text")
+                        .HasColumnName("signer_name");
 
                     b.Property<DateTimeOffset>("StartedAt")
                         .HasColumnType("timestamp with time zone")

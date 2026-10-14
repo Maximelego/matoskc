@@ -55,6 +55,10 @@ public static class DependencyInjection
         services.AddScoped<MatosKC.Application.Inspections.Ports.IInspectionsRepository, InspectionsRepository>();
         services.AddScoped<MatosKC.Application.Inspections.Ports.IInspectionTemplateRepository, InspectionTemplateRepository>();
         services.AddScoped<MatosKC.Application.Inspections.Ports.IInspectionMediaRepository, InspectionMediaRepository>();
+        services.AddScoped<MatosKC.Application.Inspections.Ports.IInspectionReportGenerator,
+            MatosKC.Infrastructure.Reports.InspectionReportGenerator>();
+        services.AddSingleton<MatosKC.Application.Inspections.Ports.IInspectionSignatureValidator,
+            MatosKC.Infrastructure.Reports.InspectionSignatureValidator>();
         services.AddScoped<DevelopmentDataSeeder>();
 
         return services;

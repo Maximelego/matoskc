@@ -47,7 +47,7 @@ public class InspectionAnswerTests
     public void Constructor_NormalizesComment(string comment, string? expected)
     {
         var answer = new InspectionAnswer(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), InspectionResult.Compliant, comment
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), InspectionResult.NonCompliant, comment
         );
 
         Assert.Equal(expected, answer.Comment);

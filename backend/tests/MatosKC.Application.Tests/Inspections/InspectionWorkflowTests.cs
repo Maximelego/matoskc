@@ -162,6 +162,7 @@ public sealed class InspectionWorkflowTests
                 returnInspection.Answers[0].Id, new MemoryStream([1]), "photo.png", "image/png", 1, fake.Actor);
         }
 
+        returnInspection.Sign("Client", [1], fake.Clock.Now);
         var useCase = new ValidateReturnInspectionUseCase(fake.Context);
         var validated = await useCase.ExecuteAsync(returnInspection.Id, fake.Actor);
         Assert.Equal(RentalStatus.Completed, fake.Rentals[0].Status);
@@ -229,6 +230,7 @@ public sealed class InspectionWorkflowTests
         stored.Content.Dispose();
         await useCase.RemoveAsync(inspection.Id, media.Id, fake.Actor);
         await Assert.ThrowsAsync<InspectionOperationException>(() => useCase.DownloadAsync(inspection.Id, media.Id, fake.Actor));
+        inspection.Sign("Client", [1], fake.Clock.Now);
         await new ValidateDepartureInspectionUseCase(fake.Context).ExecuteAsync(inspection.Id, fake.Actor);
         await Assert.ThrowsAsync<InspectionOperationException>(() => useCase.UploadAsync(
             inspection.Id, inspection.Answers[0].Id, new MemoryStream([1]), "photo.png", "image/png", 1, fake.Actor));

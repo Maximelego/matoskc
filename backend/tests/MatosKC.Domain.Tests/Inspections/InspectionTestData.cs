@@ -33,6 +33,16 @@ internal static class InspectionTestData
         StartedAt
     );
 
+    internal static void ValidateSigned(InspectionEntity inspection, InspectionTemplate template, DateTimeOffset time)
+    {
+        if (inspection.Status == InspectionStatus.Draft)
+        {
+            inspection.Sign("Client", [1], StartedAt);
+        }
+
+        inspection.Validate(template, time);
+    }
+
     internal static InspectionEntity Validated(
         InspectionTemplate template,
         Guid rentalId,
@@ -46,7 +56,7 @@ internal static class InspectionTestData
             inspection.SetAnswer(point.Id, InspectionResult.Compliant, null);
         }
 
-        inspection.Validate(template, StartedAt.AddMinutes(5));
+        ValidateSigned(inspection, template, StartedAt.AddMinutes(5));
 
         return inspection;
     }

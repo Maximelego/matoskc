@@ -72,6 +72,8 @@ public sealed class SecurityPipelineTests
     [InlineData("/accounts")]
     [InlineData("/agencies/11111111-1111-1111-1111-111111111111")]
     [InlineData("/equipments")]
+    [InlineData("/inspections/11111111-1111-1111-1111-111111111111/report")]
+    [InlineData("/inspections/11111111-1111-1111-1111-111111111111/signature")]
     public async Task ProtectedEndpoints_RequireAuthentication(string path)
     {
         await using var factory = CreateFactory();

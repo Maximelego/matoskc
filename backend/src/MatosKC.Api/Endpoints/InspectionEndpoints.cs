@@ -26,6 +26,11 @@ public static class InspectionEndpoints
         group.MapPut("/{id:guid}/draft", SaveDraftAsync)
             .RequireAuthorization("PerformInspections");
 
+        group.MapPut("/{id:guid}/signature", SignAsync)
+            .RequireAuthorization("PerformInspections");
+        group.MapGet("/{id:guid}/report", DownloadReportAsync);
+        group.MapGet("/{id:guid}/signature", DownloadSignatureAsync);
+
         group.MapPost("/{id:guid}/validation", ValidateAsync)
             .RequireAuthorization("PerformInspections");
 
@@ -125,6 +130,22 @@ public static class InspectionEndpoints
         IAgencyRepository agencies,
         CancellationToken ct
     ) => Results.Ok(await useCase.ExecuteAsync(id, request, await ActorAsync(context, agencies, ct), ct));
+
+    private static async Task<IResult> SignAsync(
+        Guid id, SignInspectionRequest request, SignInspectionUseCase useCase,
+        HttpContext context, IAgencyRepository agencies, CancellationToken ct
+    ) => Results.Ok(await useCase.ExecuteAsync(id, request, await ActorAsync(context, agencies, ct), ct));
+
+    private static async Task<IResult> DownloadSignatureAsync(
+        Guid id, DownloadInspectionSignatureUseCase useCase,
+        HttpContext context, IAgencyRepository agencies, CancellationToken ct
+    ) => Results.File(await useCase.ExecuteAsync(id, await ActorAsync(context, agencies, ct), ct), "image/png");
+
+    private static async Task<IResult> DownloadReportAsync(
+        Guid id, DownloadInspectionReportUseCase useCase,
+        HttpContext context, IAgencyRepository agencies, CancellationToken ct
+    ) => Results.File(await useCase.ExecuteAsync(id, await ActorAsync(context, agencies, ct), ct),
+        "application/pdf", $"etat-des-lieux-{id}.pdf");
 
     private static async Task<IResult> ValidateAsync(
         Guid id,

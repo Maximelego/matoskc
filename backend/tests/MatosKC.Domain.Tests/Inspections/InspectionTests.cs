@@ -92,7 +92,7 @@ public class InspectionTests
         Assert.Null(answer.Comment);
         Assert.Empty(answer.PhotosIds);
         Assert.Throws<InvalidOperationException>(() =>
-            inspection.Validate(template, InspectionTestData.StartedAt.AddMinutes(5)));
+            InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt.AddMinutes(5)));
         Assert.Equal(InspectionStatus.Draft, inspection.Status);
         Assert.Null(inspection.ValidatedAt);
     }
@@ -118,7 +118,7 @@ public class InspectionTests
         }
 
         Assert.Throws<InvalidOperationException>(() =>
-            inspection.Validate(template, InspectionTestData.StartedAt.AddMinutes(5)));
+            InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt.AddMinutes(5)));
         Assert.Equal(InspectionStatus.Draft, inspection.Status);
         Assert.Null(inspection.ValidatedAt);
     }
@@ -130,7 +130,7 @@ public class InspectionTests
         var inspection = InspectionTestData.Inspection(template);
 
         Assert.Throws<InvalidOperationException>(() =>
-            inspection.Validate(template, InspectionTestData.StartedAt));
+            InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt));
     }
 
     [Theory]
@@ -150,7 +150,7 @@ public class InspectionTests
         }
 
         Assert.Throws<InvalidOperationException>(() =>
-            inspection.Validate(template, InspectionTestData.StartedAt.AddMinutes(5)));
+            InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt.AddMinutes(5)));
         Assert.Null(inspection.ValidatedAt);
     }
 
@@ -163,7 +163,7 @@ public class InspectionTests
         inspection.AddAnswerPhoto(inspection.Answers[0].Id, Guid.NewGuid());
         var validatedAt = InspectionTestData.StartedAt.AddMinutes(5);
 
-        inspection.Validate(template, validatedAt);
+        InspectionTestData.ValidateSigned(inspection, template, validatedAt);
 
         Assert.Equal(InspectionStatus.Validated, inspection.Status);
         Assert.Equal(validatedAt, inspection.ValidatedAt);
@@ -177,11 +177,11 @@ public class InspectionTests
         inspection.SetAnswer(template.Points[0].Id, InspectionResult.Compliant, null);
 
         Assert.Throws<ArgumentNullException>(() =>
-            inspection.Validate(null!, InspectionTestData.StartedAt));
+            InspectionTestData.ValidateSigned(inspection, null!, InspectionTestData.StartedAt));
         Assert.Throws<ArgumentException>(() =>
-            inspection.Validate(InspectionTestData.Template(), InspectionTestData.StartedAt));
+            InspectionTestData.ValidateSigned(inspection, InspectionTestData.Template(), InspectionTestData.StartedAt));
         Assert.Throws<ArgumentException>(() =>
-            inspection.Validate(template, InspectionTestData.StartedAt.AddTicks(-1)));
+            InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt.AddTicks(-1)));
         Assert.Equal(InspectionStatus.Draft, inspection.Status);
     }
 
@@ -192,7 +192,7 @@ public class InspectionTests
         var inspection = InspectionTestData.Inspection(template);
         inspection.SetAnswer(template.Points[0].Id, InspectionResult.Compliant, null);
 
-        inspection.Validate(template, InspectionTestData.StartedAt);
+        InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt);
 
         Assert.Equal(InspectionStatus.Validated, inspection.Status);
         Assert.Equal(InspectionTestData.StartedAt, inspection.ValidatedAt);
@@ -212,7 +212,7 @@ public class InspectionTests
         var answer = inspection.Answers[0];
         Guid photoId = Guid.NewGuid();
         inspection.AddAnswerPhoto(answer.Id, photoId);
-        inspection.Validate(template, InspectionTestData.StartedAt);
+        InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt);
 
         Assert.Throws<InvalidOperationException>(() =>
         {
@@ -231,7 +231,7 @@ public class InspectionTests
                     inspection.UpdateOperatorFirstName("Autre");
                     break;
                 case "validate":
-                    inspection.Validate(template, InspectionTestData.StartedAt.AddMinutes(1));
+                    InspectionTestData.ValidateSigned(inspection, template, InspectionTestData.StartedAt.AddMinutes(1));
                     break;
             }
         });
@@ -281,7 +281,7 @@ public class InspectionTests
     {
         var template = InspectionTestData.Template();
         var inspection = InspectionTestData.Inspection(template);
-        inspection.SetAnswer(template.Points[0].Id, InspectionResult.Compliant, "Avant");
+        inspection.SetAnswer(template.Points[0].Id, InspectionResult.NonCompliant, "Avant");
         var answer = inspection.Answers[0];
         inspection.AddAnswerPhoto(answer.Id, Guid.NewGuid());
 
@@ -292,7 +292,7 @@ public class InspectionTests
 
         Assert.Single(inspection.Answers);
         Assert.Equal("Avant", answer.Comment);
-        Assert.Equal(InspectionResult.Compliant, answer.Result);
+        Assert.Equal(InspectionResult.NonCompliant, answer.Result);
         Assert.Single(answer.PhotosIds);
     }
 

@@ -11,11 +11,13 @@ case "${ENVIRONMENT}" in
     dev)
         COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.dev.yml"
         DEV_DATABASE_VOLUME="matoskc_postgres_data_dev"
+        ENV_FILE="${SCRIPT_DIR}/.env.auth"
         ;;
 
     prod)
         COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.prod.yml"
         DEV_DATABASE_VOLUME=""
+        ENV_FILE="${SCRIPT_DIR}/.env.prod"
         ;;
 
     *)
@@ -35,7 +37,7 @@ start_services() {
 
     docker compose \
         -f "${COMPOSE_FILE}" \
-        --env-file .env.auth \
+        --env-file "${ENV_FILE}" \
         up --detach --build
 }
 
@@ -44,6 +46,7 @@ stop_services() {
 
     docker compose \
         -f "${COMPOSE_FILE}" \
+        --env-file "${ENV_FILE}" \
         down
 }
 

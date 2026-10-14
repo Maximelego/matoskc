@@ -28,6 +28,7 @@ public sealed class InspectionPersistenceTests(PostgreSqlFixture fixture)
             InspectionType.Departure, account.Id, "Maxime", DateTimeOffset.UtcNow);
         inspection.SetAnswer(template.Points[0].Id, InspectionResult.NonCompliant, "Défaut");
         inspection.AddAnswerPhoto(inspection.Answers[0].Id, Guid.NewGuid());
+        inspection.Sign("Client", [1, 2], DateTimeOffset.UtcNow);
 
         return (client, rental, template, inspection, equipment, category, account);
     }
@@ -59,7 +60,11 @@ public sealed class InspectionPersistenceTests(PostgreSqlFixture fixture)
             Assert.Equal(data.Template.Id, template!.Id);
             Assert.Single(template.Points);
             var inspection = await new InspectionsRepository(db).GetInspectionByIdAsync(data.Inspection.Id, TestContext.Current.CancellationToken);
-            var answer = Assert.Single(inspection!.Answers);
+            Assert.Equal("Client", inspection!.SignerName);
+            Assert.Equal(new byte[] { 1, 2 }, inspection.SignaturePng);
+            Assert.NotNull(inspection.SignedAt);
+            Assert.NotNull(inspection.AcceptanceText);
+            var answer = Assert.Single(inspection.Answers);
             Assert.Equal("Défaut", answer.Comment);
             Assert.Equal(data.Inspection.Answers[0].PhotosIds[0], Assert.Single(answer.PhotosIds));
             inspection.SetAnswer(answer.TemplatePointId, InspectionResult.NonCompliant, "Modifié");

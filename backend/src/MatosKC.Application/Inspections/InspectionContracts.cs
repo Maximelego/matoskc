@@ -46,8 +46,14 @@ public sealed record InspectionResponse(
     string OperatorFirstName,
     DateTimeOffset StartedAt,
     DateTimeOffset? ValidatedAt,
-    IReadOnlyList<InspectionAnswerResponse> Answers
+    IReadOnlyList<InspectionAnswerResponse> Answers,
+    string? SignerName,
+    DateTimeOffset? SignedAt,
+    string? AcceptanceText,
+    bool HasReport
 );
+
+public sealed record SignInspectionRequest(string SignerName, string SignaturePngBase64, bool Accepted);
 
 public sealed record RentalResponse(
     Guid Id,

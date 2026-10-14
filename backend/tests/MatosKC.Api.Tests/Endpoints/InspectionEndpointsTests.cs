@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 [Collection(ApiTestCollection.Name)]
 public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
 {
+    private const string SignatureBase64 = "iVBORw0KGgoAAAANSUhEUgAAAKAAAAA8CAYAAADha7EVAAACTUlEQVR4nO2c227DIBAFS9X//2X3yZKFYoK5nbN45q1NlcDusAsJaTqO4/gBEPGrHgC8GwQEKQgIUhAQpCAgSEFAkIKAIAUBQQoCBiSl9JNSUg9jCH/qAUA9uXTnz5E/zKICBqFU8SJXQyqgOXdynVXvfDxqNUxcRvCkVNU+pSz/+yhptW7B+ep+C6WqdydW/vsoBxXbCvgpeKZDHca3dtv6PM5xsxTwafuJzqz5RhDR6hASoWWMZlTVKz2H80HFpgKWEhFhJT9lpni1r+cQRwsBvwXHNXgtqLcXbotZLmCtXDtIuLrqlXARUSrgU6miSugkXo5aRImAPQlRB+wJ6nZbi3JhLxdwRDWIIKFz1btDEdelAo5aac6tOKJ4OStFXCbgaGncJIzSbp+wQsQlAs6SxUXCHareHbNjPFXAFYlR7gd3Fi9nVpynCbgyOasl3LHd1jI61lMEXN0aV77em6peiVEiDr8PqNiX1X5y0sPd/brSHb2dGTXnoQIqDwWzJCxd7HyjeFdGLL4h17FcEvTp5kwPLvNyp+vttN49oGOSevcnjnPala4K6PI+3DdSSk2fM19xnNcONO8BneVr2Q+2fBEI+mlqwc7yXakZJ+1Wy6MWHC1ZpUMJ7daD6goYTb4rtSfjCHPZjaoKGKXltrLTXKJRdQjJExQtYaXxRpvLblSfgs9ERU1YPn5Otx7IvxUH78b6nxPB/iAgSEFAkIKAIAUBQQoCghQEBCkICFIQEKQgIEhBQJCCgCAFAUEKAoIUBAQpCAhSEBCk/AOnlJcgDPWtMwAAAABJRU5ErkJggg==";
+
     private static readonly byte[] Png = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     );
@@ -52,12 +54,31 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
             client = new { displayName = "Client", email = "client@example.test", phone = "0612345678", agencyCode, commandValue = "001234" }
         }, cancellationToken: TestContext.Current.CancellationToken);
 
-    private static Task<HttpResponseMessage> SaveAsync(HttpClient client, Guid inspectionId, Guid pointId, bool defective) =>
-        client.PutAsJsonAsync($"/inspections/{inspectionId}/draft", new
+    private static async Task<HttpResponseMessage> SaveAsync(HttpClient client, Guid inspectionId, Guid pointId, bool defective)
+    {
+        var response = await client.PutAsJsonAsync($"/inspections/{inspectionId}/draft", new
         {
             operatorFirstName = "Maxime",
             answers = new[] { new { templatePointId = pointId, result = defective ? "NonCompliant" : "Compliant", observation = defective ? "Défaut" : null } }
         }, cancellationToken: TestContext.Current.CancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await SignAsync(client, inspectionId);
+        }
+
+        return response;
+    }
+
+    private static async Task SignAsync(HttpClient client, Guid id)
+    {
+        using var response = await client.PutAsJsonAsync($"/inspections/{id}/signature", new
+        {
+            signerName = "Client", accepted = true,
+            signaturePngBase64 = SignatureBase64
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 
     [Theory]
     [InlineData(false)]
@@ -101,7 +122,10 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
 
         var validatedReturn = await JsonAsync(await client.PostAsync($"/inspections/{returnId}/validation", null, cancellationToken: TestContext.Current.CancellationToken));
         var retry = await JsonAsync(await client.PostAsync($"/inspections/{returnId}/validation", null, cancellationToken: TestContext.Current.CancellationToken));
-        Assert.Equal(validatedReturn.GetProperty("validatedAt").GetString(), retry.GetProperty("validatedAt").GetString());
+        var persisted = await JsonAsync(await client.GetAsync($"/inspections/{returnId}", cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal(persisted.GetProperty("validatedAt").GetDateTimeOffset(), retry.GetProperty("validatedAt").GetDateTimeOffset());
+        Assert.InRange((validatedReturn.GetProperty("validatedAt").GetDateTimeOffset()
+            - persisted.GetProperty("validatedAt").GetDateTimeOffset()).Duration(), TimeSpan.Zero, TimeSpan.FromMicroseconds(1));
         equipment = await JsonAsync(await client.GetAsync($"/equipments/{seed.EquipmentId}", cancellationToken: TestContext.Current.CancellationToken));
         Assert.Equal(defective ? "ToBeDecided" : "Available", equipment.GetProperty("status").GetString());
         var rental = await JsonAsync(await client.GetAsync($"/rentals/{rentalId}", cancellationToken: TestContext.Current.CancellationToken));
@@ -117,6 +141,99 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
             Assert.Equal(HttpStatusCode.Created,
                 (await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode)).StatusCode);
         }
+    }
+
+    [Fact]
+    public async Task Signature_IsRequiredAndFinalReportRemainsIdenticalAfterRetry()
+    {
+        using var client = await factory.CreateAuthenticatedClientAsync();
+        var seed = await SeedAsync();
+        var template = await JsonAsync(await TemplateAsync(client, seed.CategoryId));
+        var inspection = await JsonAsync(await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode));
+        Guid id = inspection.GetProperty("id").GetGuid();
+        Guid pointId = template.GetProperty("points")[0].GetProperty("id").GetGuid();
+        using var draft = await client.PutAsJsonAsync($"/inspections/{id}/draft", new
+        {
+            operatorFirstName = "Maxime",
+            answers = new[] { new { templatePointId = pointId, result = "Compliant", observation = (string?)null } }
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        draft.EnsureSuccessStatusCode();
+        using var unsigned = await client.PostAsync($"/inspections/{id}/validation", null,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, unsigned.StatusCode);
+        using var missingReport = await client.GetAsync($"/inspections/{id}/report", cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Conflict, missingReport.StatusCode);
+        await SignAsync(client, id);
+        var validated = await JsonAsync(await client.PostAsync($"/inspections/{id}/validation", null,
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.True(validated.GetProperty("hasReport").GetBoolean());
+        var report = await client.GetByteArrayAsync($"/inspections/{id}/report", cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(report, 0, 4));
+        await JsonAsync(await client.PostAsync($"/inspections/{id}/validation", null,
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal(report, await client.GetByteArrayAsync($"/inspections/{id}/report", cancellationToken: TestContext.Current.CancellationToken));
+        using var mutation = await client.PutAsJsonAsync($"/inspections/{id}/signature", new
+        {
+            signerName = "Autre", accepted = true, signaturePngBase64 = SignatureBase64
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, mutation.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReportFailure_RollsBackValidationAndEquipmentTransitions()
+    {
+        using var client = await factory.CreateAuthenticatedClientAsync();
+        var seed = await SeedAsync();
+        var template = await JsonAsync(await TemplateAsync(client, seed.CategoryId));
+        var inspection = await JsonAsync(await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode));
+        Guid id = inspection.GetProperty("id").GetGuid();
+        Guid pointId = template.GetProperty("points")[0].GetProperty("id").GetGuid();
+        var saved = await JsonAsync(await SaveAsync(client, id, pointId, true));
+        Guid answerId = saved.GetProperty("answers")[0].GetProperty("id").GetGuid();
+        using var form = new MultipartFormDataContent();
+        var invalidImage = new ByteArrayContent([1, 2, 3]);
+        invalidImage.Headers.ContentType = new("image/png");
+        form.Add(invalidImage, "file", "broken.png");
+        await JsonAsync(await client.PostAsync($"/inspections/{id}/answers/{answerId}/photos", form,
+            cancellationToken: TestContext.Current.CancellationToken));
+        await SignAsync(client, id);
+        using var failure = await client.PostAsync($"/inspections/{id}/validation", null,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, failure.StatusCode);
+        var persisted = await JsonAsync(await client.GetAsync($"/inspections/{id}", cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal("Draft", persisted.GetProperty("status").GetString());
+        Assert.False(persisted.GetProperty("hasReport").GetBoolean());
+        var equipment = await JsonAsync(await client.GetAsync($"/equipments/{seed.EquipmentId}", cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal("Available", equipment.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task Templates_RequireAdministratorAndExistingCategoryAndPreserveOrder()
+    {
+        using var admin = await factory.CreateAuthenticatedClientAsync(Role.Admin);
+        using var agency = await factory.CreateAuthenticatedClientAsync(Role.Agency);
+        var seed = await SeedAsync();
+        Assert.Equal(HttpStatusCode.Forbidden, (await TemplateAsync(agency, seed.CategoryId)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await TemplateAsync(admin, Guid.NewGuid())).StatusCode);
+        using var response = await admin.PostAsJsonAsync("/inspection-templates", new
+        {
+            equipmentCategoryId = seed.CategoryId,
+            points = new[] { new { description = "Premier", photoId = (Guid?)null },
+                new { description = "Second", photoId = (Guid?)null } }
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var template = await JsonAsync(response);
+        Guid id = template.GetProperty("id").GetGuid();
+        var latest = await JsonAsync(await admin.GetAsync($"/equipment-categories/{seed.CategoryId}/inspection-template",
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal(id, latest.GetProperty("id").GetGuid());
+        Assert.Equal("Premier", latest.GetProperty("points")[0].GetProperty("description").GetString());
+        Assert.Equal("Second", latest.GetProperty("points")[1].GetProperty("description").GetString());
+        using var empty = await admin.PostAsJsonAsync("/inspection-templates", new
+        {
+            equipmentCategoryId = seed.CategoryId, points = Array.Empty<object>()
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
     }
 
     [Fact]
