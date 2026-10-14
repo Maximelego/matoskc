@@ -237,6 +237,53 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
     }
 
     [Fact]
+    public async Task SearchAndCancellation_KeepAuditAndAllowAnotherDeparture()
+    {
+        using var client = await factory.CreateAuthenticatedClientAsync();
+        var seed = await SeedAsync();
+        await JsonAsync(await TemplateAsync(client, seed.CategoryId));
+        var inspection = await JsonAsync(await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode));
+        Guid id = inspection.GetProperty("id").GetGuid();
+        var draftPage = await JsonAsync(await client.GetAsync($"/inspections?equipmentId={seed.EquipmentId}&status=Draft&limit=1",
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal(1, draftPage.GetProperty("total").GetInt32());
+        Assert.Equal(id, draftPage.GetProperty("inspections")[0].GetProperty("id").GetGuid());
+        using var cancelled = await client.PostAsJsonAsync($"/inspections/{id}/cancellation", new { reason = "Abandon" },
+            cancellationToken: TestContext.Current.CancellationToken);
+        var result = await JsonAsync(cancelled);
+        Assert.Equal("Cancelled", result.GetProperty("status").GetString());
+        Assert.Equal("Abandon", result.GetProperty("cancellationReason").GetString());
+        var rental = await JsonAsync(await client.GetAsync($"/rentals/{inspection.GetProperty("rentalId").GetGuid()}",
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal("Cancelled", rental.GetProperty("status").GetString());
+        var page = await JsonAsync(await client.GetAsync($"/inspections?equipmentId={seed.EquipmentId}&commandNumber=001234",
+            cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal(1, page.GetProperty("total").GetInt32());
+        Assert.Equal("Cancelled", page.GetProperty("inspections")[0].GetProperty("status").GetString());
+        using var invalid = await client.GetAsync("/inspections?commandNumber=123", cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Cancellation_RequiresCsrfAndOperatorRole()
+    {
+        using var client = await factory.CreateAuthenticatedClientAsync();
+        var seed = await SeedAsync();
+        await JsonAsync(await TemplateAsync(client, seed.CategoryId));
+        var inspection = await JsonAsync(await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode));
+        Guid id = inspection.GetProperty("id").GetGuid();
+        using var admin = await factory.CreateAuthenticatedClientAsync(Role.Admin);
+        using var forbidden = await admin.PostAsJsonAsync($"/inspections/{id}/cancellation", new { reason = "Abandon" },
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
+        using var rejected = await client.PostAsJsonAsync($"/inspections/{id}/cancellation", new { reason = "Abandon" },
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+    }
+
+    [Fact]
     public async Task AgencyList_IsPublicAndAdministrationRemainsProtected()
     {
         using var anonymous = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
@@ -263,7 +310,9 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         await JsonAsync(await TemplateAsync(admin, seed.CategoryId));
         var departure = await JsonAsync(await DepartureAsync(admin, seed.EquipmentId, seed.AgencyCode));
         using var agency = await factory.CreateAuthenticatedClientAsync(Role.Agency);
-        Assert.Equal(HttpStatusCode.Forbidden, (await agency.GetAsync("/inspections", cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
+        var ownPage = await JsonAsync(await agency.GetAsync("/inspections", cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal(0, ownPage.GetProperty("total").GetInt32());
+        Assert.Equal(0, ownPage.GetProperty("inspections").GetArrayLength());
         Assert.Equal(HttpStatusCode.Forbidden,
             (await agency.GetAsync($"/inspections/{departure.GetProperty("id").GetGuid()}", cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden,

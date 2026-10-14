@@ -50,7 +50,10 @@ public sealed record InspectionResponse(
     string? SignerName,
     DateTimeOffset? SignedAt,
     string? AcceptanceText,
-    bool HasReport
+    bool HasReport,
+    DateTimeOffset? CancelledAt,
+    Guid? CancelledByAccountId,
+    string? CancellationReason
 );
 
 public sealed record SignInspectionRequest(string SignerName, string SignaturePngBase64, bool Accepted);
@@ -65,7 +68,8 @@ public sealed record RentalResponse(
     Guid? ReturnInspectionId,
     DateTimeOffset? DepartedAt,
     DateTimeOffset? ReturnedAt,
-    ClientInput Client
+    ClientInput Client,
+    DateTimeOffset? CancelledAt
 );
 
 public sealed class InspectionOperationException(int statusCode, string message) : Exception(message)

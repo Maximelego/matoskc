@@ -53,7 +53,8 @@ public sealed class InspectionsRepository(MatosKCDbContext db) : IInspectionsRep
         Complete.SingleOrDefaultAsync(inspection => inspection.Id == inspectionId, ct);
 
     public Task<InspectionEntity?> GetForRentalAsync(Guid rentalId, InspectionType type, CancellationToken ct = default) =>
-        Complete.SingleOrDefaultAsync(inspection => inspection.RentalId == rentalId && inspection.Type == type, ct);
+        Complete.SingleOrDefaultAsync(inspection => inspection.RentalId == rentalId && inspection.Type == type
+            && inspection.Status != InspectionStatus.Cancelled, ct);
 
     public async Task<IReadOnlyList<InspectionEntity>> ListAsync(
         Guid? rentalId,

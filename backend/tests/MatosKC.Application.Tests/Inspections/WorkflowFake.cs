@@ -112,7 +112,8 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
         Task.FromResult(Rentals.SingleOrDefault(value => value.EquipmentId == id && value.Status == RentalStatus.Active));
 
     public Task<Rental?> GetOpenForEquipmentAsync(Guid id, CancellationToken ct = default) =>
-        Task.FromResult(Rentals.SingleOrDefault(value => value.EquipmentId == id && value.Status != RentalStatus.Completed));
+        Task.FromResult(Rentals.SingleOrDefault(value => value.EquipmentId == id
+            && (value.Status == RentalStatus.Draft || value.Status == RentalStatus.Active)));
 
     public Task AddAsync(Rental rental, CancellationToken ct = default)
     {
@@ -126,7 +127,7 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
         Task.FromResult(Inspections.SingleOrDefault(value => value.Id == id));
 
     public Task<InspectionEntity?> GetForRentalAsync(Guid id, InspectionType type, CancellationToken ct = default) =>
-        Task.FromResult(Inspections.SingleOrDefault(value => value.RentalId == id && value.Type == type));
+        Task.FromResult(Inspections.SingleOrDefault(value => value.RentalId == id && value.Type == type && value.Status != InspectionStatus.Cancelled));
 
     public Task AddInspectionAsync(InspectionEntity inspection, CancellationToken ct = default)
     {

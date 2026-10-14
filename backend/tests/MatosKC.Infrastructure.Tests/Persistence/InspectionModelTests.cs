@@ -19,6 +19,10 @@ public sealed class InspectionModelTests
         Assert.NotNull(inspection.FindPrimaryKey());
         Assert.Equal("_answers", inspection.FindNavigation(nameof(InspectionEntity.Answers))!.FieldInfo!.Name);
         Assert.True(inspection.FindProperty("xmin")!.IsConcurrencyToken);
+        var liveTypeIndex = inspection.GetIndexes().Single(index => index.IsUnique
+            && index.Properties.Select(property => property.Name).SequenceEqual(new[] { "RentalId", "Type" }));
+        Assert.Equal("status <> 'Cancelled'", liveTypeIndex.GetFilter());
+        Assert.Equal(1000, inspection.FindProperty(nameof(InspectionEntity.CancellationReason))!.GetMaxLength());
         Assert.True(db.Model.FindEntityType(typeof(Rental))!.FindProperty("xmin")!.IsConcurrencyToken);
         Assert.True(db.Model.FindEntityType(typeof(Equipment))!.FindProperty("xmin")!.IsConcurrencyToken);
         var answers = db.Model.FindEntityType(typeof(InspectionAnswer))!;

@@ -37,6 +37,7 @@ public sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         {
             number.Property(value => value.AgencyCode).HasColumnName("agency_code");
             number.Property(value => value.Value).HasColumnName("command_value").IsRequired();
+            number.HasIndex(value => value.Value);
         });
         builder.Navigation(client => client.CommandNumber).IsRequired();
         InspectionColumns.Apply(builder);
@@ -77,11 +78,16 @@ public sealed class InspectionConfiguration : IEntityTypeConfiguration<Inspectio
         builder.HasOne<Rental>().WithMany().HasForeignKey(inspection => inspection.RentalId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<InspectionTemplate>().WithMany().HasForeignKey(inspection => inspection.TemplateId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Account>().WithMany().HasForeignKey(inspection => inspection.CreatedByAccountId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Account>().WithMany().HasForeignKey(inspection => inspection.CancelledByAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Property(inspection => inspection.CancellationReason).HasMaxLength(1000);
+        builder.HasIndex(inspection => new { inspection.Status, inspection.StartedAt });
         builder.HasMany(inspection => inspection.Answers).WithOne()
             .HasForeignKey(answer => answer.InspectionId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(inspection => inspection.Answers).HasField("_answers")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
-        builder.HasIndex(inspection => new { inspection.RentalId, inspection.Type }).IsUnique();
+        builder.HasIndex(inspection => new { inspection.RentalId, inspection.Type }).IsUnique()
+            .HasFilter("status <> 'Cancelled'");
         InspectionColumns.Apply(builder);
         builder.Property<uint>("xmin").IsRowVersion();
     }

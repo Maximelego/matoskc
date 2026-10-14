@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineEmits, defineProps, onMounted, ref, withDefaults } from "vue";
+import { onMounted, ref } from "vue";
 import { agenciesApi } from "../../api/agencies";
 import type { AgencyDto } from "../../api/agencies/dto";
 import type { LoginRequestDto } from "../../api/auth";

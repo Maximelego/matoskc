@@ -17,9 +17,9 @@ public sealed record CommandNumber
             throw new ArgumentException("Command number cannot be null or empty.", nameof(value));
         }
 
-        if (value.Length < 6)
+        if (value.Length != 6 || value.Any(character => character is < '0' or > '9'))
         {
-            throw new ArgumentException("Command number must contain at least 6 characters.", nameof(value));
+            throw new ArgumentException("Command number must contain exactly 6 ASCII digits.", nameof(value));
         }
 
         AgencyCode = agencyCode;

@@ -1,424 +1,123 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import {
-  inspectionHttpApi,
-  type InspectionRecord,
-  type InspectionDto,
-} from "../../api/inspections";
-import { api } from "../../api/client";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { equipmentsApi } from "../../api/equipments";
-import { inspectionTemplatesApi } from "../../api/inspection-templates";
-
-async function displayRecord(item: InspectionDto): Promise<InspectionRecord> {
-  const [equipment, version] = await Promise.all([
-    equipmentsApi.getById(item.equipmentId),
-    inspectionTemplatesApi.getVersionById(item.templateVersionId),
-  ]);
-  return {
-    id: item.id,
-    equipmentId: item.equipmentId,
-    equipmentName: equipment.name,
-    serialNumber: equipment.serialNumber,
-    direction: item.type === "Return" ? "return" : "departure",
-    performedAt: item.validatedAt ?? item.startedAt,
-    operatorFirstName: item.operatorFirstName,
-    templateVersion: version.versionNumber,
-    sections: version.steps
-      .slice()
-      .sort((a, b) => a.position - b.position)
-      .map((step) => ({
-        id: step.id,
-        title: step.title,
-        answers: step.points
-          .slice()
-          .sort((a, b) => a.position - b.position)
-          .map((point) => {
-            const answer = item.answers.find((a) => a.templatePointId === point.id);
-            return {
-              questionId: point.id,
-              label: point.label,
-              value:
-                answer?.result === "Compliant"
-                  ? ("compliant" as const)
-                  : answer?.result === "NonCompliant"
-                    ? ("nonCompliant" as const)
-                    : answer?.result === "NotApplicable"
-                      ? "Sans objet"
-                      : (answer?.textValue ??
-                        answer?.choiceValue ??
-                        answer?.numberValue ??
-                        "Non renseigné"),
-              observation: answer?.observation ?? undefined,
-              photoUrls: (answer?.photoIds ?? []).map((photoId) =>
-                api.url(
-                  `/inspections/${encodeURIComponent(item.id)}/photos/${encodeURIComponent(photoId)}`,
-                ),
-              ),
-            };
-          }),
-      })),
-  };
-}
-import BaseButton from "../common/button/BaseButton.vue";
-import BaseIcon from "../common/icon/BaseIcon.vue";
+import { inspectionHttpApi } from "../../api/inspections";
+import type { InspectionDto } from "../../api/inspections";
 import BaseModal from "../common/modal/BaseModal.vue";
 import InspectionDetails from "./InspectionDetails.vue";
 
-const inspections = ref<InspectionRecord[]>([]);
-const loading = ref(true);
+const route = useRoute();
+const router = useRouter();
+const inspections = ref<InspectionDto[]>([]);
+const equipmentNames = ref<Record<string, string>>({});
+const loading = ref(false);
 const error = ref("");
 const search = ref("");
-const direction = ref("all");
+const type = ref("all");
 const order = ref("newest");
-const selected = ref<InspectionRecord | null>(null);
-const detailOpen = ref(false);
-const formatDate = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
-
-const filtered = computed(() => {
-  const query = search.value.trim().toLocaleLowerCase("fr");
-  return inspections.value
-    .filter((item) => direction.value === "all" || item.direction === direction.value)
-    .filter((item) =>
-      `${item.equipmentName} ${item.serialNumber} ${item.operatorFirstName}`
-        .toLocaleLowerCase("fr")
-        .includes(query),
-    )
-    .sort((a, b) =>
-      order.value === "newest"
-        ? b.performedAt.localeCompare(a.performedAt)
-        : a.performedAt.localeCompare(b.performedAt),
-    );
-});
+const selected = ref<InspectionDto | null>(null);
+const equipmentId = computed(() => typeof route.query.equipmentId === "string" ? route.query.equipmentId : "");
+const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
+const filtered = computed(() => inspections.value
+  .filter(item => !equipmentId.value || item.equipmentId === equipmentId.value)
+  .filter(item => type.value === "all" || item.type === type.value)
+  .filter(item => `${equipmentNames.value[item.equipmentId] ?? ""} ${item.operatorFirstName}`
+    .toLocaleLowerCase("fr").includes(search.value.trim().toLocaleLowerCase("fr")))
+  .sort((a, b) => order.value === "newest"
+    ? (b.validatedAt ?? b.startedAt).localeCompare(a.validatedAt ?? a.startedAt)
+    : (a.validatedAt ?? a.startedAt).localeCompare(b.validatedAt ?? b.startedAt)));
 
 async function load(): Promise<void> {
-  loading.value = true;
-  error.value = "";
+  loading.value = true; error.value = "";
   try {
-    const result = await inspectionHttpApi.list({ status: "Validated" });
-    inspections.value = await Promise.all(result.inspections.map(displayRecord));
-  } catch {
-    error.value = "Impossible de charger les états des lieux. Veuillez réessayer.";
-  } finally {
-    loading.value = false;
-  }
+    const all: InspectionDto[] = [];
+    // The API currently has no equipmentId filter. Read its pages before filtering locally.
+    for (let offset = 0; ; offset += 100) {
+      const page = await inspectionHttpApi.list({ status: "Validated", offset, limit: 100 });
+      all.push(...page.inspections);
+      if (page.inspections.length < 100) break;
+    }
+    inspections.value = all;
+    const ids = [...new Set(all.map(item => item.equipmentId))];
+    const names = await Promise.all(ids.map(async id => {
+      try { return [id, (await equipmentsApi.getById(id)).name] as const; }
+      catch { return [id, id] as const; }
+    }));
+    equipmentNames.value = Object.fromEntries(names);
+    const selectedId = route.query.inspectionId;
+    selected.value = typeof selectedId === "string" ? all.find(item => item.id === selectedId) ?? null : null;
+  } catch { error.value = "Impossible de charger les états des lieux. Veuillez réessayer."; }
+  finally { loading.value = false; }
 }
-
-function showDetail(item: InspectionRecord): void {
+function show(item: InspectionDto): void {
   selected.value = item;
-  detailOpen.value = true;
+  void router.replace({ query: { ...route.query, inspectionId: item.id } });
 }
-
-onMounted(() => {
-  void load();
+function close(): void {
+  selected.value = null;
+  const query = { ...route.query }; delete query.inspectionId;
+  void router.replace({ query });
+}
+function clearEquipment(): void {
+  const query = { ...route.query }; delete query.equipmentId;
+  void router.replace({ query });
+}
+watch(() => route.query.inspectionId, id => {
+  selected.value = typeof id === "string" ? inspections.value.find(item => item.id === id) ?? null : null;
 });
+onMounted(() => { void load(); });
 </script>
-
 <template>
-  <main
-    class="inspection-admin"
-    aria-labelledby="inspection-admin-title"
-  >
-    <header class="inspection-admin__header">
-      <div>
-        <h1 id="inspection-admin-title">États des lieux</h1>
-        <p>Consultez les contrôles et les défauts relevés sur les équipements.</p>
-      </div>
-      <BaseButton
-        variant="outline"
-        size="small"
-        :loading="loading"
-        @click="load"
-      >
-        <template #leading
-          ><BaseIcon
-            name="refresh"
-            :size="18"
-        /></template>
-        Actualiser
-      </BaseButton>
-    </header>
-
-    <div
-      v-if="error"
-      class="inspection-admin__error"
-      role="alert"
-    >
-      <p>{{ error }}</p>
-      <BaseButton
-        variant="outline"
-        size="small"
-        @click="load"
-        >Réessayer</BaseButton
-      >
-    </div>
-    <p
-      v-if="loading"
-      role="status"
-    >
-      Chargement des états des lieux…
+  <main class="inspection-admin">
+    <header><div><h1>{{ equipmentId ? 'Chronologie des états des lieux' : 'États des lieux' }}</h1>
+      <p>Consultez les contrôles réalisés et les documents signés.</p></div>
+      <button type="button" :disabled="loading" @click="load">Actualiser</button></header>
+    <p v-if="equipmentId" class="inspection-admin__context">
+      Équipement : {{ equipmentNames[equipmentId] ?? equipmentId }}
+      <button type="button" @click="clearEquipment">Afficher tous les états des lieux</button>
     </p>
-
+    <p v-if="error" role="alert">{{ error }} <button type="button" @click="load">Réessayer</button></p>
+    <p v-if="loading" role="status">Chargement des états des lieux…</p>
     <template v-else-if="!error">
       <div class="inspection-admin__filters">
-        <label
-          >Rechercher
-          <input
-            v-model="search"
-            type="search"
-            placeholder="Équipement, série ou opérateur"
-          />
-        </label>
-        <label
-          >Type
-          <select v-model="direction">
-            <option value="all">Tous</option>
-            <option value="departure">Départs</option>
-            <option value="return">Retours</option>
-          </select>
-        </label>
-        <label
-          >Trier par date
-          <select v-model="order">
-            <option value="newest">Plus récents</option>
-            <option value="oldest">Plus anciens</option>
-          </select>
-        </label>
+        <label>Rechercher<input v-model="search" type="search" placeholder="Équipement ou opérateur" /></label>
+        <label>Type<select v-model="type"><option value="all">Tous</option><option value="Departure">Départs</option><option value="Return">Retours</option></select></label>
+        <label>Ordre<select v-model="order"><option value="newest">Plus récents</option><option value="oldest">Plus anciens</option></select></label>
       </div>
-
-      <p
-        class="inspection-admin__count"
-        role="status"
-      >
-        {{ filtered.length }} état{{ filtered.length > 1 ? "s" : "" }} des lieux
-      </p>
-      <p
-        v-if="!filtered.length"
-        class="inspection-admin__empty"
-      >
-        Aucun état des lieux ne correspond à ces critères.
-      </p>
-
-      <div
-        v-else
-        class="inspection-admin__table-scroll"
-      >
-        <table class="inspection-admin__table">
-          <thead>
-            <tr>
-              <th scope="col">Équipement</th>
-              <th scope="col">Date</th>
-              <th scope="col">Type</th>
-              <th scope="col">Opérateur</th>
-              <th scope="col">Défauts</th>
-              <th scope="col">Détails</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="item in filtered"
-              :key="item.id"
-            >
-              <th scope="row">
-                <strong>{{ item.equipmentName }}</strong
-                ><small>{{ item.serialNumber }}</small>
-              </th>
-              <td>{{ formatDate.format(new Date(item.performedAt)) }}</td>
-              <td>{{ item.direction === "return" ? "Retour" : "Départ" }}</td>
-              <td>{{ item.operatorFirstName }}</td>
-              <td>
-                {{
-                  item.sections
-                    .flatMap((section) => section.answers)
-                    .filter((answer) => answer.value === "nonCompliant").length
-                }}
-              </td>
-              <td>
-                <button
-                  type="button"
-                  class="inspection-admin__view"
-                  :aria-label="`Consulter l’état des lieux de ${item.equipmentName}`"
-                  @click="showDetail(item)"
-                >
-                  <BaseIcon
-                    name="view"
-                    :size="18"
-                  /><span>Consulter</span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <p role="status">{{ filtered.length }} état(s) des lieux</p>
+      <p v-if="!filtered.length">Aucun état des lieux ne correspond à ces critères.</p>
+      <ul v-else class="inspection-admin__list">
+        <li v-for="item in filtered" :key="item.id">
+          <div><strong>{{ equipmentNames[item.equipmentId] ?? item.equipmentId }}</strong>
+            <span>{{ item.type === 'Departure' ? 'Départ' : 'Retour' }} - {{ date.format(new Date(item.validatedAt ?? item.startedAt)) }}</span>
+            <span>Opérateur : {{ item.operatorFirstName }} - {{ item.answers.filter(a => a.result === 'NonCompliant').length }} défaut(s)</span></div>
+          <button type="button" @click="show(item)">Consulter</button>
+        </li>
+      </ul>
     </template>
-
-    <BaseModal
-      :open="detailOpen"
-      title="Détail de l’état des lieux"
-      @close="detailOpen = false"
-      @closed="selected = null"
-    >
-      <InspectionDetails
-        v-if="selected"
-        :inspection="selected"
-      />
+    <BaseModal :open="Boolean(selected)" title="Détail de l’état des lieux" @close="close">
+      <InspectionDetails v-if="selected" :inspection="selected" />
     </BaseModal>
   </main>
 </template>
-
 <style scoped lang="scss">
-.inspection-admin {
-  display: grid;
-  gap: 1.25rem;
-  min-width: 0;
-  max-width: 80rem;
-  margin-inline: auto;
-}
-.inspection-admin__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.inspection-admin__header h1 {
-  margin: 0;
-}
-.inspection-admin__header p {
-  margin: 0.4rem 0 0;
-  color: var(--color-text-secondary);
-}
-.inspection-admin__demo {
-  margin: 0;
-  padding: 0.8rem 1rem;
-  border-radius: 0.5rem;
-  background: var(--color-warning-soft);
-}
-.inspection-admin__error {
-  padding: 1rem;
-  border: 1px solid var(--color-danger);
-  border-radius: 0.65rem;
-}
-.inspection-admin__filters {
-  display: grid;
-  grid-template-columns: minmax(12rem, 2fr) repeat(2, minmax(10rem, 1fr));
-  gap: 0.75rem;
-}
-.inspection-admin__filters label {
-  display: grid;
-  gap: 0.35rem;
-}
-.inspection-admin__filters input,
-.inspection-admin__filters select {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.55rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-surface);
-  font: inherit;
-}
-.inspection-admin__count {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-.inspection-admin__empty {
-  padding: 2rem;
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-.inspection-admin__table-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  background: var(--color-surface);
-}
-.inspection-admin__table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-.inspection-admin__table th,
-.inspection-admin__table td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-}
-.inspection-admin__table thead {
-  background: var(--color-surface-secondary);
-}
-.inspection-admin__table tbody tr:nth-child(even) {
-  background: var(--color-surface-secondary);
-}
-.inspection-admin__table tbody tr:hover,
-.inspection-admin__table tbody tr:focus-within {
-  background: var(--color-primary-soft);
-}
-.inspection-admin__table tbody th small {
-  display: block;
-  margin-top: 0.2rem;
-  color: var(--color-text-secondary);
-  font-weight: normal;
-}
-.inspection-admin__view {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2.75rem;
-  border: 0;
-  color: var(--color-primary);
-  background: transparent;
-  font: inherit;
-  cursor: pointer;
-}
-.inspection-admin__view:focus-visible {
-  outline: 0.1875rem solid var(--color-focus);
-  outline-offset: 0.125rem;
-}
-@media (max-width: 48rem) {
-  .inspection-admin__filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .inspection-admin__filters label:first-child {
-    grid-column: 1 / -1;
-  }
-  .inspection-admin__table-scroll {
-    overflow: visible;
-    border: 0;
-    background: transparent;
-  }
-  .inspection-admin__table,
-  .inspection-admin__table tbody,
-  .inspection-admin__table tr {
-    display: block;
-  }
-  .inspection-admin__table thead {
-    display: none;
-  }
-  .inspection-admin__table tbody tr {
-    display: grid;
-    gap: 0.25rem;
-    margin-bottom: 0.75rem;
-    padding: 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-    background: var(--color-surface);
-  }
-  .inspection-admin__table th,
-  .inspection-admin__table td {
-    padding: 0.2rem;
-    border: 0;
-  }
-  .inspection-admin__table td:last-child {
-    justify-self: start;
-  }
-}
-@media (max-width: 24rem) {
-  .inspection-admin__filters {
-    grid-template-columns: 1fr;
-  }
-  .inspection-admin__filters label:first-child {
-    grid-column: auto;
-  }
-}
+.inspection-admin { display: grid; gap: 1.25rem; max-width: 78rem; margin-inline: auto; }
+header { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+h1, header p { margin: 0; }
+.inspection-admin__context { padding: .8rem; background: var(--color-surface-secondary); border-radius: .5rem; }
+.inspection-admin__filters { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: .75rem; }
+.inspection-admin__filters label { display: grid; gap: .35rem; }
+.inspection-admin__filters input, .inspection-admin__filters select { min-height: 2.75rem; padding: .5rem;
+  color: var(--color-text); background: var(--color-input-background); border: 1px solid var(--color-border); border-radius: .5rem; }
+.inspection-admin__list { display: grid; gap: .6rem; list-style: none; padding: 0; }
+.inspection-admin__list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: .85rem; border: 1px solid var(--color-border); border-radius: .6rem; background: var(--color-surface); }
+.inspection-admin__list li div { display: grid; gap: .3rem; }
+.inspection-admin__list span { color: var(--color-text-secondary); }
+button { min-height: 2.5rem; padding: .45rem .7rem; color: var(--color-text); background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: .5rem; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--color-focus); }
+@media (max-width: 40rem) { .inspection-admin__filters { grid-template-columns: 1fr; }
+  .inspection-admin__list li { align-items: start; flex-direction: column; } }
 </style>

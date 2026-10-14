@@ -118,7 +118,10 @@ public sealed class InspectionWorkflowContext(
         inspection.SignerName,
         inspection.SignedAt,
         inspection.AcceptanceText,
-        inspection.HasReport
+        inspection.HasReport,
+        inspection.CancelledAt,
+        inspection.CancelledByAccountId,
+        inspection.CancellationReason
     );
 
     public async Task<RentalResponse> RentalResponseAsync(Rental rental, CancellationToken ct)
@@ -130,7 +133,8 @@ public sealed class InspectionWorkflowContext(
             rental.Id, rental.ClientId, rental.EquipmentId, rental.Status, rental.CreatedAt,
             rental.DepartureInspectionId, rental.ReturnInspectionId, rental.DepartedAt, rental.ReturnedAt,
             new ClientInput(client.DisplayName, client.Email, client.Phone,
-                client.CommandNumber.AgencyCode, client.CommandNumber.Value)
+                client.CommandNumber.AgencyCode, client.CommandNumber.Value),
+            rental.CancelledAt
         );
     }
 }

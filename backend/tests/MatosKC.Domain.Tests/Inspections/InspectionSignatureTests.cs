@@ -83,8 +83,8 @@ public sealed class InspectionSignatureTests
 
     [Theory]
     [InlineData("123456")]
-    [InlineData("1234567")]
-    public void CommandNumber_AllowsAtLeastSixCharacters(string value)
+    [InlineData("000123")]
+    public void CommandNumber_RequiresExactlySixDigits(string value)
     {
         Assert.Equal(value, new CommandNumber(83, value).Value);
         Assert.Throws<ArgumentException>(() => new CommandNumber(83, "12345"));

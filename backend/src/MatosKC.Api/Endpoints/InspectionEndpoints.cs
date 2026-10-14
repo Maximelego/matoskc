@@ -22,6 +22,8 @@ public static class InspectionEndpoints
 
         group.MapGet("/", ListAsync);
         group.MapGet("/{id:guid}", GetAsync);
+        group.MapPost("/{id:guid}/cancellation", CancelAsync)
+            .RequireAuthorization("PerformInspections");
 
         group.MapPut("/{id:guid}/draft", SaveDraftAsync)
             .RequireAuthorization("PerformInspections");
@@ -170,23 +172,20 @@ public static class InspectionEndpoints
         Guid id, QueryInspectionsUseCase useCase, HttpContext context, IAgencyRepository agencies, CancellationToken ct
     ) => Results.Ok(await useCase.GetAsync(id, await ActorAsync(context, agencies, ct), ct));
 
-    private static async Task<IResult> ListAsync(
-        Guid? rentalId,
-        InspectionType? type,
-        InspectionStatus? status,
-        int? offset,
-        int? limit,
-        QueryInspectionsUseCase useCase,
-        HttpContext context,
-        IAgencyRepository agencies,
-        CancellationToken ct
-    )
-    {
-        var inspections = await useCase.ListAsync(await ActorAsync(context, agencies, ct),
-            rentalId, type, status, offset ?? 0, limit ?? 50, ct);
+    private static async Task<IResult> CancelAsync(
+        Guid id, CancelInspectionRequest request, CancelInspectionUseCase useCase,
+        HttpContext context, IAgencyRepository agencies, CancellationToken ct
+    ) => Results.Ok(await useCase.ExecuteAsync(id, request, await ActorAsync(context, agencies, ct), ct));
 
-        return Results.Ok(new { inspections });
-    }
+    private static async Task<IResult> ListAsync(
+        Guid? rentalId, Guid? equipmentId, Guid? agencyId, string? commandNumber,
+        DateTimeOffset? from, DateTimeOffset? to,
+        InspectionType? type, InspectionStatus? status, int? offset, int? limit,
+        SearchInspectionsUseCase useCase,
+        HttpContext context, IAgencyRepository agencies, CancellationToken ct
+    ) => Results.Ok(await useCase.ExecuteAsync(
+        new InspectionSearchQuery(rentalId, equipmentId, agencyId, commandNumber, from, to,
+            type, status, offset ?? 0, limit ?? 50), await ActorAsync(context, agencies, ct), ct));
 
     private static async Task<IResult> GetRentalAsync(
         Guid id, QueryInspectionsUseCase useCase, HttpContext context, IAgencyRepository agencies, CancellationToken ct

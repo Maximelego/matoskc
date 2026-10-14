@@ -9,7 +9,8 @@ public enum InspectionType
 public enum InspectionStatus
 {
     Draft,
-    Validated
+    Validated,
+    Cancelled
 }
 
 public enum InspectionResult

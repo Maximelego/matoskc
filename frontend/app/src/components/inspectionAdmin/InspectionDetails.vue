@@ -1,66 +1,104 @@
 <script setup lang="ts">
-import type { InspectionRecord } from "../../api/inspections";
+import { onUnmounted, ref, watch } from "vue";
+import { inspectionHttpApi } from "../../api/inspections";
+import type { InspectionDto, InspectionTemplateDto, RentalDto } from "../../api/inspections";
+import CopyButton from "../common/copy/CopyButton.vue";
 
-const props = defineProps<{ inspection: InspectionRecord }>();
+const props = defineProps<{ inspection: InspectionDto }>();
+const rental = ref<RentalDto | null>(null);
+const template = ref<InspectionTemplateDto | null>(null);
+const photos = ref<Record<string, string>>({});
+const signatureUrl = ref("");
+const error = ref("");
+const loading = ref(false);
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
-const defects = () => props.inspection.sections.flatMap((section) => section.answers).filter((answer) => answer.value === "nonCompliant");
-function answerLabel(value: string | number): string {
-  if (value === "compliant") return "Conforme";
-  if (value === "nonCompliant") return "Non conforme";
-  return String(value);
+function answerFor(pointId: string) {
+  return props.inspection.answers.find(answer => answer.templatePointId === pointId);
+}
+function release(): void {
+  Object.values(photos.value).forEach(url => URL.revokeObjectURL(url));
+  if (signatureUrl.value) URL.revokeObjectURL(signatureUrl.value);
+  photos.value = {}; signatureUrl.value = "";
+}
+watch(() => props.inspection.id, async (id, _old, onCleanup) => {
+  release(); loading.value = true; error.value = "";
+  let cancelled = false;
+  onCleanup(() => { cancelled = true; release(); });
+  try {
+    const [r, t] = await Promise.all([
+      inspectionHttpApi.getRental(props.inspection.rentalId), inspectionHttpApi.getTemplate(props.inspection.templateId),
+    ]);
+    if (cancelled) return;
+    rental.value = r; template.value = t;
+    const entries = await Promise.all(props.inspection.answers.flatMap(answer => answer.photoIds.map(async photoId =>
+      [photoId, URL.createObjectURL(await inspectionHttpApi.getPhoto(id, photoId))] as const)));
+    if (cancelled) { entries.forEach(([, url]) => URL.revokeObjectURL(url)); return; }
+    photos.value = Object.fromEntries(entries);
+    if (props.inspection.signedAt) {
+      const url = URL.createObjectURL(await inspectionHttpApi.getSignature(id));
+      if (cancelled) URL.revokeObjectURL(url); else signatureUrl.value = url;
+    }
+  } catch { if (!cancelled) error.value = "Certains éléments de l’état des lieux n’ont pas pu être chargés."; }
+  finally { if (!cancelled) loading.value = false; }
+}, { immediate: true });
+onUnmounted(release);
+
+async function downloadReport(): Promise<void> {
+  try {
+    const url = URL.createObjectURL(await inspectionHttpApi.getReport(props.inspection.id));
+    const link = document.createElement("a");
+    link.href = url; link.download = `etat-des-lieux-${props.inspection.id}.pdf`;
+    link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch { error.value = "Impossible de télécharger le PDF."; }
 }
 </script>
-
 <template>
-  <article class="inspection-detail">
-    <dl class="inspection-detail__metadata">
-      <div><dt>Équipement</dt><dd>{{ inspection.equipmentName }}</dd></div>
-      <div><dt>Numéro de série</dt><dd>{{ inspection.serialNumber }}</dd></div>
-      <div><dt>Type</dt><dd>{{ inspection.direction === "return" ? "Retour" : "Départ" }}</dd></div>
-      <div><dt>Réalisé le</dt><dd>{{ date.format(new Date(inspection.performedAt)) }}</dd></div>
+  <article class="detail">
+    <p v-if="loading" role="status">Chargement du détail…</p>
+    <p v-if="error" role="alert">{{ error }}</p>
+    <dl>
+      <div><dt>Type</dt><dd>{{ inspection.type === 'Departure' ? 'Départ' : 'Retour' }}</dd></div>
+      <div><dt>Statut</dt><dd>{{ inspection.status === 'Validated' ? 'Validé' : 'Brouillon' }}</dd></div>
       <div><dt>Opérateur</dt><dd>{{ inspection.operatorFirstName }}</dd></div>
-      <div><dt>Modèle</dt><dd>Version {{ inspection.templateVersion }}</dd></div>
+      <div><dt>Date</dt><dd>{{ date.format(new Date(inspection.validatedAt ?? inspection.startedAt)) }}</dd></div>
+      <div v-if="rental"><dt>Client</dt><dd>{{ rental.client.displayName }}</dd></div>
+      <div v-if="rental"><dt>Numéro de commande</dt><dd>{{ rental.client.commandValue }}
+        <CopyButton :value="rental.client.commandValue" label="le numéro de commande" /></dd></div>
+      <div v-if="rental"><dt>Email</dt><dd>{{ rental.client.email }}
+        <CopyButton :value="rental.client.email" label="l’adresse électronique" /></dd></div>
+      <div v-if="rental"><dt>Téléphone</dt><dd>{{ rental.client.phone }}
+        <CopyButton :value="rental.client.phone" label="le téléphone" /></dd></div>
     </dl>
-
-    <section class="inspection-detail__defects" aria-labelledby="inspection-defects-title">
-      <h3 id="inspection-defects-title">Défauts constatés ({{ defects().length }})</h3>
-      <p v-if="!defects().length">Aucun défaut constaté.</p>
-      <ul v-else>
-        <li v-for="answer in defects()" :key="answer.questionId">
-          <strong>{{ answer.label }}</strong> — {{ answer.observation || "Aucune observation" }}
-        </li>
-      </ul>
+    <section>
+      <h3>Points contrôlés</h3>
+      <ul><li v-for="point in [...(template?.points ?? [])].sort((a, b) => a.position - b.position)" :key="point.id">
+        <strong>{{ point.description }}</strong>
+        <template v-if="answerFor(point.id)">
+          : {{ answerFor(point.id)?.result === 'Compliant' ? 'Conforme' : 'Non conforme' }}
+          <p v-if="answerFor(point.id)?.observation">{{ answerFor(point.id)?.observation }}</p>
+          <a v-for="photoId in answerFor(point.id)?.photoIds ?? []" :key="photoId" :href="photos[photoId]"
+            target="_blank" rel="noopener noreferrer">Voir la photographie</a>
+        </template>
+        <span v-else> : sans réponse</span>
+      </li></ul>
     </section>
-
-    <section v-for="section in inspection.sections" :key="section.id" class="inspection-detail__section">
-      <h3>{{ section.title }}</h3>
-      <dl>
-        <div v-for="answer in section.answers" :key="answer.questionId" class="inspection-detail__answer">
-          <dt>{{ answer.label }}</dt>
-          <dd><strong>{{ answerLabel(answer.value) }}</strong></dd>
-          <dd v-if="answer.observation">Observation : {{ answer.observation }}</dd>
-          <dd v-if="answer.photoUrls.length">
-            <a v-for="(url, index) in answer.photoUrls" :key="url" :href="url" target="_blank" rel="noopener noreferrer">
-              Photographie {{ index + 1 }}
-            </a>
-          </dd>
-        </div>
-      </dl>
+    <section v-if="inspection.signedAt">
+      <h3>Signature du client</h3>
+      <p>{{ inspection.signerName }} - {{ date.format(new Date(inspection.signedAt)) }}</p>
+      <p>{{ inspection.acceptanceText }}</p>
+      <img v-if="signatureUrl" :src="signatureUrl" alt="Signature du client" class="detail__signature" />
     </section>
+    <button v-if="inspection.hasReport" type="button" @click="downloadReport">Télécharger le PDF</button>
   </article>
 </template>
-
 <style scoped lang="scss">
-.inspection-detail { display: grid; gap: 1.25rem; min-width: 0; overflow-wrap: anywhere; }
-.inspection-detail h3 { margin: 0 0 .65rem; }
-.inspection-detail dl { margin: 0; }
-.inspection-detail__metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
-.inspection-detail__metadata dt { color: var(--color-text-secondary); }
-.inspection-detail__metadata dd, .inspection-detail__answer dd { margin: .2rem 0 0; }
-.inspection-detail__defects { padding: 1rem; border-radius: .65rem; background: var(--color-warning-soft); }
-.inspection-detail__defects p, .inspection-detail__defects ul { margin-bottom: 0; }
-.inspection-detail__section { padding: 1rem; border: 1px solid var(--color-border); border-radius: .65rem; }
-.inspection-detail__answer { padding: .75rem 0; border-top: 1px solid var(--color-border); }
-.inspection-detail__answer a { display: inline-block; margin-right: .75rem; }
-@media(max-width: 35rem) { .inspection-detail__metadata { grid-template-columns: 1fr; } }
+.detail { display: grid; gap: 1.25rem; overflow-wrap: anywhere; }
+.detail dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .9rem; margin: 0; }
+.detail dt { color: var(--color-text-secondary); }
+.detail dd { margin: .25rem 0 0; }
+.detail li { padding: .65rem 0; border-bottom: 1px solid var(--color-border); }
+.detail li a { display: inline-block; margin-right: .65rem; }
+.detail__signature { max-width: 100%; max-height: 12rem; background: white; }
+button { min-height: 2.75rem; padding: .55rem .8rem; color: var(--color-text); background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: .5rem; cursor: pointer; }
 </style>

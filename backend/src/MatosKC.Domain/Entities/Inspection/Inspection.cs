@@ -30,6 +30,27 @@ public class Inspection : BaseEntity
     public byte[]? ReportPdf => _reportPdf?.ToArray();
     public bool HasReport => _reportPdf is not null;
 
+    public DateTimeOffset? CancelledAt { get; private set; }
+    public Guid? CancelledByAccountId { get; private set; }
+    public string? CancellationReason { get; private set; }
+
+    public void Cancel(Guid accountId, string reason, DateTimeOffset cancelledAt)
+    {
+        EnsureDraft();
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+
+        if (accountId == Guid.Empty || cancelledAt < StartedAt || reason.Length > 1000)
+        {
+            throw new ArgumentException("Invalid cancellation account, date or reason.");
+        }
+
+        InvalidateSignature();
+        CancelledAt = cancelledAt;
+        CancelledByAccountId = accountId;
+        CancellationReason = reason.Trim();
+        Status = InspectionStatus.Cancelled;
+    }
+
     public void Sign(string signerName, byte[] png, DateTimeOffset signedAt)
     {
         EnsureDraft();
@@ -273,7 +294,7 @@ public class Inspection : BaseEntity
         if (Status != InspectionStatus.Draft)
         {
             throw new InvalidOperationException(
-                "A validated inspection cannot be modified."
+                "Only a draft inspection can be modified."
             );
         }
     }

@@ -166,6 +166,19 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("acceptance_text");
 
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<Guid?>("CancelledByAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by_account_id");
+
                     b.Property<Guid>("CreatedByAccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_account_id");
@@ -227,12 +240,17 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CancelledByAccountId");
+
                     b.HasIndex("CreatedByAccountId");
 
                     b.HasIndex("TemplateId");
 
                     b.HasIndex("RentalId", "Type")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("status <> 'Cancelled'");
+
+                    b.HasIndex("Status", "StartedAt");
 
                     b.ToTable("inspections", (string)null);
                 });
@@ -381,6 +399,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("AgencyId")
                         .HasColumnType("uuid")
                         .HasColumnName("agency_id");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
 
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid")
@@ -592,6 +614,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("ClientId");
 
+                            b1.HasIndex("Value");
+
                             b1.ToTable("rental_clients");
 
                             b1.WithOwner()
@@ -604,6 +628,11 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.Inspection", b =>
                 {
+                    b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("CancelledByAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
                         .WithMany()
                         .HasForeignKey("CreatedByAccountId")

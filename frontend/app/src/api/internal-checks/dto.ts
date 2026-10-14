@@ -1,4 +1,9 @@
-import type { SaveInspectionAnswerDto, InspectionMediaDto } from "../inspections/dto";
+// Internal checks have not yet been migrated to the inspection API.
+export type SaveInspectionAnswerDto = {
+  templatePointId: string; result: "Compliant" | "NonCompliant" | null;
+  observation: string | null; photoIds: string[];
+};
+export type InspectionMediaDto = { id: string; inspectionId: string; answerId: string; url: string; contentType: string; uploadedAt: string };
 export type InternalCheckStatus = "Draft" | "Validated";
 export type InternalCheckDto = {
   id: string; equipmentId: string; templateVersionId: string;

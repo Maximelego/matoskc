@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, defineEmits, defineProps, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts";
 import type { EquipmentDto, EquipmentStatus } from "../../api/equipments/dto";
 import BaseModal from "../common/modal/BaseModal.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentPhoto from "./EquipmentPhoto.vue";
 import EquipmentQRCode from "./EquipmentQRCode.vue";
+import { authSession } from "../../api/auth/session";
 
 const props = defineProps<{
   equipment: EquipmentDto | null;
@@ -106,6 +107,14 @@ function submit(): void {
           <dd><EquipmentStatusBadge :status="equipment.status" /></dd>
         </div>
       </dl>
+
+      <RouterLink
+        v-if="authSession.account.value?.role === 'Admin' || authSession.account.value?.role === 'SuperAdmin'"
+        class="equipment-details__history"
+        :to="{ name: 'AdminInspections', query: { equipmentId: equipment.id } }"
+      >
+        Chronologie des états des lieux
+      </RouterLink>
 
       <form
         class="equipment-details__status"
@@ -236,6 +245,12 @@ function submit(): void {
 
   &__error {
     color: var(--color-danger);
+  }
+
+  &__history {
+    justify-self: start;
+    color: var(--color-primary);
+    text-decoration: underline;
   }
 }
 

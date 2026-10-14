@@ -52,6 +52,24 @@ public class Rental : BaseEntity
         Status = RentalStatus.Draft;
     }
 
+    public DateTimeOffset? CancelledAt { get; private set; }
+
+    public void Cancel(DateTimeOffset cancelledAt)
+    {
+        if (Status != RentalStatus.Draft)
+        {
+            throw new InvalidOperationException("Only a draft rental can be cancelled.");
+        }
+
+        if (cancelledAt < CreatedAt)
+        {
+            throw new ArgumentException("Cancellation cannot precede rental creation.", nameof(cancelledAt));
+        }
+
+        Status = RentalStatus.Cancelled;
+        CancelledAt = cancelledAt;
+    }
+
     public void ConfirmDeparture(
         Inspection departureInspection,
         DateTimeOffset departedAt
