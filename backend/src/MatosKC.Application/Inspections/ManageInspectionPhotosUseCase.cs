@@ -46,8 +46,11 @@ public sealed class ManageInspectionPhotosUseCase(InspectionWorkflowContext cont
                     throw new InspectionOperationException(404, "Inspection answer not found.");
                 }
 
+                byte[] bytes = await MatosKC.Application.Files.ImageFileReader.ReadValidatedAsync(
+                    content, contentLength, contentType, context.ImageValidator, token);
+                using var validated = new MemoryStream(bytes, writable: false);
                 storageAttempted = true;
-                await context.Storage.StoreAsync(key, content, contentType, token);
+                await context.Storage.StoreAsync(key, validated, contentType, token);
                 var media = new InspectionMedia(photoId, inspection.Id, answerId, key,
                     Path.GetFileName(fileName), contentType, contentLength);
                 inspection.AddAnswerPhoto(answerId, photoId);

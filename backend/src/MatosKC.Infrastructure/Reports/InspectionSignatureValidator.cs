@@ -3,8 +3,9 @@ namespace MatosKC.Infrastructure.Reports;
 using MatosKC.Application.Inspections;
 using MatosKC.Application.Inspections.Ports;
 using SkiaSharp;
+using MatosKC.Application.Files.Ports;
 
-public sealed class InspectionSignatureValidator : IInspectionSignatureValidator
+public sealed class InspectionSignatureValidator(IImageContentValidator images) : IInspectionSignatureValidator
 {
     public void Validate(byte[] png)
     {
@@ -18,6 +19,15 @@ public sealed class InspectionSignatureValidator : IInspectionSignatureValidator
 
         if (codec is null || codec.EncodedFormat != SKEncodedImageFormat.Png
             || codec.Info.Width is < 20 or > 2048 || codec.Info.Height is < 20 or > 2048)
+        {
+            throw Invalid();
+        }
+
+        try
+        {
+            images.Validate(png, "image/png");
+        }
+        catch (ArgumentException)
         {
             throw Invalid();
         }

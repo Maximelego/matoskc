@@ -9,14 +9,17 @@ public sealed class ReplaceEquipmentPhotoUseCase
 {
     private readonly IEquipmentPhotoRepository PhotoRepository;
     private readonly IObjectStorage ObjectStorage;
+    private readonly IImageContentValidator ImageValidator;
 
     public ReplaceEquipmentPhotoUseCase(
         IEquipmentPhotoRepository photoRepository,
-        IObjectStorage objectStorage
+        IObjectStorage objectStorage,
+        IImageContentValidator imageValidator
     )
     {
         PhotoRepository = photoRepository;
         ObjectStorage = objectStorage;
+        ImageValidator = imageValidator;
     }
 
     public async Task<EquipmentPhotoResult> ExecuteAsync(
@@ -37,9 +40,13 @@ public sealed class ReplaceEquipmentPhotoUseCase
             throw new EquipmentPhotoNotFoundException(photoId);
         }
 
+        byte[] bytes = await MatosKC.Application.Files.ImageFileReader.ReadValidatedAsync(
+            content, contentLength, contentType, ImageValidator, cancellationToken);
+        using var validated = new MemoryStream(bytes, writable: false);
+
         await ObjectStorage.StoreAsync(
             photo.ObjectKey,
-            content,
+            validated,
             contentType,
             cancellationToken
         );

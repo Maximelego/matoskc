@@ -7,6 +7,9 @@ using System.Text.Json;
 [Collection(ApiTestCollection.Name)]
 public sealed class EquipmentPhotoEndpointsTests
 {
+    private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAIAAADRv8uKAAAALklEQVR4nO3NMQEAMAgAoLlIJjG2sazg5wMFiM56F/7JKhaLxWKxWCwWi8XilQH93wGGpwUmBgAAAABJRU5ErkJggg==");
+    private static readonly byte[] Webp = Convert.FromBase64String("UklGRkoAAABXRUJQVlA4ID4AAAAwAwCdASooAB4APm02l0ikIyIhJWgAgA2JZwDQkA8KmggAAP7svY73LRSK//q0P/+Wh//y0P29IHw2sAAAAA==");
+
     private readonly HttpClient Client;
 
     public EquipmentPhotoEndpointsTests(MatosKCApiFactory factory)
@@ -18,7 +21,7 @@ public sealed class EquipmentPhotoEndpointsTests
     public async Task PhotoLifecycle_ShouldUploadListDownloadReplaceAndDelete()
     {
         Guid equipmentId = await CreateEquipmentAsync();
-        Guid photoId = await UploadAsync(equipmentId, [1, 2, 3], "first.png", "image/png");
+        Guid photoId = await UploadAsync(equipmentId, Png, "first.png", "image/png");
 
         JsonElement[] photos = await Client.GetFromJsonAsync<JsonElement[]>(
             $"/equipments/{equipmentId}/photos",
@@ -30,9 +33,9 @@ public sealed class EquipmentPhotoEndpointsTests
             $"/equipments/{equipmentId}/photos/{photoId}",
             TestContext.Current.CancellationToken
         );
-        Assert.Equal([1, 2, 3], downloaded);
+        Assert.Equal(Png, downloaded);
 
-        using var putContent = CreateMultipart([7, 8], "replacement.webp", "image/webp");
+        using var putContent = CreateMultipart(Webp, "replacement.webp", "image/webp");
         HttpResponseMessage putResponse = await Client.PutAsync(
             $"/equipments/{equipmentId}/photos/{photoId}",
             putContent,

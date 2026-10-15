@@ -71,6 +71,7 @@ public sealed class SecurityPipelineTests
     [InlineData("/auth/me")]
     [InlineData("/accounts")]
     [InlineData("/agencies/11111111-1111-1111-1111-111111111111")]
+    [InlineData("/inspection-templates/photos/11111111-1111-1111-1111-111111111111")]
     [InlineData("/equipments")]
     [InlineData("/inspections/11111111-1111-1111-1111-111111111111/report")]
     [InlineData("/inspections/11111111-1111-1111-1111-111111111111/signature")]

@@ -24,7 +24,7 @@ public sealed class InspectionMvpPersistenceTests(PostgreSqlFixture fixture)
         var account = new Account("Inspector", $"mvp-{Guid.NewGuid():N}@example.test", "hash", true, Role.SuperAdmin, null);
         Guid templateId = Guid.NewGuid();
         var template = new InspectionTemplate(templateId,
-            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Point", null)], category.Id);
+            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Point", "Le point sera à préciser", null)], category.Id);
         var start = new DateTimeOffset(2026, 10, 14, 10, 0, 0, TimeSpan.Zero);
         db.AddRange(category, item, agency, account, template);
 
@@ -71,7 +71,7 @@ public sealed class InspectionMvpPersistenceTests(PostgreSqlFixture fixture)
         var rental = new Rental(Guid.NewGuid(), client.Id, item.Id, now);
         Guid templateId = Guid.NewGuid();
         var template = new InspectionTemplate(templateId,
-            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Point", null)], category.Id);
+            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Point", "Le point sera à préciser", null)], category.Id);
         var old = new InspectionEntity(Guid.NewGuid(), rental.Id, template.Id, InspectionType.Return, account.Id, "Maxime", now);
         old.Cancel(account.Id, "Recommencer", now);
         var next = new InspectionEntity(Guid.NewGuid(), rental.Id, template.Id, InspectionType.Return, account.Id, "Maxime", now);

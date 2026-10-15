@@ -59,6 +59,8 @@ public static class DependencyInjection
         services.AddScoped<MatosKC.Application.Inspections.SearchInspectionsUseCase>();
         services.AddScoped<MatosKC.Application.Inspections.CancelInspectionUseCase>();
 
+        services.AddScoped<MatosKC.Application.Inspections.ManageInspectionTemplatePhotosUseCase>();
+
         return services;
     }
 }

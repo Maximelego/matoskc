@@ -8,7 +8,7 @@ public class InspectionTemplateTests
     public void Constructor_CopiesPointsAndExposesReadOnlyCollection()
     {
         Guid id = Guid.NewGuid();
-        var point = new InspectionTemplatePoint(Guid.NewGuid(), id, "Contrôle", null);
+        var point = new InspectionTemplatePoint(Guid.NewGuid(), id, "Contrôle", "Le point sera à préciser", null);
         var supplied = new List<InspectionTemplatePoint> { point };
         var template = new InspectionTemplate(id, supplied, Guid.NewGuid());
 
@@ -28,13 +28,13 @@ public class InspectionTemplateTests
     public void Constructor_RejectsInvalidPoints(string error)
     {
         Guid id = Guid.NewGuid();
-        var point = new InspectionTemplatePoint(Guid.NewGuid(), id, "Contrôle", null);
+        var point = new InspectionTemplatePoint(Guid.NewGuid(), id, "Contrôle", "Le point sera à préciser", null);
         IEnumerable<InspectionTemplatePoint>? points = error switch
         {
             "null" => null,
             "empty" => [],
             "nullPoint" => [null!],
-            "foreignPoint" => [new InspectionTemplatePoint(Guid.NewGuid(), Guid.NewGuid(), "Autre", null)],
+            "foreignPoint" => [new InspectionTemplatePoint(Guid.NewGuid(), Guid.NewGuid(), "Autre", "Le point sera à préciser", null)],
             "duplicate" => [point, point],
             _ => throw new InvalidOperationException()
         };
@@ -61,7 +61,7 @@ public class InspectionTemplateTests
     public void Point_RejectsBlankDescription(string? description)
     {
         Assert.Throws<ArgumentException>(() => new InspectionTemplatePoint(
-            Guid.NewGuid(), Guid.NewGuid(), description!, null
+            Guid.NewGuid(), Guid.NewGuid(), description!, "Le point sera à préciser", null
         ));
     }
 
@@ -69,10 +69,10 @@ public class InspectionTemplateTests
     public void Point_RejectsEmptyIdentifiersIncludingOptionalIllustration()
     {
         Assert.Throws<ArgumentException>(() =>
-            new InspectionTemplatePoint(Guid.Empty, Guid.NewGuid(), "Contrôle", null));
+            new InspectionTemplatePoint(Guid.Empty, Guid.NewGuid(), "Contrôle", "Le point sera à préciser", null));
         Assert.Throws<ArgumentException>(() =>
-            new InspectionTemplatePoint(Guid.NewGuid(), Guid.Empty, "Contrôle", null));
+            new InspectionTemplatePoint(Guid.NewGuid(), Guid.Empty, "Contrôle", "Le point sera à préciser", null));
         Assert.Throws<ArgumentException>(() =>
-            new InspectionTemplatePoint(Guid.NewGuid(), Guid.NewGuid(), "Contrôle", Guid.Empty));
+            new InspectionTemplatePoint(Guid.NewGuid(), Guid.NewGuid(), "Contrôle", "Le point sera à préciser", Guid.Empty));
     }
 }

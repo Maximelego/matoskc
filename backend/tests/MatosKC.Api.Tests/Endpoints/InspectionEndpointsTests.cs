@@ -15,7 +15,7 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
     private const string SignatureBase64 = "iVBORw0KGgoAAAANSUhEUgAAAKAAAAA8CAYAAADha7EVAAACTUlEQVR4nO2c227DIBAFS9X//2X3yZKFYoK5nbN45q1NlcDusAsJaTqO4/gBEPGrHgC8GwQEKQgIUhAQpCAgSEFAkIKAIAUBQQoCBiSl9JNSUg9jCH/qAUA9uXTnz5E/zKICBqFU8SJXQyqgOXdynVXvfDxqNUxcRvCkVNU+pSz/+yhptW7B+ep+C6WqdydW/vsoBxXbCvgpeKZDHca3dtv6PM5xsxTwafuJzqz5RhDR6hASoWWMZlTVKz2H80HFpgKWEhFhJT9lpni1r+cQRwsBvwXHNXgtqLcXbotZLmCtXDtIuLrqlXARUSrgU6miSugkXo5aRImAPQlRB+wJ6nZbi3JhLxdwRDWIIKFz1btDEdelAo5aac6tOKJ4OStFXCbgaGncJIzSbp+wQsQlAs6SxUXCHareHbNjPFXAFYlR7gd3Fi9nVpynCbgyOasl3LHd1jI61lMEXN0aV77em6peiVEiDr8PqNiX1X5y0sPd/brSHb2dGTXnoQIqDwWzJCxd7HyjeFdGLL4h17FcEvTp5kwPLvNyp+vttN49oGOSevcnjnPala4K6PI+3DdSSk2fM19xnNcONO8BneVr2Q+2fBEI+mlqwc7yXakZJ+1Wy6MWHC1ZpUMJ7daD6goYTb4rtSfjCHPZjaoKGKXltrLTXKJRdQjJExQtYaXxRpvLblSfgs9ERU1YPn5Otx7IvxUH78b6nxPB/iAgSEFAkIKAIAUBQQoCghQEBCkICFIQEKQgIEhBQJCCgCAFAUEKAoIUBAQpCAhSEBCk/AOnlJcgDPWtMwAAAABJRU5ErkJggg==";
 
     private static readonly byte[] Png = Convert.FromBase64String(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        "iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAIAAADRv8uKAAAALklEQVR4nO3NMQEAMAgAoLlIJjG2sazg5wMFiM56F/7JKhaLxWKxWCwWi8XilQH93wGGpwUmBgAAAABJRU5ErkJggg=="
     );
 
     private async Task<(Guid EquipmentId, Guid CategoryId, int AgencyCode)> SeedAsync()
@@ -43,7 +43,7 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         client.PostAsJsonAsync("/inspection-templates", new
         {
             equipmentCategoryId = categoryId,
-            points = new[] { new { description = "Etat extérieur", photoId = (Guid?)null } }
+            points = new[] { new { description = "Etat extérieur", descriptionDetail = "Le point sera à préciser", photoId = (Guid?)null } }
         }, cancellationToken: TestContext.Current.CancellationToken);
 
     private static Task<HttpResponseMessage> DepartureAsync(HttpClient client, Guid equipmentId, int agencyCode) =>
@@ -180,31 +180,27 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
     }
 
     [Fact]
-    public async Task ReportFailure_RollsBackValidationAndEquipmentTransitions()
+    public async Task InvalidPhoto_IsRejectedAtUploadWithoutInvalidatingSignatureOrSavingMetadata()
     {
         using var client = await factory.CreateAuthenticatedClientAsync();
         var seed = await SeedAsync();
         var template = await JsonAsync(await TemplateAsync(client, seed.CategoryId));
         var inspection = await JsonAsync(await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode));
         Guid id = inspection.GetProperty("id").GetGuid();
-        Guid pointId = template.GetProperty("points")[0].GetProperty("id").GetGuid();
-        var saved = await JsonAsync(await SaveAsync(client, id, pointId, true));
+        var saved = await JsonAsync(await SaveAsync(client, id,
+            template.GetProperty("points")[0].GetProperty("id").GetGuid(), true));
         Guid answerId = saved.GetProperty("answers")[0].GetProperty("id").GetGuid();
         using var form = new MultipartFormDataContent();
-        var invalidImage = new ByteArrayContent([1, 2, 3]);
-        invalidImage.Headers.ContentType = new("image/png");
-        form.Add(invalidImage, "file", "broken.png");
-        await JsonAsync(await client.PostAsync($"/inspections/{id}/answers/{answerId}/photos", form,
-            cancellationToken: TestContext.Current.CancellationToken));
-        await SignAsync(client, id);
-        using var failure = await client.PostAsync($"/inspections/{id}/validation", null,
+        var invalid = new ByteArrayContent([1, 2, 3]);
+        invalid.Headers.ContentType = new("image/png");
+        form.Add(invalid, "file", "broken.png");
+        using var response = await client.PostAsync($"/inspections/{id}/answers/{answerId}/photos", form,
             cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, failure.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var persisted = await JsonAsync(await client.GetAsync($"/inspections/{id}", cancellationToken: TestContext.Current.CancellationToken));
         Assert.Equal("Draft", persisted.GetProperty("status").GetString());
-        Assert.False(persisted.GetProperty("hasReport").GetBoolean());
-        var equipment = await JsonAsync(await client.GetAsync($"/equipments/{seed.EquipmentId}", cancellationToken: TestContext.Current.CancellationToken));
-        Assert.Equal("Available", equipment.GetProperty("status").GetString());
+        Assert.Equal(0, persisted.GetProperty("answers")[0].GetProperty("photoIds").GetArrayLength());
+        Assert.NotEqual(JsonValueKind.Null, persisted.GetProperty("signedAt").ValueKind);
     }
 
     [Fact]
@@ -218,8 +214,8 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         using var response = await admin.PostAsJsonAsync("/inspection-templates", new
         {
             equipmentCategoryId = seed.CategoryId,
-            points = new[] { new { description = "Premier", photoId = (Guid?)null },
-                new { description = "Second", photoId = (Guid?)null } }
+            points = new[] { new { description = "Premier", descriptionDetail = "Le point sera à préciser", photoId = (Guid?)null },
+                new { description = "Second", descriptionDetail = "Le point sera à préciser", photoId = (Guid?)null } }
         }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var template = await JsonAsync(response);
@@ -281,6 +277,56 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         using var rejected = await client.PostAsJsonAsync($"/inspections/{id}/cancellation", new { reason = "Abandon" },
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+    }
+
+    [Fact]
+    public async Task TemplateIllustration_UploadReferenceDownloadAndPermissions()
+    {
+        using var admin = await factory.CreateAuthenticatedClientAsync(Role.Admin);
+        using var agency = await factory.CreateAuthenticatedClientAsync(Role.Agency);
+        using var anonymous = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        var seed = await SeedAsync();
+        using var form = new MultipartFormDataContent();
+        var file = new ByteArrayContent(Png);
+        file.Headers.ContentType = new("image/png");
+        form.Add(file, "file", "guide.png");
+        using var upload = await admin.PostAsync("/inspection-templates/photos", form, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Created, upload.StatusCode);
+        var photo = await JsonAsync(upload);
+        Guid id = photo.GetProperty("id").GetGuid();
+        Assert.Equal(Png, await agency.GetByteArrayAsync($"/inspection-templates/photos/{id}", cancellationToken: TestContext.Current.CancellationToken));
+        using var deniedRead = await anonymous.GetAsync($"/inspection-templates/photos/{id}", cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, deniedRead.StatusCode);
+        using var forbiddenForm = new MultipartFormDataContent();
+        var forbiddenFile = new ByteArrayContent(Png);
+        forbiddenFile.Headers.ContentType = new("image/png");
+        forbiddenForm.Add(forbiddenFile, "file", "guide.png");
+        using var deniedWrite = await agency.PostAsync("/inspection-templates/photos", forbiddenForm,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, deniedWrite.StatusCode);
+        foreach (int version in new[] { 1, 2 })
+        {
+            var created = await JsonAsync(await admin.PostAsJsonAsync("/inspection-templates", new
+            {
+                equipmentCategoryId = seed.CategoryId,
+                points = new[] { new { description = "Contrôle " + version, descriptionDetail = "Consigne", photoId = id } }
+            }, cancellationToken: TestContext.Current.CancellationToken));
+            Assert.Equal(id, created.GetProperty("points")[0].GetProperty("photoId").GetGuid());
+        }
+        Assert.Equal(Png, await agency.GetByteArrayAsync($"/inspection-templates/photos/{id}", cancellationToken: TestContext.Current.CancellationToken));
+        using var unknown = await admin.PostAsJsonAsync("/inspection-templates", new
+        {
+            equipmentCategoryId = seed.CategoryId,
+            points = new[] { new { description = "Contrôle", descriptionDetail = "Consigne", photoId = Guid.NewGuid() } }
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, unknown.StatusCode);
+        using var invalidForm = new MultipartFormDataContent();
+        var invalidFile = new ByteArrayContent([1, 2, 3]);
+        invalidFile.Headers.ContentType = new("image/png");
+        invalidForm.Add(invalidFile, "file", "bad.png");
+        using var invalid = await admin.PostAsync("/inspection-templates/photos", invalidForm,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
     }
 
     [Fact]

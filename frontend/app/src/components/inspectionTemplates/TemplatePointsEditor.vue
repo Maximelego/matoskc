@@ -5,24 +5,29 @@ export interface EditablePoint {
   descriptionDetail: string;
   photoId: string | null;
 }
+
 const props = defineProps<{ points: EditablePoint[]; disabled: boolean }>();
 const emit = defineEmits<{ change: [points: EditablePoint[]] }>();
 let nextKey = 1;
+
 function add() {
   emit("change", [
     ...props.points,
     { key: Date.now() + nextKey++, description: "", descriptionDetail: "", photoId: null },
   ]);
 }
+
 function remove(index: number) {
   emit(
     "change",
     props.points.filter((_, i) => i !== index),
   );
 }
+
 function move(index: number, direction: number) {
   const copy = [...props.points];
   const target = index + direction;
+
   if (target < 0 || target >= copy.length) return;
   [copy[index], copy[target]] = [copy[target]!, copy[index]!];
   emit("change", copy);

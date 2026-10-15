@@ -22,7 +22,7 @@ public sealed class InspectionPersistenceTests(PostgreSqlFixture fixture)
         var rental = new Rental(Guid.NewGuid(), client.Id, equipment.Id, DateTimeOffset.UtcNow);
         Guid templateId = Guid.NewGuid();
         var template = new InspectionTemplate(templateId,
-            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Point", null)], category.Id);
+            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Point", "Le point sera à préciser", null)], category.Id);
         var account = new Account("Inspector", $"inspect-{Guid.NewGuid():N}@example.test", "hash", true, Role.SuperAdmin, null);
         var inspection = new InspectionEntity(Guid.NewGuid(), rental.Id, template.Id,
             InspectionType.Departure, account.Id, "Maxime", DateTimeOffset.UtcNow);

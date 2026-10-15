@@ -29,7 +29,7 @@ public sealed class InspectionReportTests
         var rental = new Rental(Guid.NewGuid(), client.Id, item.Id, now, agency.Id);
         Guid templateId = Guid.NewGuid();
         var template = new InspectionTemplate(templateId,
-            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Etat extérieur", null)], category.Id);
+            [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Etat extérieur", "Le point sera à préciser", null)], category.Id);
         var inspection = new InspectionEntity(Guid.NewGuid(), rental.Id, templateId,
             InspectionType.Departure, Guid.NewGuid(), "Maxime", now);
         inspection.SetAnswer(template.Points[0].Id, InspectionResult.NonCompliant,

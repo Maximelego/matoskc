@@ -62,6 +62,11 @@ public static class InspectionEndpoints
         templates.MapGet("/{id:guid}", async (Guid id, ManageInspectionTemplatesUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.GetAsync(id, ct)));
 
+        templates.MapPost("/photos", UploadTemplatePhotoAsync)
+            .RequireAuthorization("ManageEquipment")
+            .DisableAntiforgery();
+        templates.MapGet("/photos/{photoId:guid}", DownloadTemplatePhotoAsync);
+
         templates.MapPost("/", CreateTemplateAsync)
             .RequireAuthorization("ManageEquipment");
 
@@ -210,6 +215,29 @@ public static class InspectionEndpoints
         var template = await useCase.CreateAsync(request, await ActorAsync(context, agencies, ct), ct);
 
         return Results.Created($"/inspection-templates/{template.Id}", template);
+    }
+
+    private static async Task<IResult> UploadTemplatePhotoAsync(
+        IFormFile file, ManageInspectionTemplatePhotosUseCase useCase,
+        HttpContext context, IAgencyRepository agencies, CancellationToken ct
+    )
+    {
+        await using var content = file.OpenReadStream();
+        var photo = await useCase.UploadAsync(content, file.FileName, file.ContentType, file.Length,
+            await ActorAsync(context, agencies, ct), ct);
+
+        return Results.Created($"/inspection-templates/photos/{photo.Id}", photo);
+    }
+
+    private static async Task<IResult> DownloadTemplatePhotoAsync(
+        Guid photoId, ManageInspectionTemplatePhotosUseCase useCase,
+        HttpContext context, IAgencyRepository agencies, CancellationToken ct
+    )
+    {
+        var photo = await useCase.DownloadAsync(photoId, await ActorAsync(context, agencies, ct), ct);
+        context.Response.Headers.CacheControl = "private, no-store";
+
+        return Results.Stream(photo.Content, photo.ContentType);
     }
 
     private static async Task<IResult> UploadPhotoAsync(

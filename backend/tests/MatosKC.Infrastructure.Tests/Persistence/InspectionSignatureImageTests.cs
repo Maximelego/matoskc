@@ -9,7 +9,7 @@ public sealed class InspectionSignatureImageTests
     [Fact]
     public void Validator_RejectsBlankForgedAndOversizedSignatures()
     {
-        var validator = new InspectionSignatureValidator();
+        var validator = new InspectionSignatureValidator(new MatosKC.Infrastructure.Storage.ImageContentValidator());
         Assert.Throws<InspectionOperationException>(() => validator.Validate([1, 2, 3]));
         Assert.Throws<InspectionOperationException>(() => validator.Validate(new byte[1024 * 1024 + 1]));
         using var bitmap = new SKBitmap(100, 40);

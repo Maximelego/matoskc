@@ -35,6 +35,15 @@ public sealed class ManageInspectionTemplatesUseCase(InspectionWorkflowContext c
                 throw new InspectionOperationException(404, "Equipment category not found.");
             }
 
+            foreach (var photoId in request.Points.Where(point => point is not null && point.PhotoId.HasValue)
+                         .Select(point => point.PhotoId!.Value).Distinct())
+            {
+                var photo = await context.TemplatePhotos.GetByIdAsync(photoId, token)
+                    ?? throw new InspectionOperationException(400, "A template point references an unknown illustration.");
+                await using var stored = await context.Storage.RetrieveAsync(photo.ObjectKey, token)
+                    ?? throw new InspectionOperationException(409, "A template illustration is unavailable.");
+            }
+
             Guid id = Guid.NewGuid();
             var points = request.Points.Select((point, position) =>
             {

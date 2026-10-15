@@ -18,7 +18,7 @@ public sealed class EquipmentPhotoUseCaseTests
         (Equipment equipment, FakeEquipmentRepository equipments) = CreateEquipmentRepository();
         var photos = new FakeEquipmentPhotoRepository();
         var storage = new FakeObjectStorage();
-        var useCase = new UploadEquipmentPhotoUseCase(equipments, photos, storage);
+        var useCase = new UploadEquipmentPhotoUseCase(equipments, photos, storage, new FakeImageContentValidator());
         await using var content = new MemoryStream([1, 2, 3]);
 
         var result = await useCase.ExecuteAsync(
@@ -41,7 +41,8 @@ public sealed class EquipmentPhotoUseCaseTests
         var useCase = new UploadEquipmentPhotoUseCase(
             new FakeEquipmentRepository(),
             new FakeEquipmentPhotoRepository(),
-            new FakeObjectStorage()
+            new FakeObjectStorage(),
+            new FakeImageContentValidator()
         );
         await using var content = new MemoryStream([1]);
 
@@ -62,7 +63,8 @@ public sealed class EquipmentPhotoUseCaseTests
         var useCase = new UploadEquipmentPhotoUseCase(
             equipments,
             new FakeEquipmentPhotoRepository(),
-            new FakeObjectStorage()
+            new FakeObjectStorage(),
+            new FakeImageContentValidator()
         );
         await using var content = new MemoryStream([1]);
 
@@ -120,7 +122,7 @@ public sealed class EquipmentPhotoUseCaseTests
         var photos = new FakeEquipmentPhotoRepository();
         photos.Photos.Add(photo);
         var storage = new FakeObjectStorage();
-        var useCase = new ReplaceEquipmentPhotoUseCase(photos, storage);
+        var useCase = new ReplaceEquipmentPhotoUseCase(photos, storage, new FakeImageContentValidator());
         await using var replacement = new MemoryStream([8, 9]);
 
         var result = await useCase.ExecuteAsync(
@@ -165,6 +167,39 @@ public sealed class EquipmentPhotoUseCaseTests
 
         await Assert.ThrowsAsync<EquipmentPhotoNotFoundException>(() =>
             useCase.ExecuteAsync(Guid.NewGuid(), photo.Id));
+    }
+
+    [Fact]
+    public async Task Upload_RejectsUndecodableImageBeforeStorageAndMetadata()
+    {
+        var (equipment, equipments) = CreateEquipmentRepository();
+        var photos = new FakeEquipmentPhotoRepository();
+        var storage = new FakeObjectStorage();
+        var validator = new FakeImageContentValidator { Reject = true };
+        await Assert.ThrowsAsync<ArgumentException>(() => new UploadEquipmentPhotoUseCase(
+            equipments, photos, storage, validator).ExecuteAsync(equipment.Id,
+                new MemoryStream([1]), "bad.png", "image/png", 1));
+        Assert.Equal(1, validator.Calls);
+        Assert.Empty(storage.ObjectKeys);
+        Assert.Empty(photos.Photos);
+    }
+
+    [Fact]
+    public async Task Replace_RejectsUndecodableImageAndPreservesExistingContent()
+    {
+        var (equipment, _) = CreateEquipmentRepository();
+        var photo = CreatePhoto(equipment.Id);
+        var photos = new FakeEquipmentPhotoRepository();
+        photos.Photos.Add(photo);
+        var storage = new FakeObjectStorage();
+        await storage.StoreAsync(photo.ObjectKey, new MemoryStream([7]), "image/png");
+        var validator = new FakeImageContentValidator { Reject = true };
+        await Assert.ThrowsAsync<ArgumentException>(() => new ReplaceEquipmentPhotoUseCase(
+            photos, storage, validator).ExecuteAsync(equipment.Id, photo.Id,
+                new MemoryStream([1]), "bad.png", "image/png", 1));
+        Assert.Equal("photo.png", photo.OriginalFileName);
+        await using var preserved = await storage.RetrieveAsync(photo.ObjectKey);
+        Assert.Equal(7, preserved!.Content.ReadByte());
     }
 
     private static (Equipment Equipment, FakeEquipmentRepository Repository)

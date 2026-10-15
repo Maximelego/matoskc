@@ -27,7 +27,9 @@ public sealed class InspectionWorkflowContext(
     IUnitOfWork unitOfWork,
     TimeProvider time,
     IInspectionReportGenerator reports,
-    IInspectionSignatureValidator signatureValidator
+    IInspectionSignatureValidator signatureValidator,
+    IInspectionTemplatePhotoRepository templatePhotos,
+    IImageContentValidator imageValidator
 )
 {
     public IClientRepository Clients { get; } = clients;
@@ -43,6 +45,8 @@ public sealed class InspectionWorkflowContext(
     public TimeProvider Time { get; } = time;
     public IInspectionReportGenerator Reports { get; } = reports;
     public IInspectionSignatureValidator SignatureValidator { get; } = signatureValidator;
+    public IInspectionTemplatePhotoRepository TemplatePhotos { get; } = templatePhotos;
+    public IImageContentValidator ImageValidator { get; } = imageValidator;
 
     public static void RequireReader(InspectionActor actor)
     {

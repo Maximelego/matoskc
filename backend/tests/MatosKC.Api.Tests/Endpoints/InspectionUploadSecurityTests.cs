@@ -31,6 +31,7 @@ public sealed class InspectionUploadSecurityTests
         });
 
     [Theory]
+    [InlineData("/inspection-templates/photos")]
     [InlineData("/equipments/11111111-1111-1111-1111-111111111111/photos")]
     [InlineData("/inspections/11111111-1111-1111-1111-111111111111/answers/22222222-2222-2222-2222-222222222222/photos")]
     public async Task MultipartUploadWithoutCsrf_IsRejectedBeforeDatabaseAccess(string path)

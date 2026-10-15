@@ -15,6 +15,8 @@ public sealed class MatosKCDbContext : DbContext
     public DbSet<MatosKC.Domain.Entities.Inspection.InspectionTemplate> InspectionTemplates => Set<MatosKC.Domain.Entities.Inspection.InspectionTemplate>();
     public DbSet<MatosKC.Domain.Entities.Inspection.InspectionMedia> InspectionMedia => Set<MatosKC.Domain.Entities.Inspection.InspectionMedia>();
 
+    public DbSet<MatosKC.Domain.Entities.Inspection.InspectionTemplatePhoto> InspectionTemplatePhotos => Set<MatosKC.Domain.Entities.Inspection.InspectionTemplatePhoto>();
+
     public DbSet<Equipment> Equipments => Set<Equipment>();
 
     public DbSet<EquipmentPhoto> EquipmentPhotos => Set<EquipmentPhoto>();

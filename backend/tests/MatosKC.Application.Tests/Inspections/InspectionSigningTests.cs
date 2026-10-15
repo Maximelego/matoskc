@@ -45,7 +45,7 @@ public sealed class InspectionSigningTests
         var fake = new WorkflowFake();
         var useCase = new ManageInspectionTemplatesUseCase(fake.Context);
         var request = new CreateTemplateRequest(fake.Equipment.CategoryId,
-            [new("Premier", null), new("Second", null)]);
+            [new("Premier", "Le point sera à préciser", null), new("Second", "Le point sera à préciser", null)]);
         await Assert.ThrowsAsync<InspectionOperationException>(() => useCase.CreateAsync(request, fake.Actor));
         var admin = new InspectionActor(Guid.NewGuid(), Role.Admin, null);
         var created = await useCase.CreateAsync(request, admin);

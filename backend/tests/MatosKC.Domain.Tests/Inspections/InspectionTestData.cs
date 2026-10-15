@@ -13,7 +13,7 @@ internal static class InspectionTestData
         Guid templateId = Guid.NewGuid();
         var points = Enumerable.Range(1, pointCount)
             .Select(index => new InspectionTemplatePoint(
-                Guid.NewGuid(), templateId, $"Point {index}", null
+                Guid.NewGuid(), templateId, $"Point {index}", "Le point sera à préciser", null
             ));
 
         return new InspectionTemplate(templateId, points, Guid.NewGuid());

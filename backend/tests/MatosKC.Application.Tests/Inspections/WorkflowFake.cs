@@ -18,12 +18,14 @@ using InspectionEntity = MatosKC.Domain.Entities.Inspection.Inspection;
 
 internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInspectionsRepository,
     IInspectionTemplateRepository, IInspectionMediaRepository, IUnitOfWork, IAgencyRepository,
-    IInspectionReportGenerator, IInspectionSignatureValidator
+    IInspectionReportGenerator, IInspectionSignatureValidator, IInspectionTemplatePhotoRepository
 {
     internal List<Client> Clients { get; } = [];
     internal List<Rental> Rentals { get; } = [];
     internal List<InspectionEntity> Inspections { get; } = [];
     internal List<InspectionTemplate> Templates { get; } = [];
+    internal List<InspectionTemplatePhoto> TemplatePhotos { get; } = [];
+    internal FakeImageContentValidator ImageValidator { get; } = new();
     internal List<InspectionMedia> Media { get; } = [];
     internal FakeEquipmentRepository EquipmentRepository { get; } = new();
     internal FakeEquipmentCategoryRepository Categories { get; } = new();
@@ -45,7 +47,7 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
         EquipmentRepository.AddedEquipments.Add(Equipment);
         AddTemplate();
         Context = new(this, this, this, this, this, EquipmentRepository, Categories,
-            this, Storage, this, Clock, this, this);
+            this, Storage, this, Clock, this, this, this, ImageValidator);
     }
 
     internal InspectionTemplate AddTemplate()
@@ -157,6 +159,15 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
 
     Task<InspectionMedia?> IInspectionMediaRepository.GetByIdAsync(Guid id, CancellationToken ct) =>
         Task.FromResult(Media.SingleOrDefault(value => value.Id == id));
+
+    Task<InspectionTemplatePhoto?> IInspectionTemplatePhotoRepository.GetByIdAsync(Guid id, CancellationToken ct) =>
+        Task.FromResult(TemplatePhotos.SingleOrDefault(photo => photo.Id == id));
+
+    public Task AddAsync(InspectionTemplatePhoto photo, CancellationToken ct = default)
+    {
+        TemplatePhotos.Add(photo);
+        return Task.CompletedTask;
+    }
 
     public Task AddAsync(InspectionMedia media, CancellationToken ct = default)
     {

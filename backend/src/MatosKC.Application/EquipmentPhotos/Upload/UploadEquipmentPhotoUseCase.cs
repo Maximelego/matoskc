@@ -11,16 +11,19 @@ public sealed class UploadEquipmentPhotoUseCase
     private readonly IEquipmentRepository EquipmentRepository;
     private readonly IEquipmentPhotoRepository PhotoRepository;
     private readonly IObjectStorage ObjectStorage;
+    private readonly IImageContentValidator ImageValidator;
 
     public UploadEquipmentPhotoUseCase(
         IEquipmentRepository equipmentRepository,
         IEquipmentPhotoRepository photoRepository,
-        IObjectStorage objectStorage
+        IObjectStorage objectStorage,
+        IImageContentValidator imageValidator
     )
     {
         EquipmentRepository = equipmentRepository;
         PhotoRepository = photoRepository;
         ObjectStorage = objectStorage;
+        ImageValidator = imageValidator;
     }
 
     public async Task<EquipmentPhotoResult> ExecuteAsync(
@@ -52,9 +55,13 @@ public sealed class UploadEquipmentPhotoUseCase
             now
         );
 
+        byte[] bytes = await MatosKC.Application.Files.ImageFileReader.ReadValidatedAsync(
+            content, contentLength, contentType, ImageValidator, cancellationToken);
+        using var validated = new MemoryStream(bytes, writable: false);
+
         await ObjectStorage.StoreAsync(
             objectKey,
-            content,
+            validated,
             photo.ContentType,
             cancellationToken
         );

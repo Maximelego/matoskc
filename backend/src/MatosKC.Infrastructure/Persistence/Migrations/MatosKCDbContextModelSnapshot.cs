@@ -360,6 +360,49 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.ToTable("inspection_templates", (string)null);
                 });
 
+            modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionTemplatePhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("ContentLength")
+                        .HasColumnType("bigint")
+                        .HasColumnName("content_length");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_account_id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("object_key");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByAccountId");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique();
+
+                    b.ToTable("inspection_template_photos", (string)null);
+                });
+
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionTemplatePoint", b =>
                 {
                     b.Property<Guid>("Id")
@@ -692,6 +735,15 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasOne("MatosKC.Domain.Equipments.EquipmentCategory", null)
                         .WithMany()
                         .HasForeignKey("EquipmentCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionTemplatePhoto", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByAccountId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
