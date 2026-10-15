@@ -12,15 +12,19 @@ import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import EquipmentCategoryCreateForm from "../equipmentCategoryCreate/EquipmentCategoryCreateForm.vue";
 import EquipmentCreateForm from "../equipmentCreate/EquipmentCreateForm.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
+import EquipmentCategoryEditor from "./EquipmentCategoryEditor.vue";
 import EquipmentDetailsModal from "./EquipmentDetailsModal.vue";
-import EquipmentListThumbnail from "./EquipmentListThumbnail.vue";
 import EquipmentFiltersControl from "./EquipmentFilters.vue";
+import EquipmentListThumbnail from "./EquipmentListThumbnail.vue";
 
 const selectedEquipment = ref<EquipmentDto | null>(null);
 const detailsOpen = ref(false);
 const photoVersion = ref(0);
 const createContentVisible = ref(false);
 const createCategoryContentVisible = ref(false);
+const editCategoryOpen = ref(false);
+const detailsBusy = ref(false);
+const detailsError = ref<string | null>(null);
 
 function openCreate(): void {
   createContentVisible.value = true;
@@ -46,9 +50,13 @@ function clearCreateCategory(): void {
 
 function closeDetails(): void {
   detailsOpen.value = false;
+  detailsError.value = null;
 }
 function clearDetails(): void {
-  if (!detailsOpen.value) { selectedEquipment.value = null; photoVersion.value++; }
+  if (!detailsOpen.value) {
+    selectedEquipment.value = null;
+    photoVersion.value++;
+  }
 }
 
 type SortKey = "name" | "serialNumber" | "equipmentCategoryId" | "status";
@@ -124,6 +132,7 @@ function ariaSort(key: SortKey): "ascending" | "descending" | "none" {
 }
 function openDetails(equipment: EquipmentDto): void {
   selectedEquipment.value = equipment;
+  detailsError.value = null;
   detailsOpen.value = true;
 }
 function equipmentErrorMessage(cause: unknown): string {
@@ -207,15 +216,47 @@ async function handleCreatedCategory(): Promise<void> {
   await loadCategories();
 }
 
-async function handleStatusChange(equipment: EquipmentDto, status: EquipmentStatus): Promise<void> {
+async function handleStatusChange(
+  equipment: EquipmentDto,
+  status: EquipmentStatus,
+  reason: string,
+): Promise<void> {
+  detailsBusy.value = true;
+  detailsError.value = null;
   try {
-    await equipmentsApi.updateStatus(equipment.id, status);
+    await equipmentsApi.updateStatus(equipment.id, status, reason);
     notice.value = "L’état de l’équipement a été mis à jour.";
     closeDetails();
     await loadEquipments();
   } catch (cause: unknown) {
-    error.value = equipmentErrorMessage(cause);
+    detailsError.value = equipmentErrorMessage(cause);
+  } finally {
+    detailsBusy.value = false;
   }
+}
+async function handleEquipmentUpdate(
+  equipment: EquipmentDto,
+  name: string,
+  equipmentCategoryId: string,
+): Promise<void> {
+  detailsBusy.value = true;
+  detailsError.value = null;
+  try {
+    const updated = await equipmentsApi.update(equipment.id, { name, equipmentCategoryId });
+    selectedEquipment.value = { ...equipment, ...updated };
+    notice.value = "L’équipement a été modifié.";
+    await loadEquipments();
+  } catch (cause: unknown) {
+    detailsError.value = equipmentErrorMessage(cause);
+  } finally {
+    detailsBusy.value = false;
+  }
+}
+async function handleCategoryUpdate(): Promise<void> {
+  editCategoryOpen.value = false;
+  notice.value = "La catégorie a été modifiée.";
+  await loadCategories();
+  await loadEquipments();
 }
 onMounted(() => {
   void loadCategories();
@@ -268,6 +309,12 @@ onUnmounted(() => {
           </template>
           Créer une catégorie d’équipement
         </BaseButton>
+        <BaseButton
+          variant="outline"
+          size="small"
+          @click="editCategoryOpen = true"
+          >Modifier une catégorie</BaseButton
+        >
       </div>
     </div>
     <p
@@ -437,7 +484,11 @@ onUnmounted(() => {
                 class="equipment-list__name"
               >
                 <span class="equipment-list__identity">
-                  <EquipmentListThumbnail :key="`${equipment.id}-${photoVersion}`" :equipment-id="equipment.id" :name="equipment.name" />
+                  <EquipmentListThumbnail
+                    :key="`${equipment.id}-${photoVersion}`"
+                    :name="equipment.name"
+                    :thumbnail-url="equipment.thumbnailUrl"
+                  />
                   <span>{{ equipment.name }}</span>
                 </span>
               </th>
@@ -489,10 +540,23 @@ onUnmounted(() => {
         @created="handleCreatedCategory"
       />
     </BaseModal>
+    <BaseModal
+      :open="editCategoryOpen"
+      title="Modifier une catégorie"
+      @close="editCategoryOpen = false"
+    >
+      <EquipmentCategoryEditor
+        :categories="categories"
+        @updated="handleCategoryUpdate"
+      />
+    </BaseModal>
     <EquipmentDetailsModal
       :equipment="selectedEquipment"
       :equipment-categories="categories"
       :open="detailsOpen"
+      :busy="detailsBusy"
+      :error="detailsError"
+      @update-equipment="handleEquipmentUpdate"
       @close="closeDetails"
       @closed="clearDetails"
       @change-status="handleStatusChange"
@@ -573,7 +637,11 @@ onUnmounted(() => {
   &__clickable-row {
     cursor: pointer;
   }
-  &__identity { display: flex; align-items: center; gap: .75rem; }
+  &__identity {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
   &__name {
     font-weight: var(--font-weight-semibold);
   }

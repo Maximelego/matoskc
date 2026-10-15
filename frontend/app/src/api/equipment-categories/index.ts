@@ -4,6 +4,7 @@ import type {
   CreateEquipmentCategoryDto,
   EquipmentCategoryDto,
   ListEquipmentCategoriesDto,
+  UpdateEquipmentCategoryDto,
 } from "./dto";
 
 export const equipmentCategoriesApi = {
@@ -17,5 +18,10 @@ export const equipmentCategoriesApi = {
 
   create(dto: CreateEquipmentCategoryDto) {
     return api.post<CreatedResourceDto, CreateEquipmentCategoryDto>("/equipment-categories/", dto);
+  },
+  update(id: string, dto: UpdateEquipmentCategoryDto) {
+    return api.put<EquipmentCategoryDto, UpdateEquipmentCategoryDto>(
+      `/equipment-categories/${encodeURIComponent(id)}`, dto,
+    );
   },
 };

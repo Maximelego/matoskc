@@ -241,6 +241,16 @@ public class Inspection : BaseEntity
         InvalidateSignature();
     }
 
+    public void LinkAnswerToExistingDefect(Guid templatePointId, Guid? defectId)
+    {
+        EnsureDraft();
+        var answer = _answers.SingleOrDefault(value => value.TemplatePointId == templatePointId)
+            ?? throw new InvalidOperationException("Answer not found.");
+
+        answer.LinkExistingDefect(defectId);
+        InvalidateSignature();
+    }
+
     public void AddAnswerPhoto(Guid answerId, Guid photoId)
     {
         EnsureDraft();

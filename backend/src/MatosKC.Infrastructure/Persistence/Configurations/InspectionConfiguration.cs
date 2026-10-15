@@ -99,6 +99,8 @@ public sealed class InspectionAnswerConfiguration : IEntityTypeConfiguration<Ins
     {
         builder.ToTable("inspection_answers");
         builder.Property(answer => answer.Result).HasConversion<string>().HasMaxLength(32);
+        builder.HasOne<MatosKC.Domain.Entities.Maintenance.EquipmentDefect>().WithMany()
+            .HasForeignKey(answer => answer.ExistingDefectId).OnDelete(DeleteBehavior.Restrict);
         builder.Ignore(answer => answer.PhotosIds);
         builder.Property<List<Guid>>("_photos").HasColumnName("photo_ids").HasColumnType("uuid[]");
         builder.HasOne<InspectionTemplatePoint>().WithMany().HasForeignKey(answer => answer.TemplatePointId)

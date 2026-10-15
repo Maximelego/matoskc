@@ -1,6 +1,6 @@
 import { api } from "../client";
 import type { CreatedResourceDto } from "../types";
-import type { CreateEquipmentDto, EquipmentDto, EquipmentFilters, ListEquipmentsDto } from "./dto";
+import type { CreateEquipmentDto, EquipmentDto, EquipmentFilters, ListEquipmentsDto, UpdateEquipmentDto } from "./dto";
 
 export const equipmentsApi = {
   list(filters: EquipmentFilters = {}) {
@@ -15,7 +15,11 @@ export const equipmentsApi = {
     return api.post<CreatedResourceDto, CreateEquipmentDto>("/equipments", dto);
   },
 
-  updateStatus(id: string, status: EquipmentDto["status"]) {
-    return api.patch<EquipmentDto>(`/equipments/${encodeURIComponent(id)}/status`, { status });
+  update(id: string, dto: UpdateEquipmentDto) {
+    return api.put<EquipmentDto, UpdateEquipmentDto>(`/equipments/${encodeURIComponent(id)}`, dto);
+  },
+
+  updateStatus(id: string, status: EquipmentDto["status"], reason: string) {
+    return api.patch<EquipmentDto>(`/equipments/${encodeURIComponent(id)}/status`, { status, reason });
   },
 };

@@ -35,6 +35,9 @@ public static class DependencyInjection
         services.AddScoped<ReplaceEquipmentPhotoUseCase>();
         services.AddScoped<DeleteEquipmentPhotoUseCase>();
 
+        services.AddScoped<MatosKC.Application.Maintenance.RecordMaintenanceUseCase>();
+        services.AddScoped<MatosKC.Application.Maintenance.QueryEquipmentCareUseCase>();
+
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<MatosKC.Application.Accounts.Create.CreateAccountUseCase>();
         services.AddScoped<MatosKC.Application.Accounts.Get.GetAccountUseCase>();

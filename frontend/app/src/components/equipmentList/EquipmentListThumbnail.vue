@@ -1,37 +1,16 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
-import { equipmentPhotosApi } from "../../api/equipments/photos";
+import { computed, ref, watch } from "vue";
+import { api } from "../../api/client";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 
-const props = defineProps<{ equipmentId: string; name: string }>();
-const element = ref<HTMLElement | null>(null);
-const url = ref<string | null>(null);
-let observer: IntersectionObserver | null = null;
-let disposed = false;
-
-async function load(): Promise<void> {
-  try {
-    const metadata = await equipmentPhotosApi.list(props.equipmentId);
-    const first = metadata.sort((a, b) => a.createdAtUtc.localeCompare(b.createdAtUtc))[0];
-    if (!first || disposed) return;
-    const blob = await equipmentPhotosApi.download(props.equipmentId, first.id);
-    if (disposed) return;
-    if (blob.type.startsWith("image/")) url.value = URL.createObjectURL(blob);
-  } catch { /* La miniature absente ou inaccessible affiche l’icône de remplacement. */ }
-}
-onMounted(() => {
-  if (!element.value) return;
-  if (!("IntersectionObserver" in window)) { void load(); return; }
-  observer = new IntersectionObserver(entries => {
-    if (entries.some(entry => entry.isIntersecting)) { observer?.disconnect(); void load(); }
-  }, { rootMargin: "150px" });
-  observer.observe(element.value);
-});
-onUnmounted(() => { disposed = true; observer?.disconnect(); if (url.value) URL.revokeObjectURL(url.value); });
+const props = defineProps<{ name: string; thumbnailUrl: string | null }>();
+const failed = ref(false);
+const source = computed(() => props.thumbnailUrl && !failed.value ? api.url(props.thumbnailUrl) : null);
+watch(() => props.thumbnailUrl, () => { failed.value = false; });
 </script>
 <template>
-  <span ref="element" class="thumbnail">
-    <img v-if="url" :src="url" :alt="`Photographie de ${name}`" loading="lazy" />
+  <span class="thumbnail">
+    <img v-if="source" :src="source" :alt="`Photographie de ${name}`" loading="lazy" @error="failed = true" />
     <BaseIcon v-else name="image" :size="23" />
   </span>
 </template>

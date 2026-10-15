@@ -94,6 +94,7 @@ app.MapAgencyEndpoints();
 app.MapEquipmentCategoryEndpoints();
 app.MapEquipmentEndpoints();
 app.MapEquipmentManagementEndpoints();
+app.MapEquipmentCareEndpoints();
 app.MapEquipmentPhotoEndpoints();
 
 app.Run();

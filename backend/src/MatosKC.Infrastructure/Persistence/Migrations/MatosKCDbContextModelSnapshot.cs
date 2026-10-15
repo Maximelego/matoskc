@@ -303,6 +303,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("comment");
 
+                    b.Property<Guid?>("ExistingDefectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("existing_defect_id");
+
                     b.Property<Guid>("InspectionId")
                         .HasColumnType("uuid")
                         .HasColumnName("inspection_id");
@@ -323,6 +327,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnName("photo_ids");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ExistingDefectId");
 
                     b.HasIndex("TemplatePointId");
 
@@ -474,6 +480,175 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasIndex("TemplateId");
 
                     b.ToTable("inspection_template_points", (string)null);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.DefectOccurrence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("DefectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("defect_id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("InspectionAnswerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_answer_id");
+
+                    b.Property<Guid>("InspectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_id");
+
+                    b.Property<string>("Observation")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("observation");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("observed_at");
+
+                    b.PrimitiveCollection<List<Guid>>("_photoIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("photo_ids");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DefectId");
+
+                    b.HasIndex("InspectionAnswerId")
+                        .IsUnique();
+
+                    b.HasIndex("InspectionId");
+
+                    b.ToTable("equipment_defect_occurrences", (string)null);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.EquipmentDefect", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("EquipmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("equipment_id");
+
+                    b.Property<Guid>("InspectionAnswerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_answer_id");
+
+                    b.Property<Guid>("InspectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_id");
+
+                    b.Property<string>("Observation")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("observation");
+
+                    b.Property<DateTimeOffset>("ReportedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reported_at");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedByAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_account_id");
+
+                    b.Property<Guid?>("ResolvedByMaintenanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_maintenance_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InspectionAnswerId")
+                        .IsUnique();
+
+                    b.HasIndex("InspectionId");
+
+                    b.HasIndex("ResolvedByAccountId");
+
+                    b.HasIndex("ResolvedByMaintenanceId");
+
+                    b.HasIndex("EquipmentId", "Status", "ReportedAt");
+
+                    b.ToTable("equipment_defects", (string)null);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.EquipmentMaintenance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EquipmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("equipment_id");
+
+                    b.Property<DateTimeOffset>("PerformedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("performed_at");
+
+                    b.Property<string>("PerformedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("performed_by");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid>("RecordedByAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_account_id");
+
+                    b.Property<string>("WorkDescription")
+                        .IsRequired()
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
+                        .HasColumnName("work_description");
+
+                    b.PrimitiveCollection<List<Guid>>("_resolvedDefectIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("resolved_defect_ids");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecordedByAccountId");
+
+                    b.HasIndex("EquipmentId", "PerformedAt");
+
+                    b.ToTable("equipment_maintenances", (string)null);
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Rental.Rental", b =>
@@ -746,6 +921,11 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionAnswer", b =>
                 {
+                    b.HasOne("MatosKC.Domain.Entities.Maintenance.EquipmentDefect", null)
+                        .WithMany()
+                        .HasForeignKey("ExistingDefectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
                         .WithMany("Answers")
                         .HasForeignKey("InspectionId")
@@ -798,6 +978,73 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .WithMany("Points")
                         .HasForeignKey("TemplateId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.DefectOccurrence", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Entities.Maintenance.EquipmentDefect", null)
+                        .WithMany()
+                        .HasForeignKey("DefectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionAnswer", null)
+                        .WithMany()
+                        .HasForeignKey("InspectionAnswerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
+                        .WithMany()
+                        .HasForeignKey("InspectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.EquipmentDefect", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Equipments.Equipment", null)
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionAnswer", null)
+                        .WithMany()
+                        .HasForeignKey("InspectionAnswerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
+                        .WithMany()
+                        .HasForeignKey("InspectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("ResolvedByAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MatosKC.Domain.Entities.Maintenance.EquipmentMaintenance", null)
+                        .WithMany()
+                        .HasForeignKey("ResolvedByMaintenanceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.EquipmentMaintenance", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Equipments.Equipment", null)
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

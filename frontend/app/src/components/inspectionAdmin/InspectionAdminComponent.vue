@@ -71,21 +71,25 @@ async function load(): Promise<void> {
     loading.value = false;
   }
 }
+
 function show(item: InspectionDto): void {
   selected.value = item;
   void router.replace({ query: { ...route.query, inspectionId: item.id } });
 }
+
 function close(): void {
   selected.value = null;
   const query = { ...route.query };
   delete query.inspectionId;
   void router.replace({ query });
 }
+
 function clearEquipment(): void {
   const query = { ...route.query };
   delete query.equipmentId;
   void router.replace({ query });
 }
+
 watch(
   () => route.query.inspectionId,
   (id) => {
@@ -194,7 +198,7 @@ onMounted(() => {
             >
             <span
               >Opérateur : {{ item.operatorFirstName }} -
-              {{ item.answers.filter((a) => a.result === "NonCompliant").length }} défaut(s)</span
+              {{ item.answers?.filter((a) => a.result === "NonCompliant").length }} défaut(s)</span
             >
           </div>
           <button

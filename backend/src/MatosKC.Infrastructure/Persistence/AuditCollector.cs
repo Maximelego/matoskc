@@ -25,7 +25,8 @@ public static class AuditCollector
             bool equipmentDetails = entry.Entity is Equipment or EquipmentCategory;
             string[] safeFields = ["Status", "Type", "RentalId", "TemplateId", "EquipmentId",
                 "EquipmentCategoryId", "AgencyId", "StartedAt", "ValidatedAt", "CancelledAt",
-                "CreatedByAccountId", "CancelledByAccountId", "TemplatePointId", "Position", "Result"];
+                "CreatedByAccountId", "CancelledByAccountId", "TemplatePointId", "Position", "Result", "DefectId", "ExistingDefectId",
+                "ResolvedByMaintenanceId", "ResolvedByAccountId", "ResolvedAt", "PerformedAt", "RecordedAt", "RecordedByAccountId"];
 
             var changes = entry.Properties
                 .Where(property => !property.Metadata.IsPrimaryKey()

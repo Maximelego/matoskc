@@ -43,6 +43,8 @@ public sealed class ValidateReturnInspectionUseCase(InspectionWorkflowContext co
             var now = context.Time.GetUtcNow();
             inspection.Validate(template, now);
             inspection.AttachReport(await context.Reports.GenerateAsync(inspection, rental, template, ct));
+            await MatosKC.Application.Maintenance.RecordInspectionDefects.ExecuteAsync(
+                context, inspection, equipment.Id, template, now, ct);
             rental.ConfirmReturn(inspection, now);
 
             EquipmentStatus nextStatus = inspection.Answers.Any(answer => answer.Result == InspectionResult.NonCompliant)

@@ -50,7 +50,11 @@ public sealed class SecurityPipelineTests
             "/equipments/{equipmentId:guid}/photos",
             "/equipments/{id:guid}/history",
             "/equipments/{id:guid}",
-            "/equipment-categories/{id:guid}"
+            "/equipment-categories/{id:guid}",
+            "/equipments/{equipmentId:guid}/defects",
+            "/equipments/{equipmentId:guid}/maintenances",
+            "/equipments/{equipmentId:guid}/maintenances/{maintenanceId:guid}",
+            "/equipments/{equipmentId:guid}/defects/{defectId:guid}/photos/{photoId:guid}"
         ];
 
         foreach (string expected in expectedRoutes)
@@ -79,6 +83,10 @@ public sealed class SecurityPipelineTests
     [InlineData("/equipments/11111111-1111-1111-1111-111111111111/history")]
     [InlineData("/inspections/11111111-1111-1111-1111-111111111111/report")]
     [InlineData("/inspections/11111111-1111-1111-1111-111111111111/signature")]
+    [InlineData("/equipments/11111111-1111-1111-1111-111111111111/defects")]
+    [InlineData("/equipments/11111111-1111-1111-1111-111111111111/maintenances")]
+    [InlineData("/equipments/11111111-1111-1111-1111-111111111111/maintenances/22222222-2222-2222-2222-222222222222")]
+    [InlineData("/equipments/11111111-1111-1111-1111-111111111111/defects/22222222-2222-2222-2222-222222222222/photos/33333333-3333-3333-3333-333333333333")]
     public async Task ProtectedEndpoints_RequireAuthentication(string path)
     {
         await using var factory = CreateFactory();

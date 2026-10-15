@@ -27,7 +27,8 @@ export const inspectionHttpApi = {
   getReport: (id: string) => api.getBlob(`${path(id)}/report`),
   getRental: (id: string) => api.get<RentalDto>(`/rentals/${encodeURIComponent(id)}`),
   getCurrentRental: (equipmentId: string) =>
-    api.get<RentalDto | null>(`/equipments/${encodeURIComponent(equipmentId)}/current-rental`),
+    api.get<{ rental: RentalDto | null }>(`/equipments/${encodeURIComponent(equipmentId)}/current-rental`)
+      .then(response => response.rental),
   getDeparture: (rentalId: string) =>
     api.get<InspectionDto | null>(`/rentals/${encodeURIComponent(rentalId)}/departure-inspection`),
   getTemplate: (id: string) => api.get<InspectionTemplateDto>(`/inspection-templates/${encodeURIComponent(id)}`),

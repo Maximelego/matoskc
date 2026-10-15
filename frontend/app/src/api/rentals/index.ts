@@ -16,9 +16,9 @@ export const rentalsApi = {
     return api.get<RentalDto>(path(id));
   },
   getCurrentForEquipment(equipmentId: string) {
-    return api.get<RentalDto | null>(
+    return api.get<{ rental: RentalDto | null }>(
       `/equipments/${encodeURIComponent(equipmentId)}/current-rental`,
-    );
+    ).then(response => response.rental);
   },
   create(dto: CreateRentalDto) {
     return api.post<RentalDto, CreateRentalDto>("/rentals", dto);

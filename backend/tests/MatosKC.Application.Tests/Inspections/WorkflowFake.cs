@@ -29,6 +29,7 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
     internal List<InspectionMedia> Media { get; } = [];
     internal FakeEquipmentRepository EquipmentRepository { get; } = new();
     internal FakeEquipmentCategoryRepository Categories { get; } = new();
+    internal FakeEquipmentCareRepository Care { get; } = new();
     internal FakeObjectStorage Storage { get; } = new();
     internal Agency Agency { get; } = new("Epinal", 83);
     internal Equipment Equipment { get; }
@@ -47,7 +48,7 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
         EquipmentRepository.AddedEquipments.Add(Equipment);
         AddTemplate();
         Context = new(this, this, this, this, this, EquipmentRepository, Categories,
-            this, Storage, this, Clock, this, this, this, ImageValidator);
+            this, Storage, this, Clock, this, this, this, ImageValidator, Care);
     }
 
     internal InspectionTemplate AddTemplate()

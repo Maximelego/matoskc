@@ -8,6 +8,8 @@ public class InspectionAnswer : BaseEntity
 
     public InspectionResult Result { get; private set; }
 
+    public Guid? ExistingDefectId { get; private set; }
+
     public string? Comment { get; private set; }
 
     private readonly List<Guid> _photos = [];
@@ -50,8 +52,23 @@ public class InspectionAnswer : BaseEntity
             throw new ArgumentException("A compliant answer cannot have an observation.", nameof(comment));
         }
 
+        if (result == InspectionResult.Compliant)
+        {
+            ExistingDefectId = null;
+        }
+
         Result = result;
         Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+    }
+
+    internal void LinkExistingDefect(Guid? defectId)
+    {
+        if (defectId == Guid.Empty || (defectId.HasValue && Result != InspectionResult.NonCompliant))
+        {
+            throw new ArgumentException("Only a noncompliant answer can reference an existing defect.");
+        }
+
+        ExistingDefectId = defectId;
     }
 
     internal void AddPhoto(Guid photoId)

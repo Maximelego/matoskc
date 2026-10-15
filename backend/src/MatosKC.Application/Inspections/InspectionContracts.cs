@@ -18,7 +18,7 @@ public sealed record CreateDepartureRequest(Guid EquipmentId, ClientInput Client
 
 public sealed record CreateReturnRequest(string OperatorFirstName);
 
-public sealed record SaveAnswerRequest(Guid TemplatePointId, InspectionResult? Result, string? Observation);
+public sealed record SaveAnswerRequest(Guid TemplatePointId, InspectionResult? Result, string? Observation, Guid? ExistingDefectId = null);
 
 // A partial update: omitted answers and attached photos are preserved.
 public sealed record SaveDraftRequest(string OperatorFirstName, IReadOnlyList<SaveAnswerRequest> Answers);
@@ -32,7 +32,8 @@ public sealed record InspectionAnswerResponse(
     Guid TemplatePointId,
     InspectionResult Result,
     string? Observation,
-    IReadOnlyList<Guid> PhotoIds
+    IReadOnlyList<Guid> PhotoIds,
+    Guid? ExistingDefectId = null
 );
 
 public sealed record InspectionResponse(

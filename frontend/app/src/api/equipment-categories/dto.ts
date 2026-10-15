@@ -9,6 +9,8 @@ export interface CreateEquipmentCategoryDto {
   description: string | null;
 }
 
+export type UpdateEquipmentCategoryDto = CreateEquipmentCategoryDto;
+
 export interface ListEquipmentCategoriesDto {
   equipmentCategories: EquipmentCategoryDto[];
 }

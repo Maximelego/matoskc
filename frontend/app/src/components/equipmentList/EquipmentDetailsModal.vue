@@ -5,6 +5,7 @@ import type { EquipmentDto, EquipmentStatus } from "../../api/equipments/dto";
 import BaseModal from "../common/modal/BaseModal.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentPhoto from "./EquipmentPhoto.vue";
+import EquipmentHistory from "./EquipmentHistory.vue";
 import EquipmentQRCode from "./EquipmentQRCode.vue";
 import { authSession } from "../../api/auth/session";
 
@@ -19,7 +20,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   closed: [];
-  changeStatus: [equipment: EquipmentDto, status: EquipmentStatus];
+  changeStatus: [equipment: EquipmentDto, status: EquipmentStatus, reason: string];
+  updateEquipment: [equipment: EquipmentDto, name: string, categoryId: string];
 }>();
 
 const labels: Record<EquipmentStatus, string> = {
@@ -41,13 +43,22 @@ const transitions: Record<EquipmentStatus, EquipmentStatus[]> = {
 };
 
 const selectedStatus = ref<EquipmentStatus | "">("");
+const reason = ref("");
+const editName = ref("");
+const editCategoryId = ref("");
+const showHistory = ref(false);
 
 watch(
   () => props.equipment,
   () => {
-    selectedStatus.value = "";
+    selectedStatus.value = ""; reason.value = "";
+    editName.value = props.equipment?.name ?? "";
+    editCategoryId.value = props.equipment?.equipmentCategoryId ?? "";
+    showHistory.value = false;
   },
 );
+
+const isAdministrator = computed(() => ["Admin", "SuperAdmin"].includes(authSession.account.value?.role ?? ""));
 
 const availableStatuses = computed(() =>
   props.equipment ? (transitions[props.equipment.status] ?? []) : [],
@@ -61,7 +72,12 @@ function submit(): void {
     return;
   }
 
-  emit("changeStatus", equipment, status);
+  if (!reason.value.trim() || reason.value.trim().length > 1000) return;
+  emit("changeStatus", equipment, status, reason.value.trim());
+}
+function saveEquipment(): void {
+  if (!props.equipment || !editName.value.trim() || !editCategoryId.value || props.busy) return;
+  emit("updateEquipment", props.equipment, editName.value.trim(), editCategoryId.value);
 }
 </script>
 
@@ -108,13 +124,22 @@ function submit(): void {
         </div>
       </dl>
 
-      <RouterLink
-        v-if="authSession.account.value?.role === 'Admin' || authSession.account.value?.role === 'SuperAdmin'"
-        class="equipment-details__history"
-        :to="{ name: 'AdminInspections', query: { equipmentId: equipment.id } }"
-      >
-        Chronologie des états des lieux
-      </RouterLink>
+      <form v-if="isAdministrator" class="equipment-details__status" @submit.prevent="saveEquipment">
+        <h3>Modifier le matériel</h3>
+        <label for="equipment-edit-name">Nom</label>
+        <input id="equipment-edit-name" v-model="editName" required :disabled="busy" />
+        <label for="equipment-edit-category">Catégorie</label>
+        <select id="equipment-edit-category" v-model="editCategoryId" required :disabled="busy">
+          <option v-for="category in equipmentCategories" :key="category.id" :value="category.id">{{ category.name }}</option>
+        </select>
+        <button type="submit" :disabled="busy || !editName.trim() || !editCategoryId">Enregistrer les modifications</button>
+      </form>
+      <div v-if="isAdministrator">
+        <button type="button" class="equipment-details__history" @click="showHistory = !showHistory">
+          {{ showHistory ? 'Masquer l’historique' : 'Afficher l’historique du matériel' }}
+        </button>
+        <EquipmentHistory v-if="showHistory" :equipment-id="equipment.id" />
+      </div>
 
       <form
         class="equipment-details__status"
@@ -143,6 +168,10 @@ function submit(): void {
             </option>
           </select>
 
+          <label for="equipment-status-reason">Motif du changement *</label>
+          <textarea id="equipment-status-reason" v-model="reason" required maxlength="1000" rows="3"
+            :disabled="busy" placeholder="Précisez la raison de cette décision" />
+
           <p
             v-if="error"
             class="equipment-details__error"
@@ -153,7 +182,7 @@ function submit(): void {
 
           <button
             type="submit"
-            :disabled="!selectedStatus || busy"
+            :disabled="!selectedStatus || !reason.trim() || busy"
           >
             {{ busy ? "Enregistrement…" : "Enregistrer le nouvel état" }}
           </button>
@@ -218,7 +247,7 @@ function submit(): void {
       margin: 0;
     }
 
-    select {
+    input, select, textarea {
       width: 100%;
       padding: 0.625rem;
       border: 1px solid var(--color-border);
@@ -249,6 +278,7 @@ function submit(): void {
 
   &__history {
     justify-self: start;
+    padding: .5rem 0; border: 0; background: none; font: inherit; cursor: pointer;
     color: var(--color-primary);
     text-decoration: underline;
   }

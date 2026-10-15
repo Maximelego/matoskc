@@ -1,7 +1,8 @@
 import { api } from "../client";
-import type { EquipmentHistoryDto } from "./dto";
+import type { EquipmentAuditEntryDto } from "./dto";
 export const equipmentHistoryApi = {
-  list(equipmentId: string) {
-    return api.get<EquipmentHistoryDto>(`/equipments/${encodeURIComponent(equipmentId)}/history`);
+  list(equipmentId: string, offset = 0, limit = 50) {
+    return api.get<EquipmentAuditEntryDto[]>(`/equipments/${encodeURIComponent(equipmentId)}/history`,
+      { query: { offset, limit } });
   },
 };

@@ -5,7 +5,11 @@ export type EquipmentDto = {
   status: EquipmentStatus;
   serialNumber: string;
   equipmentCategoryId: string;
+  primaryPhotoId: string | null;
+  thumbnailUrl: string | null;
 };
+
+export type UpdateEquipmentDto = { name: string; equipmentCategoryId: string };
 
 export type CreateEquipmentDto = {
   name: string;

@@ -80,6 +80,54 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         response.EnsureSuccessStatusCode();
     }
 
+    [Fact]
+    public async Task DefectResolution_PreservesSignedReportAndSharesOnlyEquipmentPhotos()
+    {
+        using var client = await factory.CreateAuthenticatedClientAsync();
+        var seed = await SeedAsync();
+        var template = await JsonAsync(await TemplateAsync(client, seed.CategoryId));
+        var departure = await JsonAsync(await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode));
+        Guid id = departure.GetProperty("id").GetGuid();
+        Guid pointId = template.GetProperty("points")[0].GetProperty("id").GetGuid();
+        var saved = await JsonAsync(await SaveAsync(client, id, pointId, true));
+        using var form = new MultipartFormDataContent();
+        var image = new ByteArrayContent(Png);
+        image.Headers.ContentType = new("image/png");
+        form.Add(image, "file", "defect.png");
+        Guid answerId = saved.GetProperty("answers")[0].GetProperty("id").GetGuid();
+        var photo = await JsonAsync(await client.PostAsync($"/inspections/{id}/answers/{answerId}/photos", form, TestContext.Current.CancellationToken));
+        Guid photoId = photo.GetProperty("id").GetGuid();
+        await SignAsync(client, id);
+        await JsonAsync(await client.PostAsync($"/inspections/{id}/validation", null, TestContext.Current.CancellationToken));
+        await JsonAsync(await client.PostAsync($"/inspections/{id}/validation", null, TestContext.Current.CancellationToken));
+        byte[] report = await client.GetByteArrayAsync($"/inspections/{id}/report", TestContext.Current.CancellationToken);
+
+        using var otherAgency = await factory.CreateAuthenticatedClientAsync(Role.Agency);
+        var defects = await JsonAsync(await otherAgency.GetAsync($"/equipments/{seed.EquipmentId}/defects?status=Open", TestContext.Current.CancellationToken));
+        Assert.Equal(1, defects.GetProperty("total").GetInt32());
+        Guid defectId = defects.GetProperty("items")[0].GetProperty("id").GetGuid();
+        Assert.Equal(Png, await otherAgency.GetByteArrayAsync(
+            $"/equipments/{seed.EquipmentId}/defects/{defectId}/photos/{photoId}", TestContext.Current.CancellationToken));
+        using var privateInspection = await otherAgency.GetAsync($"/inspections/{id}", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, privateInspection.StatusCode);
+        using var foreignPhoto = await otherAgency.GetAsync(
+            $"/equipments/{seed.EquipmentId}/defects/{defectId}/photos/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.NotFound, foreignPhoto.StatusCode);
+
+        await JsonAsync(await client.PostAsJsonAsync($"/equipments/{seed.EquipmentId}/maintenances", new
+        {
+            id = Guid.NewGuid(), performedAt = DateTimeOffset.UtcNow, performedBy = "Atelier",
+            workDescription = "Tuyau remplacé", resolvedDefectIds = new[] { defectId }
+        }, TestContext.Current.CancellationToken));
+        var open = await JsonAsync(await client.GetAsync($"/equipments/{seed.EquipmentId}/defects?status=Open", TestContext.Current.CancellationToken));
+        Assert.Equal(0, open.GetProperty("total").GetInt32());
+        var history = await JsonAsync(await client.GetAsync($"/equipments/{seed.EquipmentId}/defects?status=Resolved", TestContext.Current.CancellationToken));
+        Assert.Equal(1, history.GetProperty("total").GetInt32());
+        Assert.Equal(report, await client.GetByteArrayAsync($"/inspections/{id}/report", TestContext.Current.CancellationToken));
+        var equipment = await JsonAsync(await client.GetAsync($"/equipments/{seed.EquipmentId}", TestContext.Current.CancellationToken));
+        Assert.Equal("Borrowed", equipment.GetProperty("status").GetString());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

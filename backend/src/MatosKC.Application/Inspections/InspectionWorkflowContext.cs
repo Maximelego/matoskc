@@ -29,9 +29,12 @@ public sealed class InspectionWorkflowContext(
     IInspectionReportGenerator reports,
     IInspectionSignatureValidator signatureValidator,
     IInspectionTemplatePhotoRepository templatePhotos,
-    IImageContentValidator imageValidator
+    IImageContentValidator imageValidator,
+    MatosKC.Application.Maintenance.IEquipmentCareRepository care
 )
 {
+    public MatosKC.Application.Maintenance.IEquipmentCareRepository Care { get; } = care;
+
     public IClientRepository Clients { get; } = clients;
     public IRentalRepository Rentals { get; } = rentals;
     public IInspectionsRepository Inspections { get; } = inspections;
@@ -117,7 +120,7 @@ public sealed class InspectionWorkflowContext(
         inspection.StartedAt,
         inspection.ValidatedAt,
         inspection.Answers.Select(answer => new InspectionAnswerResponse(
-            answer.Id, answer.TemplatePointId, answer.Result, answer.Comment, answer.PhotosIds.ToArray()
+            answer.Id, answer.TemplatePointId, answer.Result, answer.Comment, answer.PhotosIds.ToArray(), answer.ExistingDefectId
         )).ToArray(),
         inspection.SignerName,
         inspection.SignedAt,

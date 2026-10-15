@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IEquipmentThumbnailRepository, EquipmentThumbnailRepository>();
         services.AddScoped<MatosKC.Application.Persistence.AuditContext>();
         services.AddScoped<MatosKC.Application.Persistence.IAuditRepository, AuditRepository>();
+        services.AddScoped<MatosKC.Application.Maintenance.IEquipmentCareRepository, EquipmentCareRepository>();
         services.AddScoped<DevelopmentDataSeeder>();
 
         return services;
