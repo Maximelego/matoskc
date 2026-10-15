@@ -21,6 +21,9 @@ const success = ref("");
 let requestId = 0;
 
 function describeError(cause: unknown) {
+  if (cause instanceof ApiError) {
+    if (cause.status === 400) return "Le modèle n’a pas pu être créé. Vérifiez les champs.";
+  }
   return cause instanceof ApiError ? cause.message : "Une erreur est survenue. Veuillez réessayer.";
 }
 

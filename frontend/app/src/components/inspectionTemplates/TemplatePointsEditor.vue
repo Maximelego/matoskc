@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseIcon from "../common/icon/BaseIcon.vue";
+
 export interface EditablePoint {
   key: number;
   description: string;
@@ -50,45 +52,50 @@ function move(index: number, direction: number) {
     >
       <label :for="`template-point-${point.key}`">Point {{ index + 1 }}</label>
       <div class="point__row">
-        <input
-          :id="`template-point-${point.key}`"
-          v-model="point.description"
-          required
-          maxlength="500"
-          placeholder="Ex. Vérifier l’état du câble"
-        />
-        <input
-          :id="`template-point-detail-${point.key}`"
-          v-model="point.descriptionDetail"
-          required
-          type="text"
-          maxlength="500"
-          placeholder="Ex. Contrôle des points suivants..."
-        />
-        <button
-          type="button"
-          :disabled="index === 0"
-          :aria-label="`Monter le point ${index + 1}`"
-          @click="move(index, -1)"
-        >
-          ↑
-        </button>
-        <button
-          type="button"
-          :disabled="index === points.length - 1"
-          :aria-label="`Descendre le point ${index + 1}`"
-          @click="move(index, 1)"
-        >
-          ↓
-        </button>
-        <button
-          type="button"
-          :disabled="points.length === 1"
-          :aria-label="`Supprimer le point ${index + 1}`"
-          @click="remove(index)"
-        >
-          Supprimer
-        </button>
+        <div class="point__inputs">
+          <input
+            :id="`template-point-${point.key}`"
+            v-model="point.description"
+            required
+            maxlength="500"
+            placeholder="Ex. Vérifier l’état du câble"
+          />
+          <input
+            :id="`template-point-detail-${point.key}`"
+            v-model="point.descriptionDetail"
+            class="point__details"
+            required
+            type="text"
+            maxlength="500"
+            placeholder="Ex. Contrôle des points suivants..."
+          />
+        </div>
+        <div class="point__buttons">
+          <button
+            type="button"
+            :disabled="index === 0"
+            :aria-label="`Monter le point ${index + 1}`"
+            @click="move(index, -1)"
+          >
+            <BaseIcon name="chevron-up" />
+          </button>
+          <button
+            type="button"
+            :disabled="index === points.length - 1"
+            :aria-label="`Descendre le point ${index + 1}`"
+            @click="move(index, 1)"
+          >
+            <BaseIcon name="chevron-down" />
+          </button>
+          <button
+            type="button"
+            :disabled="points.length === 1"
+            :aria-label="`Supprimer le point ${index + 1}`"
+            @click="remove(index)"
+          >
+            <BaseIcon name="delete" />
+          </button>
+        </div>
       </div>
     </div>
     <button
@@ -128,7 +135,31 @@ legend {
 }
 .point__row {
   display: flex;
+  flex-direction: row;
   gap: 0.5rem;
+
+  .point__inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 0;
+
+    .point__details input {
+      flex: 1;
+      min-height: 5rem;
+
+      /* Making sure the Text input allows for text formatting like line returns */
+      white-space: pre-wrap;
+    }
+  }
+
+  .point__buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 0.35rem;
+    max-height: 3rem;
+  }
 }
 .point__row input {
   flex: 1;
