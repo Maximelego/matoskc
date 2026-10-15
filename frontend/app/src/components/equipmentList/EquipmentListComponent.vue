@@ -9,20 +9,49 @@ import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
 import BaseSpinner from "../common/spinner/BaseSpinner.vue";
+import EquipmentCategoryCreateForm from "../equipmentCategoryCreate/EquipmentCategoryCreateForm.vue";
 import EquipmentCreateForm from "../equipmentCreate/EquipmentCreateForm.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentDetailsModal from "./EquipmentDetailsModal.vue";
 import EquipmentFiltersControl from "./EquipmentFilters.vue";
+
 const selectedEquipment = ref<EquipmentDto | null>(null);
 const detailsOpen = ref(false);
 const createContentVisible = ref(false);
-function openCreate(): void { createContentVisible.value = true; createOpen.value = true; }
-function closeCreate(): void { createOpen.value = false; }
-function clearCreate(): void { if (!createOpen.value) createContentVisible.value = false; }
-function closeDetails(): void { detailsOpen.value = false; }
-function clearDetails(): void { if (!detailsOpen.value) selectedEquipment.value = null; }
+const createCategoryContentVisible = ref(false);
+
+function openCreate(): void {
+  createContentVisible.value = true;
+  createOpen.value = true;
+}
+function closeCreate(): void {
+  createOpen.value = false;
+}
+function clearCreate(): void {
+  if (!createOpen.value) createContentVisible.value = false;
+}
+
+function openCreateCategory(): void {
+  createCategoryContentVisible.value = true;
+  createCategoryOpen.value = true;
+}
+function closeCreateCategory(): void {
+  createCategoryOpen.value = false;
+}
+function clearCreateCategory(): void {
+  if (!createCategoryOpen.value) createCategoryContentVisible.value = false;
+}
+
+function closeDetails(): void {
+  detailsOpen.value = false;
+}
+function clearDetails(): void {
+  if (!detailsOpen.value) selectedEquipment.value = null;
+}
+
 type SortKey = "name" | "serialNumber" | "equipmentCategoryId" | "status";
 type SortDirection = "asc" | "desc";
+
 const statusLabels: Record<string, string> = {
   Available: "Disponible",
   Unavailable: "Indisponible",
@@ -31,6 +60,7 @@ const statusLabels: Record<string, string> = {
   Maintenance: "En maintenance",
   Borrowed: "Emprunté",
 };
+
 const equipments = ref<EquipmentDto[]>([]);
 const categories = ref<EquipmentCategoryDto[]>([]);
 const filters = ref<EquipmentFilters>({});
@@ -41,6 +71,8 @@ const error = ref<string | null>(null);
 const notice = ref("");
 const createOpen = ref(false);
 const createBusy = ref(false);
+const createCategoryOpen = ref(false);
+const createCategoryBusy = ref(false);
 const sortKey = ref<SortKey>("name");
 const sortDirection = ref<SortDirection>("asc");
 const collator = new Intl.Collator("fr", {
@@ -161,11 +193,18 @@ function updateFilters(next: EquipmentFilters): void {
     void loadEquipments();
   }
 }
+
 async function handleCreated(): Promise<void> {
   closeCreate();
   notice.value = "L’équipement a été créé.";
   await loadEquipments();
 }
+async function handleCreatedCategory(): Promise<void> {
+  closeCreateCategory();
+  notice.value = "La catégorie d’équipement a été créée.";
+  await loadCategories();
+}
+
 async function handleStatusChange(equipment: EquipmentDto, status: EquipmentStatus): Promise<void> {
   try {
     await equipmentsApi.updateStatus(equipment.id, status);
@@ -216,6 +255,16 @@ onUnmounted(() => {
             <BaseIcon name="add" />
           </template>
           Créer un équipement
+        </BaseButton>
+        <BaseButton
+          variant="primary"
+          size="small"
+          @click="openCreateCategory"
+        >
+          <template #leading>
+            <BaseIcon name="add" />
+          </template>
+          Créer une catégorie d’équipement
         </BaseButton>
       </div>
     </div>
@@ -421,6 +470,20 @@ onUnmounted(() => {
         @created="handleCreated"
       />
     </BaseModal>
+    <BaseModal
+      :open="createCategoryOpen"
+      :busy="createCategoryBusy"
+      title="Créer une catégorie d'équipement"
+      @close="closeCreateCategory"
+      @closed="clearCreateCategory"
+    >
+      <EquipmentCategoryCreateForm
+        v-if="createCategoryContentVisible"
+        @cancel="closeCreateCategory"
+        @busy="createCategoryBusy = $event"
+        @created="handleCreatedCategory"
+      />
+    </BaseModal>
     <EquipmentDetailsModal
       :equipment="selectedEquipment"
       :equipment-categories="categories"
@@ -433,34 +496,118 @@ onUnmounted(() => {
 </template>
 <style scoped lang="scss">
 .equipment-list {
-  display: grid; gap: 1.25rem;
-  &__header, &__header-actions, &__panel-header { display: flex; align-items: center; }
-  &__header { justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
-  &__header h1 { margin: 0; }
-  &__subtitle { margin: .35rem 0 0; color: var(--color-text-secondary); }
-  &__header-actions { flex-wrap: wrap; gap: .75rem; }
-  &__notice { margin: 0; padding: .75rem 1rem; border-radius: .5rem; background: var(--color-primary-soft); }
-  &__error { padding: 1rem; border: 1px solid var(--color-danger); border-radius: .5rem; color: var(--color-danger); }
-  &__error p { margin-top: 0; }
-  &__panel { overflow: hidden; border: 1px solid var(--color-border); border-radius: .75rem; background: var(--color-surface); }
-  &__panel-header { justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-border); }
-  &__panel-header h2 { margin: 0; font-size: 1rem; }
-  &__count { color: var(--color-text-secondary); white-space: nowrap; }
-  &__state { display: flex; align-items: center; justify-content: center; gap: .75rem; min-height: 8rem; margin: 0; padding: 1rem; color: var(--color-text-secondary); }
-  &__clickable-row { cursor: pointer; }
-  &__name { font-weight: var(--font-weight-semibold); }
-  &__serial, &__category { color: var(--color-text-secondary); }
+  display: grid;
+  gap: 1.25rem;
+  &__header,
+  &__header-actions,
+  &__panel-header {
+    display: flex;
+    align-items: center;
+  }
+  &__header {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  &__header h1 {
+    margin: 0;
+  }
+  &__subtitle {
+    margin: 0.35rem 0 0;
+    color: var(--color-text-secondary);
+  }
+  &__header-actions {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  &__notice {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-primary-soft);
+  }
+  &__error {
+    padding: 1rem;
+    border: 1px solid var(--color-danger);
+    border-radius: 0.5rem;
+    color: var(--color-danger);
+  }
+  &__error p {
+    margin-top: 0;
+  }
+  &__panel {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+  }
+  &__panel-header {
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  &__panel-header h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  &__count {
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+  &__state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 8rem;
+    margin: 0;
+    padding: 1rem;
+    color: var(--color-text-secondary);
+  }
+  &__clickable-row {
+    cursor: pointer;
+  }
+  &__name {
+    font-weight: var(--font-weight-semibold);
+  }
+  &__serial,
+  &__category {
+    color: var(--color-text-secondary);
+  }
 }
 @media (max-width: 42rem) {
   .equipment-list {
-    min-width: 0; gap: 1rem;
-    &__header, &__header-actions { display: grid; width: 100%; }
-    &__header-actions { grid-template-columns: 1fr 1fr; }
-    &__header-actions :deep(button) { width: 100%; min-height: 2.75rem; }
-    &__panel-header { padding: .875rem 1rem; flex-wrap: wrap; }
-    &__table-container { padding: 0 .75rem .75rem; }
-    &__name { margin-bottom: .5rem; font-size: 1.05rem; }
+    min-width: 0;
+    gap: 1rem;
+    &__header,
+    &__header-actions {
+      display: grid;
+      width: 100%;
+    }
+    &__header-actions {
+      grid-template-columns: 1fr 1fr;
+    }
+    &__header-actions :deep(button) {
+      width: 100%;
+      min-height: 2.75rem;
+    }
+    &__panel-header {
+      padding: 0.875rem 1rem;
+      flex-wrap: wrap;
+    }
+    &__table-container {
+      padding: 0 0.75rem 0.75rem;
+    }
+    &__name {
+      margin-bottom: 0.5rem;
+      font-size: 1.05rem;
+    }
   }
 }
-@media (max-width: 23rem) { .equipment-list__header-actions { grid-template-columns: 1fr; } }
+@media (max-width: 23rem) {
+  .equipment-list__header-actions {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

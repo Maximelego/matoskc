@@ -371,6 +371,11 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<string>("DescriptionDetail")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description_detail");
+
                     b.Property<Guid?>("PhotoId")
                         .HasColumnType("uuid")
                         .HasColumnName("photo_id");

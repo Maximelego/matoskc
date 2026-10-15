@@ -6,6 +6,7 @@ const agencyMenus: HomeTileProps[] = [
 ];
 const adminMenus: HomeTileProps[] = [
   { title: "Équipements", description: "Consulter et gérer le matériel enregistré.", icon: "equipment", to: "/equipments" },
+  { title: "Modèles d’état des lieux", description: "Créer les points de contrôle par catégorie.", icon: "clipboard", to: "/admin/inspection-templates" },
   { title: "Suivi des états des lieux", description: "Consulter les états des lieux réalisés.", icon: "document", to: "/admin/inspections" },
 ];
 const superAdminMenus: HomeTileProps[] = [

@@ -4,17 +4,21 @@ public class InspectionTemplatePoint: BaseEntity
 {
     public Guid TemplateId { get; private set; }
     public string Description { get; private set; }
+    public string DescriptionDetail {get; private set; }
     public int Position { get; private set; }
 
     public Guid? PhotoId { get; private set; }
 
-    public InspectionTemplatePoint(Guid id, Guid templateId, string description, Guid? photoId, int position = 0) : base(id)
+    public InspectionTemplatePoint(Guid id, Guid templateId, string description, string descriptionDetail, Guid? photoId, int position = 0) : base(id)
     {
         if (templateId == Guid.Empty)
             throw new ArgumentException("Template ID cannot be empty.", nameof(templateId));
 
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("Description cannot be null or whitespace.", nameof(description));
+
+        if (string.IsNullOrWhiteSpace(descriptionDetail))
+            throw new ArgumentException("Description detail cannot be null or whitespace.", nameof(descriptionDetail));
 
         if (photoId.HasValue && photoId.Value == Guid.Empty)
             throw new ArgumentException("Photo ID cannot be empty if provided.", nameof(photoId));
@@ -25,6 +29,7 @@ public class InspectionTemplatePoint: BaseEntity
         Position = position;
         TemplateId = templateId;
         Description = description;
+        DescriptionDetail = descriptionDetail;
         PhotoId = photoId;
     }
 }

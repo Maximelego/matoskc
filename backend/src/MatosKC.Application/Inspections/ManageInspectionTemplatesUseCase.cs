@@ -40,7 +40,7 @@ public sealed class ManageInspectionTemplatesUseCase(InspectionWorkflowContext c
             {
                 ArgumentNullException.ThrowIfNull(point);
 
-                return new InspectionTemplatePoint(Guid.NewGuid(), id, point.Description, point.PhotoId, position);
+                return new InspectionTemplatePoint(Guid.NewGuid(), id, point.Description, point.DescriptionDetail, point.PhotoId, position);
             }).ToArray();
             var template = new InspectionTemplate(id, points, request.EquipmentCategoryId);
 

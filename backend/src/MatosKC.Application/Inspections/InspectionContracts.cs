@@ -23,7 +23,7 @@ public sealed record SaveAnswerRequest(Guid TemplatePointId, InspectionResult? R
 // A partial update: omitted answers and attached photos are preserved.
 public sealed record SaveDraftRequest(string OperatorFirstName, IReadOnlyList<SaveAnswerRequest> Answers);
 
-public sealed record TemplatePointInput(string Description, Guid? PhotoId);
+public sealed record TemplatePointInput(string Description, string DescriptionDetail, Guid? PhotoId);
 
 public sealed record CreateTemplateRequest(Guid EquipmentCategoryId, IReadOnlyList<TemplatePointInput> Points);
 
