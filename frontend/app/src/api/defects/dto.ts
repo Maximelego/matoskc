@@ -1,9 +1,12 @@
 export type DefectStatus = "Open" | "Resolved";
-export type DefectDto = {
-  id: string; equipmentId: string; discoveredInInspectionId: string;
-  templatePointId: string | null; description: string; status: DefectStatus;
-  photoIds: string[]; createdAt: string; resolvedAt: string | null;
+export type DefectOccurrenceDto = {
+  id: string; inspectionId: string; inspectionAnswerId: string;
+  description: string; observation: string; observedAt: string; photoIds: string[];
 };
-export type ListDefectsDto = { defects: DefectDto[] };
-export type DefectFilters = { equipmentId?: string; status?: DefectStatus };
-export type ResolveDefectDto = { resolutionNote: string };
+export type DefectDto = {
+  id: string; equipmentId: string; inspectionId: string; inspectionAnswerId: string;
+  description: string; observation: string; reportedAt: string; status: DefectStatus;
+  resolvedByMaintenanceId: string | null; resolvedByAccountId: string | null;
+  resolvedAt: string | null; occurrences: DefectOccurrenceDto[];
+};
+export type DefectPageDto = { items: DefectDto[]; total: number; offset: number; limit: number };

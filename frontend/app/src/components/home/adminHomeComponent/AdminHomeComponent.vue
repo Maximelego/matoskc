@@ -8,6 +8,7 @@ const menus: HomeTileProps[] = [
     icon: "equipment",
     to: "/equipments",
   },
+  { title: "Entretiens", description: "Consigner les travaux et résoudre les défauts.", icon: "maintenance", to: "/admin/maintenances" },
   { title: "Modèles d’état des lieux", description: "Créer les points de contrôle par catégorie.", icon: "clipboard", to: "/admin/inspection-templates" },
   {
     title: "Etats des Lieux",

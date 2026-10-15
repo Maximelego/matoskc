@@ -18,6 +18,8 @@ export const inspectionHttpApi = {
   saveDraft: (id: string, dto: SaveDraftDto) => api.put<InspectionDto, SaveDraftDto>(`${path(id)}/draft`, dto),
   sign: (id: string, dto: SignInspectionDto) => api.put<InspectionDto, SignInspectionDto>(`${path(id)}/signature`, dto),
   validate: (id: string) => api.post<InspectionDto>(`${path(id)}/validation`, {}),
+  cancel: (id: string, reason: string) =>
+    api.post<InspectionDto>(`${path(id)}/cancellation`, { reason }),
   uploadPhoto: (id: string, answerId: string, file: File) =>
     api.postFile<InspectionMediaDto>(`${path(id)}/answers/${encodeURIComponent(answerId)}/photos`, file),
   removePhoto: (id: string, photoId: string) =>

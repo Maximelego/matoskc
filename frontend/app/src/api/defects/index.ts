@@ -1,16 +1,11 @@
 import { api } from "../client";
-import type { DefectDto, DefectFilters, ListDefectsDto, ResolveDefectDto } from "./dto";
+import type { DefectPageDto, DefectStatus } from "./dto";
+const path = (equipmentId: string) => `/equipments/${encodeURIComponent(equipmentId)}/defects`;
 export const defectsApi = {
-  list(filters: DefectFilters = {}) {
-    return api.get<ListDefectsDto>("/defects", { query: { ...filters } });
+  list(equipmentId: string, status?: DefectStatus, offset = 0, limit = 50) {
+    return api.get<DefectPageDto>(path(equipmentId), { query: { status, offset, limit } });
   },
-  getById(id: string) {
-    return api.get<DefectDto>(`/defects/${encodeURIComponent(id)}`);
-  },
-  resolve(id: string, dto: ResolveDefectDto) {
-    return api.post<DefectDto, ResolveDefectDto>(
-      `/defects/${encodeURIComponent(id)}/resolution`,
-      dto,
-    );
+  getPhoto(equipmentId: string, defectId: string, photoId: string) {
+    return api.getBlob(`${path(equipmentId)}/${encodeURIComponent(defectId)}/photos/${encodeURIComponent(photoId)}`);
   },
 };

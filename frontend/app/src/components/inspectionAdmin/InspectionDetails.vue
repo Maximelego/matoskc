@@ -107,7 +107,7 @@ async function downloadReport(): Promise<void> {
       </div>
       <div>
         <dt>Statut</dt>
-        <dd>{{ inspection.status === "Validated" ? "Validé" : "Brouillon" }}</dd>
+        <dd>{{ inspection.status === "Validated" ? "Validé" : inspection.status === "Cancelled" ? "Annulé" : "Brouillon" }}</dd>
       </div>
       <div>
         <dt>Opérateur</dt>
@@ -116,6 +116,9 @@ async function downloadReport(): Promise<void> {
       <div>
         <dt>Date</dt>
         <dd>{{ date.format(new Date(inspection.validatedAt ?? inspection.startedAt)) }}</dd>
+      </div>
+      <div v-if="inspection.cancellationReason">
+        <dt>Motif d’annulation</dt><dd>{{ inspection.cancellationReason }}</dd>
       </div>
       <div v-if="rental">
         <dt>Client</dt>

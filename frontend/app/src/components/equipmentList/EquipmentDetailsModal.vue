@@ -134,6 +134,9 @@ function saveEquipment(): void {
         </select>
         <button type="submit" :disabled="busy || !editName.trim() || !editCategoryId">Enregistrer les modifications</button>
       </form>
+      <RouterLink v-if="isAdministrator" :to="{ name: 'ManageMaintenances', query: { equipmentId: equipment.id } }">
+        Voir les défauts et les entretiens
+      </RouterLink>
       <div v-if="isAdministrator">
         <button type="button" class="equipment-details__history" @click="showHistory = !showHistory">
           {{ showHistory ? 'Masquer l’historique' : 'Afficher l’historique du matériel' }}

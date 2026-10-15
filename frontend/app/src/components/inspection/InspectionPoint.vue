@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { InspectionResultDto } from "../../api/inspections";
 import InspectionAnswerPhoto from "./InspectionAnswerPhoto.vue";
-export type PointValue = { result: InspectionResultDto | null; observation: string; files: File[]; photoIds: string[] };
-const props = defineProps<{ id: string; label: string; value: PointValue; inspectionId?: string | null; disabled?: boolean }>();
+import type { DefectDto } from "../../api/defects/dto";
+export type PointValue = { result: InspectionResultDto | null; observation: string; files: File[]; photoIds: string[]; existingDefectId: string | null };
+const props = defineProps<{ id: string; label: string; value: PointValue; openDefects?: DefectDto[]; inspectionId?: string | null; disabled?: boolean }>();
 const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: string] }>();
 function update(patch: Partial<PointValue>): void { emit("update", { ...props.value, ...patch }); }
 function addFiles(event: Event): void {
@@ -15,10 +16,19 @@ function addFiles(event: Event): void {
   <fieldset class="point" :disabled="disabled">
     <legend>{{ label }}</legend>
     <label><input type="radio" :name="id" :checked="value.result === 'Compliant'"
-      @change="update({ result: 'Compliant', observation: '' })" /> Conforme</label>
+      @change="update({ result: 'Compliant', observation: '', existingDefectId: null })" /> Conforme</label>
     <label><input type="radio" :name="id" :checked="value.result === 'NonCompliant'"
       @change="update({ result: 'NonCompliant' })" /> Non conforme</label>
     <div v-if="value.result === 'NonCompliant'" class="point__defect">
+      <label v-if="openDefects?.length">Défaut déjà constaté (facultatif)
+        <select :value="value.existingDefectId ?? ''"
+          @change="update({ existingDefectId: ($event.target as HTMLSelectElement).value || null })">
+          <option value="">Nouveau défaut</option>
+          <option v-for="defect in openDefects" :key="defect.id" :value="defect.id">
+            {{ defect.description }} - {{ defect.observation }}
+          </option>
+        </select>
+      </label>
       <label>Observation *<textarea :value="value.observation" rows="3"
         @input="update({ observation: ($event.target as HTMLTextAreaElement).value })" /></label>
       <label>Photographies *<input type="file" accept="image/jpeg,image/png,image/webp" multiple @change="addFiles" /></label>
@@ -40,7 +50,7 @@ function addFiles(event: Event): void {
 .point label { display: block; }
 .point__defect { display: grid; gap: .7rem; }
 .point__defect label { display: grid; gap: .35rem; }
-textarea, input[type="file"] { box-sizing: border-box; width: 100%; padding: .55rem; color: var(--color-text);
+textarea, select, input[type="file"] { box-sizing: border-box; width: 100%; padding: .55rem; color: var(--color-text);
   background: var(--color-input-background); border: 1px solid var(--color-border); border-radius: .5rem; font: inherit; }
 button { color: var(--color-primary); background: none; border: 0; cursor: pointer; }
 </style>

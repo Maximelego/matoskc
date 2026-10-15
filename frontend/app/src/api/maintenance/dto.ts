@@ -1,9 +1,10 @@
-export type MaintenanceEntryDto = {
-  id: string; equipmentId: string; defectId: string | null;
-  note: string; performedAt: string; operatorName: string;
+export type MaintenanceDto = {
+  id: string; equipmentId: string; performedAt: string; performedBy: string;
+  workDescription: string; recordedByAccountId: string; recordedAt: string;
+  resolvedDefectIds: string[];
 };
-export type CreateMaintenanceEntryDto = {
-  equipmentId: string; defectId?: string | null;
-  note: string; performedAt: string; operatorName: string;
+export type RecordMaintenanceDto = {
+  id: string; performedAt: string; performedBy: string;
+  workDescription: string; resolvedDefectIds: string[];
 };
-export type ListMaintenanceEntriesDto = { entries: MaintenanceEntryDto[] };
+export type MaintenancePageDto = { items: MaintenanceDto[]; total: number; offset: number; limit: number };

@@ -1,5 +1,5 @@
 export type InspectionTypeDto = "Departure" | "Return";
-export type InspectionStatusDto = "Draft" | "Validated";
+export type InspectionStatusDto = "Draft" | "Validated" | "Cancelled";
 export type InspectionResultDto = "Compliant" | "NonCompliant";
 
 export type ClientInputDto = {
@@ -27,6 +27,7 @@ export type InspectionAnswerDto = {
   result: InspectionResultDto;
   observation: string | null;
   photoIds: string[];
+  existingDefectId: string | null;
 };
 export type InspectionDto = {
   id: string;
@@ -44,6 +45,9 @@ export type InspectionDto = {
   signedAt: string | null;
   acceptanceText: string | null;
   hasReport: boolean;
+  cancelledAt: string | null;
+  cancelledByAccountId: string | null;
+  cancellationReason: string | null;
 };
 export type InspectionTemplateDto = {
   id: string;
@@ -54,7 +58,7 @@ export type InspectionTemplateDto = {
 export type CreateDepartureDto = { equipmentId: string; client: ClientInputDto; operatorFirstName: string };
 export type SaveDraftDto = {
   operatorFirstName: string;
-  answers: { templatePointId: string; result: InspectionResultDto; observation: string | null }[];
+  answers: { templatePointId: string; result: InspectionResultDto; observation: string | null; existingDefectId: string | null }[];
 };
 export type SignInspectionDto = { signerName: string; signaturePngBase64: string; accepted: boolean };
 export type InspectionListItemDto = {

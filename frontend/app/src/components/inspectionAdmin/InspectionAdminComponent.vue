@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { InspectionDto, InspectionListItemDto } from "../../api/inspections";
 import { inspectionHttpApi } from "../../api/inspections";
+import { agenciesApi } from "../../api/agencies";
+import type { AgencyDto } from "../../api/agencies/dto";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
@@ -13,8 +15,14 @@ const router = useRouter();
 const inspections = ref<InspectionListItemDto[]>([]);
 const loading = ref(false);
 const error = ref("");
-const search = ref("");
+const agencies = ref<AgencyDto[]>([]);
+const commandNumber = ref("");
+const agencyId = ref("");
+const rentalId = ref("");
+const from = ref("");
+const to = ref("");
 const type = ref("all");
+const status = ref("Validated");
 const order = ref("newest");
 const selected = ref<InspectionDto | null>(null);
 const detailLoading = ref(false);
@@ -26,27 +34,42 @@ const equipmentId = computed(() =>
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 const filtered = computed(() =>
   inspections.value
-    .filter((item) => !equipmentId.value || item.equipmentId === equipmentId.value)
-    .filter((item) => type.value === "all" || item.type === type.value)
-    .filter((item) =>
-      `${item.equipmentName} ${item.operatorFirstName} ${item.clientName} ${item.commandNumber}`
-        .toLocaleLowerCase("fr")
-        .includes(search.value.trim().toLocaleLowerCase("fr")),
-    )
     .sort((a, b) =>
       order.value === "newest"
         ? (b.validatedAt ?? b.startedAt).localeCompare(a.validatedAt ?? a.startedAt)
         : (a.validatedAt ?? a.startedAt).localeCompare(b.validatedAt ?? b.startedAt),
     ),
 );
+const invalidDates = computed(() => Boolean(from.value && to.value && from.value > to.value));
+function resetFilters(): void {
+  commandNumber.value = ""; agencyId.value = ""; rentalId.value = "";
+  from.value = ""; to.value = ""; type.value = "all"; status.value = "Validated";
+  order.value = "newest";
+  void load();
+}
 
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
+  if (invalidDates.value || (commandNumber.value && !/^\d{6}$/.test(commandNumber.value.trim()))) {
+    error.value = invalidDates.value
+      ? "La date de début doit précéder la date de fin."
+      : "Le numéro de commande doit contenir exactement 6 chiffres.";
+    loading.value = false;
+    return;
+  }
   try {
     const all: InspectionListItemDto[] = [];
     for (let offset = 0; ; offset += 100) {
-      const page = await inspectionHttpApi.list({ status: "Validated", equipmentId: equipmentId.value || undefined,
+      const page = await inspectionHttpApi.list({
+        status: status.value === "all" ? undefined : status.value as "Draft" | "Validated" | "Cancelled",
+        type: type.value === "all" ? undefined : type.value as "Departure" | "Return",
+        equipmentId: equipmentId.value || undefined,
+        agencyId: agencyId.value || undefined,
+        rentalId: rentalId.value.trim() || undefined,
+        commandNumber: commandNumber.value.trim() || undefined,
+        from: from.value ? new Date(`${from.value}T00:00:00`).toISOString() : undefined,
+        to: to.value ? new Date(`${to.value}T23:59:59.999`).toISOString() : undefined,
         offset, limit: 100 });
       all.push(...page.inspections);
       if (offset + page.inspections.length >= page.total || !page.inspections.length) break;
@@ -88,6 +111,7 @@ watch(selectedId, async (id, _previous, onCleanup) => {
 }, { immediate: true });
 watch(equipmentId, () => { void load(); });
 onMounted(() => {
+  void agenciesApi.list().then(result => { agencies.value = result.agencies; }).catch(() => {});
   void load();
 });
 </script>
@@ -150,12 +174,11 @@ onMounted(() => {
     </p>
     <template v-else-if="!error">
       <div class="inspection-admin__filters">
-        <label
-          >Rechercher<input
-            v-model="search"
-            type="search"
-            placeholder="Équipement ou opérateur"
-        /></label>
+        <label>Numéro de commande<input v-model="commandNumber" inputmode="numeric" maxlength="6" placeholder="6 chiffres" /></label>
+        <label>Agence<select v-model="agencyId"><option value="">Toutes les agences</option><option v-for="agency in agencies" :key="agency.id" :value="agency.id">{{ agency.code }} — {{ agency.name }}</option></select></label>
+        <label>Identifiant de location<input v-model="rentalId" type="text" placeholder="UUID de la location" /></label>
+        <label>Du<input v-model="from" type="date" /></label>
+        <label>Au<input v-model="to" type="date" /></label>
         <label
           >Type<select v-model="type">
             <option value="all">Tous</option>
@@ -163,12 +186,19 @@ onMounted(() => {
             <option value="Return">Retours</option>
           </select></label
         >
+        <label>Statut<select v-model="status">
+          <option value="Validated">Validés</option>
+          <option value="Draft">Brouillons</option>
+          <option value="Cancelled">Annulés</option>
+          <option value="all">Tous</option>
+        </select></label>
         <label
           >Ordre<select v-model="order">
             <option value="newest">Plus récents</option>
             <option value="oldest">Plus anciens</option>
           </select></label
         >
+        <div class="inspection-admin__filter-actions"><button type="button" :disabled="loading" @click="load">Rechercher</button><button type="button" :disabled="loading" @click="resetFilters">Réinitialiser</button></div>
       </div>
       <p role="status">{{ filtered.length }} état(s) des lieux</p>
       <p v-if="!filtered.length">Aucun état des lieux ne correspond à ces critères.</p>
@@ -183,7 +213,7 @@ onMounted(() => {
           <div>
             <strong>{{ item.equipmentName }}</strong>
             <span
-              >{{ item.type === "Departure" ? "Départ" : "Retour" }} -
+              >{{ item.type === "Departure" ? "Départ" : "Retour" }} - {{ item.status === "Validated" ? "Validé" : item.status === "Cancelled" ? "Annulé" : "Brouillon" }} -
               {{ date.format(new Date(item.validatedAt ?? item.startedAt)) }}</span
             >
             <span
@@ -252,13 +282,14 @@ header p {
 }
 .inspection-admin__filters {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 0.75rem;
 }
 .inspection-admin__filters label {
   display: grid;
   gap: 0.35rem;
 }
+.inspection-admin__filter-actions { display: flex; align-items: end; gap: 0.5rem; }
 .inspection-admin__filters input,
 .inspection-admin__filters select {
   min-height: 2.75rem;

@@ -5,6 +5,8 @@ import { ApiError } from "../../api/client";
 import { agenciesApi } from "../../api/agencies";
 import { authSession } from "../../api/auth/session";
 import { equipmentsApi } from "../../api/equipments";
+import { defectsApi } from "../../api/defects";
+import type { DefectDto } from "../../api/defects/dto";
 import type { EquipmentDto } from "../../api/equipments/dto";
 import { inspectionHttpApi } from "../../api/inspections";
 import type { ClientInputDto, InspectionDto, InspectionTemplateDto, RentalDto } from "../../api/inspections";
@@ -26,6 +28,8 @@ const departureTemplate = ref<InspectionTemplateDto | null>(null);
 const client = ref<ClientInputDto>({ displayName: "", email: "", phone: "", agencyCode: 83, commandValue: "" });
 const operatorFirstName = ref("");
 const points = ref<Record<string, PointValue>>({});
+const openDefects = ref<DefectDto[]>([]);
+const cancellationReason = ref("");
 const signerName = ref("");
 const accepted = ref(false);
 const signatureFile = ref<File | null>(null);
@@ -37,7 +41,7 @@ const isDeparture = computed(() => equipment.value?.status === "Available");
 const orderedPoints = computed(() => [...(template.value?.points ?? [])].sort((a, b) => a.position - b.position));
 const currentPoint = computed(() => orderedPoints.value[step.value - 1]);
 const finalStep = computed(() => orderedPoints.value.length + 1);
-const defaultPoint = (): PointValue => ({ result: null, observation: "", files: [], photoIds: [] });
+const defaultPoint = (): PointValue => ({ result: null, observation: "", files: [], photoIds: [], existingDefectId: null });
 
 function message(cause: unknown): string {
   if (cause instanceof ApiError) {
@@ -57,6 +61,12 @@ async function load(): Promise<void> {
     if (item.status !== "Available" && item.status !== "Borrowed")
       throw new Error("Cet équipement ne peut pas faire l’objet d’un état des lieux.");
     equipment.value = item;
+    openDefects.value = [];
+    for (let offset = 0; ; offset += 100) {
+      const page = await defectsApi.list(item.id, "Open", offset, 100);
+      openDefects.value.push(...page.items);
+      if (offset + page.items.length >= page.total || !page.items.length) break;
+    }
     const current = await inspectionHttpApi.getCurrentRental(item.id);
     rental.value = current;
     if (item.status === "Borrowed" && !current) throw new Error("Aucune location en cours pour cet équipement.");
@@ -86,7 +96,7 @@ async function load(): Promise<void> {
     points.value = Object.fromEntries(template.value.points.map(point => {
       const answer = draft?.answers.find(a => a.templatePointId === point.id);
       return [point.id, answer
-        ? { result: answer.result, observation: answer.observation ?? "", photoIds: answer.photoIds, files: [] }
+        ? { result: answer.result, observation: answer.observation ?? "", photoIds: answer.photoIds, existingDefectId: answer.existingDefectId ?? null, files: [] }
         : defaultPoint()];
     }));
   } catch (cause) { error.value = message(cause); }
@@ -128,6 +138,7 @@ async function persist(): Promise<void> {
   const answers = Object.entries(points.value).filter(([, value]) => value.result).map(([id, value]) => ({
     templatePointId: id, result: value.result!,
     observation: value.result === "NonCompliant" ? value.observation.trim() || null : null,
+    existingDefectId: value.result === "NonCompliant" ? value.existingDefectId : null,
   }));
   inspection.value = await inspectionHttpApi.saveDraft(current.id,
     { operatorFirstName: operatorFirstName.value.trim(), answers });
@@ -169,6 +180,15 @@ async function removePhoto(pointId: string, photoId: string): Promise<void> {
     await inspectionHttpApi.removePhoto(inspection.value.id, photoId);
     points.value[pointId].photoIds = points.value[pointId].photoIds.filter(id => id !== photoId);
     inspection.value = await inspectionHttpApi.getById(inspection.value.id);
+  } catch (cause) { error.value = message(cause); }
+  finally { busy.value = false; }
+}
+async function cancelDraft(): Promise<void> {
+  if (!inspection.value || busy.value || !cancellationReason.value.trim()) return;
+  busy.value = true; error.value = "";
+  try {
+    await inspectionHttpApi.cancel(inspection.value.id, cancellationReason.value.trim());
+    await router.push({ name: "Inspections" });
   } catch (cause) { error.value = message(cause); }
   finally { busy.value = false; }
 }
@@ -229,7 +249,7 @@ onMounted(() => { void load(); });
         <p class="wizard__point-detail">{{ currentPoint.descriptionDetail }}</p>
         <TemplateIllustration :photo-id="currentPoint.photoId" />
         <InspectionPoint :id="currentPoint.id" :label="currentPoint.description"
-          :value="points[currentPoint.id]" :inspection-id="inspection?.id" :disabled="busy"
+          :value="points[currentPoint.id]" :open-defects="openDefects" :inspection-id="inspection?.id" :disabled="busy"
           @update="points[currentPoint.id] = $event"
           @remove-photo="removePhoto(currentPoint.id, $event)" />
       </section>
@@ -247,6 +267,12 @@ onMounted(() => { void load(); });
         <button type="button" :disabled="busy" @click="validate">Signer et valider l’état des lieux</button>
       </section>
       <p v-if="error" role="alert" class="wizard__error">{{ error }}</p>
+      <section v-if="inspection?.status === 'Draft'" class="wizard__cancel">
+        <label for="cancel-reason">Annuler ce brouillon</label>
+        <textarea id="cancel-reason" v-model="cancellationReason" rows="2" maxlength="1000"
+          placeholder="Motif de l’annulation" :disabled="busy" />
+        <button type="button" :disabled="busy || !cancellationReason.trim()" @click="cancelDraft">Annuler l’état des lieux</button>
+      </section>
       <nav class="wizard__actions">
         <button v-if="step > 0" type="button" :disabled="busy" @click="step--">Précédent</button>
         <button type="button" :disabled="busy" @click="save">Enregistrer le brouillon</button>
@@ -257,6 +283,8 @@ onMounted(() => { void load(); });
 </template>
 <style scoped lang="scss">
 .wizard__point-detail { white-space: pre-wrap; tab-size: 4; }
+.wizard__cancel { display: grid; gap: .5rem; border-top: 1px solid var(--color-border); padding-top: 1rem; }
+.wizard__cancel button { justify-self: start; }
 .wizard { display: grid; gap: 1.25rem; max-width: 48rem; margin-inline: auto; }
 .wizard h1 { margin: 0; }
 .wizard progress { width: 100%; accent-color: var(--color-primary); }
