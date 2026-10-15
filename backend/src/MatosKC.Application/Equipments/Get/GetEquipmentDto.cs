@@ -8,5 +8,7 @@ public record GetEquipmentDto(
     string Name,
     string SerialNumber,
     EquipmentStatus Status,
-    Guid EquipmentCategoryId
+    Guid EquipmentCategoryId,
+    Guid? PrimaryPhotoId = null,
+    string? ThumbnailUrl = null
 );

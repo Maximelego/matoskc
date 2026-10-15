@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { InspectionResultDto } from "../../api/inspections";
+import InspectionAnswerPhoto from "./InspectionAnswerPhoto.vue";
 export type PointValue = { result: InspectionResultDto | null; observation: string; files: File[]; photoIds: string[] };
-const props = defineProps<{ id: string; label: string; value: PointValue; disabled?: boolean }>();
+const props = defineProps<{ id: string; label: string; value: PointValue; inspectionId?: string | null; disabled?: boolean }>();
 const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: string] }>();
 function update(patch: Partial<PointValue>): void { emit("update", { ...props.value, ...patch }); }
 function addFiles(event: Event): void {
@@ -26,6 +27,7 @@ function addFiles(event: Event): void {
           {{ file.name }} <button type="button" @click="update({ files: value.files.filter((_, i) => i !== index) })">Retirer</button>
         </li>
         <li v-for="photoId in value.photoIds" :key="photoId">
+          <InspectionAnswerPhoto v-if="inspectionId" :inspection-id="inspectionId" :photo-id="photoId" />
           Photo enregistrée <button type="button" @click="emit('removePhoto', photoId)">Retirer</button>
         </li>
       </ul>

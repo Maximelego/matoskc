@@ -146,7 +146,9 @@ class ApiClient {
 
     if (response.status === 204 || response.status === 205) return undefined as T;
 
-    return (responseType === "blob" ? await response.blob() : await response.json()) as T;
+    if (responseType === "blob") return (await response.blob()) as T;
+    const responseBody = await response.text();
+    return (responseBody.trim() ? JSON.parse(responseBody) : null) as T;
   }
 }
 

@@ -71,6 +71,7 @@ public sealed class DevelopmentDataSeeder
 
         await DbContext.SaveChangesAsync(cancellationToken);
 
+        await DevelopmentInspectionTemplates.SeedAsync(DbContext, cancellationToken);
         await SeedPhotosAsync(cancellationToken);
     }
 

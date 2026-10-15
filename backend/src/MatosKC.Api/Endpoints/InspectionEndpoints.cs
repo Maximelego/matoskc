@@ -86,7 +86,7 @@ public static class InspectionEndpoints
             .RequireAuthorization("ManageEquipment");
     }
 
-    private static async Task<InspectionActor> ActorAsync(HttpContext context, IAgencyRepository agencies, CancellationToken ct)
+    internal static async Task<InspectionActor> ActorAsync(HttpContext context, IAgencyRepository agencies, CancellationToken ct)
     {
         Guid accountId = Guid.Parse(context.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         Role role = Enum.Parse<Role>(context.User.FindFirstValue(ClaimTypes.Role)!);
@@ -198,7 +198,7 @@ public static class InspectionEndpoints
 
     private static async Task<IResult> GetOpenRentalAsync(
         Guid equipmentId, QueryInspectionsUseCase useCase, HttpContext context, IAgencyRepository agencies, CancellationToken ct
-    ) => Results.Ok(await useCase.GetOpenRentalAsync(equipmentId, await ActorAsync(context, agencies, ct), ct));
+    ) => Results.Ok(new { rental = await useCase.GetOpenRentalAsync(equipmentId, await ActorAsync(context, agencies, ct), ct) });
 
     private static async Task<IResult> GetDepartureAsync(
         Guid id, QueryInspectionsUseCase useCase, HttpContext context, IAgencyRepository agencies, CancellationToken ct
@@ -297,6 +297,12 @@ public static class InspectionEndpoints
         CancellationToken ct
     )
     {
+        if (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Length > 1000)
+        {
+            throw new InspectionOperationException(400, "A decision reason (1 to 1000 characters) is required.");
+        }
+
+        context.RequestServices.GetRequiredService<MatosKC.Application.Persistence.AuditContext>().Reason = request.Reason.Trim();
         var equipment = await useCase.ExecuteAsync(equipmentId, request.Status, await ActorAsync(context, agencies, ct), ct);
 
         return Results.Ok(new
@@ -307,6 +313,7 @@ public static class InspectionEndpoints
     }
 
     public sealed record ChangeEquipmentStatusRequest(
-        [property: System.Text.Json.Serialization.JsonRequired] EquipmentStatus Status
+        [property: System.Text.Json.Serialization.JsonRequired] EquipmentStatus Status,
+        string? Reason = null
     );
 }

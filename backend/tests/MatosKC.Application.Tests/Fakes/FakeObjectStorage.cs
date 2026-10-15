@@ -6,6 +6,9 @@ internal sealed class FakeObjectStorage : IObjectStorage
 {
     private readonly Dictionary<string, (byte[] Content, string ContentType)> Objects = [];
 
+    public bool FailStore { get; set; }
+    public bool FailDelete { get; set; }
+
     public IReadOnlyCollection<string> ObjectKeys => Objects.Keys;
 
     public Task EnsureReadyAsync(CancellationToken cancellationToken = default)
@@ -20,6 +23,7 @@ internal sealed class FakeObjectStorage : IObjectStorage
         CancellationToken cancellationToken = default
     )
     {
+        if (FailStore) throw new IOException("Storage failure.");
         using var buffer = new MemoryStream();
         await content.CopyToAsync(buffer, cancellationToken);
         Objects[objectKey] = (buffer.ToArray(), contentType);
@@ -48,6 +52,7 @@ internal sealed class FakeObjectStorage : IObjectStorage
         CancellationToken cancellationToken = default
     )
     {
+        if (FailDelete) throw new IOException("Cleanup failure.");
         Objects.Remove(objectKey);
         return Task.CompletedTask;
     }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseIcon from "../common/icon/BaseIcon.vue";
+import TemplatePointPhoto from "./TemplatePointPhoto.vue";
 
 export interface EditablePoint {
   key: number;
@@ -9,7 +10,7 @@ export interface EditablePoint {
 }
 
 const props = defineProps<{ points: EditablePoint[]; disabled: boolean }>();
-const emit = defineEmits<{ change: [points: EditablePoint[]] }>();
+const emit = defineEmits<{ change: [points: EditablePoint[]]; busy: [value: boolean] }>();
 let nextKey = 1;
 
 function add() {
@@ -33,6 +34,19 @@ function move(index: number, direction: number) {
   if (target < 0 || target >= copy.length) return;
   [copy[index], copy[target]] = [copy[target]!, copy[index]!];
   emit("change", copy);
+}
+function insertTab(event: KeyboardEvent, point: EditablePoint) {
+  if (event.key !== "Tab" || event.shiftKey) return;
+  event.preventDefault();
+  const input = event.target as HTMLTextAreaElement;
+  const start = input.selectionStart;
+  point.descriptionDetail =
+    point.descriptionDetail.slice(0, start) +
+    "\t" +
+    point.descriptionDetail.slice(input.selectionEnd);
+  requestAnimationFrame(() => {
+    input.selectionStart = input.selectionEnd = start + 1;
+  });
 }
 </script>
 
@@ -60,14 +74,21 @@ function move(index: number, direction: number) {
             maxlength="500"
             placeholder="Ex. Vérifier l’état du câble"
           />
-          <input
+          <label :for="`template-point-detail-${point.key}`">Détail du point</label>
+          <textarea
             :id="`template-point-detail-${point.key}`"
             v-model="point.descriptionDetail"
             class="point__details"
             required
-            type="text"
-            maxlength="500"
-            placeholder="Ex. Contrôle des points suivants..."
+            rows="5"
+            placeholder="Décrivez les contrôles à effectuer…"
+            @keydown="insertTab($event, point)"
+          ></textarea>
+          <TemplatePointPhoto
+            :photo-id="point.photoId"
+            :disabled="disabled"
+            @change="point.photoId = $event"
+            @busy="emit('busy', $event)"
           />
         </div>
         <div class="point__buttons">
@@ -145,11 +166,10 @@ legend {
     flex: 1;
     min-width: 0;
 
-    .point__details input {
-      flex: 1;
-      min-height: 5rem;
-
-      /* Making sure the Text input allows for text formatting like line returns */
+    .point__details {
+      min-height: 7rem;
+      resize: vertical;
+      tab-size: 4;
       white-space: pre-wrap;
     }
   }
@@ -161,7 +181,8 @@ legend {
     max-height: 3rem;
   }
 }
-.point__row input {
+.point__row input,
+.point__row textarea {
   flex: 1;
   min-width: 0;
   padding: 0.65rem;
@@ -190,7 +211,8 @@ button:disabled {
   .point__row {
     flex-wrap: wrap;
   }
-  .point__row input {
+  .point__row input,
+  .point__row textarea {
     flex-basis: 100%;
   }
 }

@@ -45,21 +45,37 @@ public sealed class EquipmentPhotoRepository : IEquipmentPhotoRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task UpdateAsync(
+    public async Task UpdateAsync(
         EquipmentPhoto photo,
         CancellationToken cancellationToken
     )
     {
         DbContext.EquipmentPhotos.Update(photo);
-        return DbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await DbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new MatosKC.Application.Inspections.InspectionOperationException(
+                409, "Photo changed concurrently. Refresh and retry.");
+        }
     }
 
-    public Task DeleteAsync(
+    public async Task DeleteAsync(
         EquipmentPhoto photo,
         CancellationToken cancellationToken
     )
     {
         DbContext.EquipmentPhotos.Remove(photo);
-        return DbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await DbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new MatosKC.Application.Inspections.InspectionOperationException(
+                409, "Photo changed concurrently. Refresh and retry.");
+        }
     }
 }

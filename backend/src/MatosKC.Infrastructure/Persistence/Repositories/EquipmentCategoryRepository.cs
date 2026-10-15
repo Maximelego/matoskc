@@ -41,11 +41,17 @@ public sealed class EquipmentCategoryRepository
         CancellationToken cancellationToken)
     {
         return _dbContext.EquipmentCategories
-            .AsNoTracking()
             .SingleOrDefaultAsync(
                 category => category.Id == id,
                 cancellationToken
             );
+    }
+
+    public Task UpdateAsync(EquipmentCategory category, CancellationToken cancellationToken)
+    {
+        _dbContext.EquipmentCategories.Update(category);
+
+        return Task.CompletedTask;
     }
 
     public async Task AddAsync(

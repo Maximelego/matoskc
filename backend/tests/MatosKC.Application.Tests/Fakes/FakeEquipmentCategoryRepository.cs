@@ -6,6 +6,8 @@ namespace MatosKC.Application.Tests.Fakes;
 
 internal sealed class FakeEquipmentCategoryRepository : IEquipmentCategoryRepository
 {
+    public Task UpdateAsync(MatosKC.Domain.Equipments.EquipmentCategory category, CancellationToken cancellationToken) => Task.CompletedTask;
+
     private readonly Dictionary<Guid, EquipmentCategory> _categories = [];
 
     public bool NameAlreadyExists { get; set; }

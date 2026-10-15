@@ -16,6 +16,7 @@ const points = ref<EditablePoint[]>([
 const loading = ref(true);
 const loadingTemplate = ref(false);
 const saving = ref(false);
+const uploading = ref(false);
 const error = ref("");
 const success = ref("");
 let requestId = 0;
@@ -77,12 +78,17 @@ onMounted(async () => {
 });
 
 async function submit() {
-  if (!categoryId.value || saving.value || loadingTemplate.value) return;
+  if (!categoryId.value || saving.value || uploading.value || loadingTemplate.value) return;
   error.value = "";
   success.value = "";
   const descriptions = points.value.map((point) => point.description.trim());
   if (!descriptions.length || descriptions.some((description) => !description)) {
     error.value = "Renseignez au moins un point et complétez toutes les descriptions.";
+    return;
+  }
+  const details = points.value.map((point) => point.descriptionDetail);
+  if (details.some((detail) => !detail.trim())) {
+    error.value = "Complétez le détail de chaque point.";
     return;
   }
   saving.value = true;
@@ -92,6 +98,7 @@ async function submit() {
       equipmentCategoryId: selectedCategory,
       points: points.value.map((point, index) => ({
         description: descriptions[index]!,
+        descriptionDetail: details[index]!,
         photoId: point.photoId,
       })),
     });
@@ -158,9 +165,7 @@ async function submit() {
             :key="point.id"
           >
             {{ point.description }}
-            <span>
-              {{ point.descriptionDetail }}
-            </span>
+            <span class="current__detail">{{ point.descriptionDetail }}</span>
           </li>
         </ol>
         <button
@@ -185,8 +190,9 @@ async function submit() {
       </p>
       <TemplatePointsEditor
         :points="points"
-        :disabled="saving || !categoryId || loadingTemplate"
+        :disabled="saving || uploading || !categoryId || loadingTemplate"
         @change="points = $event"
+        @busy="uploading = $event"
       />
       <p
         v-if="error"
@@ -205,7 +211,7 @@ async function submit() {
       <button
         class="submit"
         type="submit"
-        :disabled="!categoryId || saving || loadingTemplate"
+        :disabled="!categoryId || saving || uploading || loadingTemplate"
       >
         {{ saving ? "Création…" : "Créer le modèle" }}
       </button>
@@ -254,6 +260,12 @@ select {
 .current {
   border-top: 1px solid var(--color-border);
   padding-top: 1rem;
+}
+.current__detail {
+  display: block;
+  white-space: pre-wrap;
+  tab-size: 4;
+  color: var(--color-text-secondary);
 }
 .current ol {
   padding-left: 1.4rem;

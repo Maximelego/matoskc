@@ -49,7 +49,7 @@ export type InspectionTemplateDto = {
   id: string;
   equipmentCategoryId: string;
   createdAt: string;
-  points: { id: string; templateId: string; description: string; position: number; photoId: string | null }[];
+  points: { id: string; templateId: string; description: string; descriptionDetail: string; position: number; photoId: string | null }[];
 };
 export type CreateDepartureDto = { equipmentId: string; client: ClientInputDto; operatorFirstName: string };
 export type SaveDraftDto = {

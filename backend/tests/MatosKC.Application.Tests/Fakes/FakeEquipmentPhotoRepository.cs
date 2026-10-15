@@ -5,6 +5,8 @@ using MatosKC.Domain.Equipments;
 
 internal sealed class FakeEquipmentPhotoRepository : IEquipmentPhotoRepository
 {
+    public bool FailUpdate { get; set; }
+
     public List<EquipmentPhoto> Photos { get; } = [];
 
     public Task AddAsync(EquipmentPhoto photo, CancellationToken cancellationToken)
@@ -31,6 +33,7 @@ internal sealed class FakeEquipmentPhotoRepository : IEquipmentPhotoRepository
 
     public Task UpdateAsync(EquipmentPhoto photo, CancellationToken cancellationToken)
     {
+        if (FailUpdate) throw new InvalidOperationException("Database failure.");
         return Task.CompletedTask;
     }
 

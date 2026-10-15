@@ -137,7 +137,7 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         {
             Assert.Equal(HttpStatusCode.Conflict,
                 (await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode)).StatusCode);
-            await JsonAsync(await client.PatchAsJsonAsync($"/equipments/{seed.EquipmentId}/status", new { status = "Available" }, cancellationToken: TestContext.Current.CancellationToken));
+            await JsonAsync(await client.PatchAsJsonAsync($"/equipments/{seed.EquipmentId}/status", new { status = "Available", reason = "Défaut examiné : remise en location autorisée." }, cancellationToken: TestContext.Current.CancellationToken));
             Assert.Equal(HttpStatusCode.Created,
                 (await DepartureAsync(client, seed.EquipmentId, seed.AgencyCode)).StatusCode);
         }

@@ -5,6 +5,7 @@ import { equipmentsApi } from "../../api/equipments";
 import type { InspectionDto } from "../../api/inspections";
 import { inspectionHttpApi } from "../../api/inspections";
 import BaseButton from "../common/button/BaseButton.vue";
+import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
 import InspectionDetails from "./InspectionDetails.vue";
 
@@ -104,23 +105,22 @@ onMounted(() => {
         <h1>{{ equipmentId ? "Chronologie des états des lieux" : "États des lieux" }}</h1>
         <p>Consultez les contrôles réalisés et les documents signés.</p>
       </div>
-      <button
-        type="button"
-        :disabled="loading"
-        @click="load"
-      >
-        Actualiser
-      </button>
+      <div class="header__tools">
+        <button
+          type="button"
+          :disabled="loading"
+          @click="load"
+        >
+          <BaseIcon name="refresh" />
+        </button>
+      </div>
       <router-link
         to="/admin/inspection-templates"
         class="inspection-admin__create-button"
       >
-        <BaseButton
-          variant="primary"
-          size="small"
-        >
+        <BaseButton variant="primary">
           <BaseIcon name="add" />
-          Créer un modèle d'état des lieux
+          <span> Créer un modèle d'état des lieux </span>
         </BaseButton>
       </router-link>
     </header>
@@ -228,9 +228,21 @@ onMounted(() => {
 }
 header {
   display: flex;
-  justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+
+  .header__tools {
+    max-height: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
 }
 h1,
 header p {

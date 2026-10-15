@@ -13,6 +13,7 @@ import InspectionIdentity from "./InspectionIdentity.vue";
 import InspectionPoint from "./InspectionPoint.vue";
 import type { PointValue } from "./InspectionPoint.vue";
 import InspectionSignaturePad from "./InspectionSignaturePad.vue";
+import TemplateIllustration from "./TemplateIllustration.vue";
 
 const props = defineProps<{ equipmentId: string }>();
 const router = useRouter();
@@ -224,8 +225,10 @@ onMounted(() => { void load(); });
       </template>
       <section v-else-if="currentPoint">
         <h2>Point {{ step }} sur {{ orderedPoints.length }}</h2>
+        <p class="wizard__point-detail">{{ currentPoint.descriptionDetail }}</p>
+        <TemplateIllustration :photo-id="currentPoint.photoId" />
         <InspectionPoint :id="currentPoint.id" :label="currentPoint.description"
-          :value="points[currentPoint.id]" :disabled="busy"
+          :value="points[currentPoint.id]" :inspection-id="inspection?.id" :disabled="busy"
           @update="points[currentPoint.id] = $event"
           @remove-photo="removePhoto(currentPoint.id, $event)" />
       </section>
@@ -252,6 +255,7 @@ onMounted(() => { void load(); });
   </main>
 </template>
 <style scoped lang="scss">
+.wizard__point-detail { white-space: pre-wrap; tab-size: 4; }
 .wizard { display: grid; gap: 1.25rem; max-width: 48rem; margin-inline: auto; }
 .wizard h1 { margin: 0; }
 .wizard progress { width: 100%; accent-color: var(--color-primary); }

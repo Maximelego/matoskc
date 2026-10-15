@@ -10,6 +10,8 @@ public sealed class EquipmentPhotoConfiguration
     public void Configure(EntityTypeBuilder<EquipmentPhoto> builder)
     {
         builder.ToTable("equipment_photos");
+        builder.Property<uint>("xmin").IsRowVersion();
+
         builder.HasKey(photo => photo.Id);
 
         builder.Property(photo => photo.Id).HasColumnName("id");

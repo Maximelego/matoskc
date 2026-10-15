@@ -10,6 +10,8 @@ public interface IEquipmentCategoryRepository
 
     Task<bool> ExistsByNameAsync(string Name, CancellationToken cancellationToken);
 
+    Task UpdateAsync(EquipmentCategory category, CancellationToken cancellationToken);
+
     Task AddAsync(EquipmentCategory category, CancellationToken cancellationToken);
 
     Task<List<EquipmentCategory>> ListEquipmentCategoriesAsync(ListEquipmentCategoryQuery query, CancellationToken cancellationToken);

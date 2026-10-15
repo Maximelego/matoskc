@@ -13,10 +13,12 @@ import EquipmentCategoryCreateForm from "../equipmentCategoryCreate/EquipmentCat
 import EquipmentCreateForm from "../equipmentCreate/EquipmentCreateForm.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentDetailsModal from "./EquipmentDetailsModal.vue";
+import EquipmentListThumbnail from "./EquipmentListThumbnail.vue";
 import EquipmentFiltersControl from "./EquipmentFilters.vue";
 
 const selectedEquipment = ref<EquipmentDto | null>(null);
 const detailsOpen = ref(false);
+const photoVersion = ref(0);
 const createContentVisible = ref(false);
 const createCategoryContentVisible = ref(false);
 
@@ -46,7 +48,7 @@ function closeDetails(): void {
   detailsOpen.value = false;
 }
 function clearDetails(): void {
-  if (!detailsOpen.value) selectedEquipment.value = null;
+  if (!detailsOpen.value) { selectedEquipment.value = null; photoVersion.value++; }
 }
 
 type SortKey = "name" | "serialNumber" | "equipmentCategoryId" | "status";
@@ -434,7 +436,10 @@ onUnmounted(() => {
                 scope="row"
                 class="equipment-list__name"
               >
-                {{ equipment.name }}
+                <span class="equipment-list__identity">
+                  <EquipmentListThumbnail :key="`${equipment.id}-${photoVersion}`" :equipment-id="equipment.id" :name="equipment.name" />
+                  <span>{{ equipment.name }}</span>
+                </span>
               </th>
               <td
                 class="equipment-list__serial"
@@ -568,6 +573,7 @@ onUnmounted(() => {
   &__clickable-row {
     cursor: pointer;
   }
+  &__identity { display: flex; align-items: center; gap: .75rem; }
   &__name {
     font-weight: var(--font-weight-semibold);
   }

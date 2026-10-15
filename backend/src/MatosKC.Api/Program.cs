@@ -67,6 +67,15 @@ app.UseExceptionHandler();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.Use(async (http, next) =>
+{
+    var audit = http.RequestServices.GetRequiredService<MatosKC.Application.Persistence.AuditContext>();
+    var accountId = http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    audit.AccountId = Guid.TryParse(accountId, out var id) ? id : null;
+
+    await next(http);
+});
+
 app.UseRateLimiter();
 app.UseMiddleware<CsrfMiddleware>();
 app.UseAntiforgery();
@@ -84,6 +93,7 @@ app.MapAgencyEndpoints();
 
 app.MapEquipmentCategoryEndpoints();
 app.MapEquipmentEndpoints();
+app.MapEquipmentManagementEndpoints();
 app.MapEquipmentPhotoEndpoints();
 
 app.Run();

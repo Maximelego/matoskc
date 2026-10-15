@@ -12,6 +12,48 @@ using MatosKC.Domain.Equipments;
 
 public sealed class EquipmentPhotoUseCaseTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReplacementFailure_PreservesOriginalObject(bool storageFailure)
+    {
+        var photo = CreatePhoto(Guid.NewGuid());
+        string originalKey = photo.ObjectKey;
+        var photos = new FakeEquipmentPhotoRepository { FailUpdate = !storageFailure };
+        photos.Photos.Add(photo);
+        var storage = new FakeObjectStorage();
+        await storage.StoreAsync(originalKey, new MemoryStream([1, 2]), "image/png");
+        storage.FailStore = storageFailure;
+        var useCase = new ReplaceEquipmentPhotoUseCase(photos, storage, new FakeImageContentValidator());
+
+        await Assert.ThrowsAnyAsync<Exception>(() => useCase.ExecuteAsync(photo.EquipmentId, photo.Id,
+            new MemoryStream([8, 9]), "new.png", "image/png", 2));
+
+        await using var original = await storage.RetrieveAsync(originalKey);
+        Assert.NotNull(original);
+        using var bytes = new MemoryStream();
+        await original.Content.CopyToAsync(bytes);
+        Assert.Equal(new byte[] { 1, 2 }, bytes.ToArray());
+    }
+
+    [Fact]
+    public async Task CleanupFailure_AfterReplacementDoesNotReportMutationAsFailed()
+    {
+        var photo = CreatePhoto(Guid.NewGuid());
+        string originalKey = photo.ObjectKey;
+        var photos = new FakeEquipmentPhotoRepository();
+        photos.Photos.Add(photo);
+        var storage = new FakeObjectStorage { FailDelete = true };
+        var useCase = new ReplaceEquipmentPhotoUseCase(photos, storage, new FakeImageContentValidator());
+
+        var result = await useCase.ExecuteAsync(photo.EquipmentId, photo.Id,
+            new MemoryStream([8, 9]), "new.png", "image/png", 2);
+
+        Assert.Equal(photo.Id, result.Id);
+        Assert.NotEqual(originalKey, photo.ObjectKey);
+        Assert.Contains(photo.ObjectKey, storage.ObjectKeys);
+    }
+
     [Fact]
     public async Task Upload_WithValidPng_ShouldStoreContentAndMetadata()
     {
@@ -115,7 +157,7 @@ public sealed class EquipmentPhotoUseCaseTests
     }
 
     [Fact]
-    public async Task Replace_ShouldOverwriteContentAndMetadata()
+    public async Task Replace_ShouldSwapObjectAndMetadata()
     {
         (Equipment equipment, _) = CreateEquipmentRepository();
         EquipmentPhoto photo = CreatePhoto(equipment.Id);

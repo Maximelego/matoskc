@@ -16,5 +16,7 @@ export interface InspectionTemplateDto {
 
 export interface CreateInspectionTemplateDto {
   equipmentCategoryId: string;
-  points: Array<{ description: string; photoId: string | null }>;
+  points: Array<{ description: string; descriptionDetail: string; photoId: string | null }>;
 }
+
+export interface InspectionTemplatePhotoDto { id: string; fileName: string; contentType: string; contentLength: number; createdAt: string }

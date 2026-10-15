@@ -24,10 +24,50 @@ public sealed class MatosKCDbContext : DbContext
     public DbSet<EquipmentCategory> EquipmentCategories =>
         Set<EquipmentCategory>();
 
+    private readonly MatosKC.Application.Persistence.AuditContext? Audit;
+
+    public DbSet<MatosKC.Application.Persistence.AuditEntry> AuditEntries =>
+        Set<MatosKC.Application.Persistence.AuditEntry>();
+
     public MatosKCDbContext(
-        DbContextOptions<MatosKCDbContext> options)
+        DbContextOptions<MatosKCDbContext> options,
+        MatosKC.Application.Persistence.AuditContext? audit = null)
         : base(options)
     {
+        Audit = audit;
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        var records = AuditCollector.Collect(this, Audit);
+        AuditEntries.AddRange(records);
+
+        try
+        {
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+        catch
+        {
+            foreach (var record in records) Entry(record).State = EntityState.Detached;
+            throw;
+        }
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        var records = AuditCollector.Collect(this, Audit);
+        AuditEntries.AddRange(records);
+
+        try
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        catch
+        {
+            foreach (var record in records) Entry(record).State = EntityState.Detached;
+            throw;
+        }
     }
 
     protected override void OnModelCreating(

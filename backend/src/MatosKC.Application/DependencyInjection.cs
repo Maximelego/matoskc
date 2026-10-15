@@ -23,6 +23,8 @@ public static class DependencyInjection
         services.AddScoped<GetEquipmentCategoryUseCase>();
         services.AddScoped<ListEquipmentCategoryUseCase>();
 
+        services.AddScoped<MatosKC.Application.Equipments.ManageEquipmentUseCase>();
+        services.AddScoped<MatosKC.Application.Equipments.GetEquipmentHistoryUseCase>();
         services.AddScoped<CreateEquipmentUseCase>();
         services.AddScoped<GetEquipmentUseCase>();
         services.AddScoped<ListEquipmentUseCase>();

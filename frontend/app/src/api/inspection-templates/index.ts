@@ -1,5 +1,5 @@
 import { api } from "../client";
-import type { CreateInspectionTemplateDto, InspectionTemplateDto } from "./dto";
+import type { CreateInspectionTemplateDto, InspectionTemplateDto, InspectionTemplatePhotoDto } from "./dto";
 
 export const inspectionTemplatesApi = {
   getById(id: string) {
@@ -12,5 +12,11 @@ export const inspectionTemplatesApi = {
   },
   create(dto: CreateInspectionTemplateDto) {
     return api.post<InspectionTemplateDto, CreateInspectionTemplateDto>("/inspection-templates/", dto);
+  },
+  uploadPhoto(file: File) {
+    return api.postFile<InspectionTemplatePhotoDto>("/inspection-templates/photos", file);
+  },
+  getPhoto(photoId: string) {
+    return api.getBlob(`/inspection-templates/photos/${encodeURIComponent(photoId)}`);
   },
 };

@@ -47,7 +47,10 @@ public sealed class SecurityPipelineTests
             "/agencies/",
             "/equipments",
             "/equipment-categories",
-            "/equipments/{equipmentId:guid}/photos"
+            "/equipments/{equipmentId:guid}/photos",
+            "/equipments/{id:guid}/history",
+            "/equipments/{id:guid}",
+            "/equipment-categories/{id:guid}"
         ];
 
         foreach (string expected in expectedRoutes)
@@ -73,6 +76,7 @@ public sealed class SecurityPipelineTests
     [InlineData("/agencies/11111111-1111-1111-1111-111111111111")]
     [InlineData("/inspection-templates/photos/11111111-1111-1111-1111-111111111111")]
     [InlineData("/equipments")]
+    [InlineData("/equipments/11111111-1111-1111-1111-111111111111/history")]
     [InlineData("/inspections/11111111-1111-1111-1111-111111111111/report")]
     [InlineData("/inspections/11111111-1111-1111-1111-111111111111/signature")]
     public async Task ProtectedEndpoints_RequireAuthentication(string path)

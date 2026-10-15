@@ -5,7 +5,7 @@ namespace MatosKC.Domain.Equipments;
 public sealed class EquipmentPhoto: BaseEntity
 {
     public Guid EquipmentId { get; }
-    public string ObjectKey { get; }
+    public string ObjectKey { get; private set; }
     public string OriginalFileName { get; private set; } = null!;
     public string ContentType { get; private set; } = null!;
     public long ContentLength { get; private set; }
@@ -42,6 +42,14 @@ public sealed class EquipmentPhoto: BaseEntity
         UpdatedAtUtc = createdAtUtc;
 
         ReplaceMetadata(originalFileName, contentType, contentLength, createdAtUtc);
+    }
+
+    public void ReplaceContent(string objectKey, string fileName, string contentType,
+        long contentLength, DateTimeOffset updatedAtUtc)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(objectKey);
+        ReplaceMetadata(fileName, contentType, contentLength, updatedAtUtc);
+        ObjectKey = objectKey;
     }
 
     public void ReplaceMetadata(

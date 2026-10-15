@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from "vue";
-import { inspectionHttpApi } from "../../api/inspections";
 import type { InspectionDto, InspectionTemplateDto, RentalDto } from "../../api/inspections";
+import { inspectionHttpApi } from "../../api/inspections";
 import CopyButton from "../common/copy/CopyButton.vue";
+import TemplateIllustration from "../inspection/TemplateIllustration.vue";
 
 const props = defineProps<{ inspection: InspectionDto }>();
 const rental = ref<RentalDto | null>(null);
@@ -13,92 +14,232 @@ const error = ref("");
 const loading = ref(false);
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 function answerFor(pointId: string) {
-  return props.inspection.answers.find(answer => answer.templatePointId === pointId);
+  return props.inspection.answers.find((answer) => answer.templatePointId === pointId);
 }
 function release(): void {
-  Object.values(photos.value).forEach(url => URL.revokeObjectURL(url));
+  Object.values(photos.value).forEach((url) => URL.revokeObjectURL(url));
   if (signatureUrl.value) URL.revokeObjectURL(signatureUrl.value);
-  photos.value = {}; signatureUrl.value = "";
+  photos.value = {};
+  signatureUrl.value = "";
 }
-watch(() => props.inspection.id, async (id, _old, onCleanup) => {
-  release(); loading.value = true; error.value = "";
-  let cancelled = false;
-  onCleanup(() => { cancelled = true; release(); });
-  try {
-    const [r, t] = await Promise.all([
-      inspectionHttpApi.getRental(props.inspection.rentalId), inspectionHttpApi.getTemplate(props.inspection.templateId),
-    ]);
-    if (cancelled) return;
-    rental.value = r; template.value = t;
-    const entries = await Promise.all(props.inspection.answers.flatMap(answer => answer.photoIds.map(async photoId =>
-      [photoId, URL.createObjectURL(await inspectionHttpApi.getPhoto(id, photoId))] as const)));
-    if (cancelled) { entries.forEach(([, url]) => URL.revokeObjectURL(url)); return; }
-    photos.value = Object.fromEntries(entries);
-    if (props.inspection.signedAt) {
-      const url = URL.createObjectURL(await inspectionHttpApi.getSignature(id));
-      if (cancelled) URL.revokeObjectURL(url); else signatureUrl.value = url;
+watch(
+  () => props.inspection.id,
+  async (id, _old, onCleanup) => {
+    release();
+    loading.value = true;
+    error.value = "";
+    let cancelled = false;
+    onCleanup(() => {
+      cancelled = true;
+      release();
+    });
+    try {
+      const [r, t] = await Promise.all([
+        inspectionHttpApi.getRental(props.inspection.rentalId),
+        inspectionHttpApi.getTemplate(props.inspection.templateId),
+      ]);
+      if (cancelled) return;
+      rental.value = r;
+      template.value = t;
+      const entries = await Promise.all(
+        props.inspection.answers.flatMap((answer) =>
+          answer.photoIds.map(
+            async (photoId) =>
+              [
+                photoId,
+                URL.createObjectURL(await inspectionHttpApi.getPhoto(id, photoId)),
+              ] as const,
+          ),
+        ),
+      );
+      if (cancelled) {
+        entries.forEach(([, url]) => URL.revokeObjectURL(url));
+        return;
+      }
+      photos.value = Object.fromEntries(entries);
+      if (props.inspection.signedAt) {
+        const url = URL.createObjectURL(await inspectionHttpApi.getSignature(id));
+        if (cancelled) URL.revokeObjectURL(url);
+        else signatureUrl.value = url;
+      }
+    } catch {
+      if (!cancelled)
+        error.value = "Certains éléments de l’état des lieux n’ont pas pu être chargés.";
+    } finally {
+      if (!cancelled) loading.value = false;
     }
-  } catch { if (!cancelled) error.value = "Certains éléments de l’état des lieux n’ont pas pu être chargés."; }
-  finally { if (!cancelled) loading.value = false; }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 onUnmounted(release);
 
 async function downloadReport(): Promise<void> {
   try {
     const url = URL.createObjectURL(await inspectionHttpApi.getReport(props.inspection.id));
     const link = document.createElement("a");
-    link.href = url; link.download = `etat-des-lieux-${props.inspection.id}.pdf`;
-    link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } catch { error.value = "Impossible de télécharger le PDF."; }
+    link.href = url;
+    link.download = `etat-des-lieux-${props.inspection.id}.pdf`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch {
+    error.value = "Impossible de télécharger le PDF.";
+  }
 }
 </script>
 <template>
   <article class="detail">
-    <p v-if="loading" role="status">Chargement du détail…</p>
-    <p v-if="error" role="alert">{{ error }}</p>
+    <p
+      v-if="loading"
+      role="status"
+    >
+      Chargement du détail…
+    </p>
+    <p
+      v-if="error"
+      role="alert"
+    >
+      {{ error }}
+    </p>
     <dl>
-      <div><dt>Type</dt><dd>{{ inspection.type === 'Departure' ? 'Départ' : 'Retour' }}</dd></div>
-      <div><dt>Statut</dt><dd>{{ inspection.status === 'Validated' ? 'Validé' : 'Brouillon' }}</dd></div>
-      <div><dt>Opérateur</dt><dd>{{ inspection.operatorFirstName }}</dd></div>
-      <div><dt>Date</dt><dd>{{ date.format(new Date(inspection.validatedAt ?? inspection.startedAt)) }}</dd></div>
-      <div v-if="rental"><dt>Client</dt><dd>{{ rental.client.displayName }}</dd></div>
-      <div v-if="rental"><dt>Numéro de commande</dt><dd>{{ rental.client.commandValue }}
-        <CopyButton :value="rental.client.commandValue" label="le numéro de commande" /></dd></div>
-      <div v-if="rental"><dt>Email</dt><dd>{{ rental.client.email }}
-        <CopyButton :value="rental.client.email" label="l’adresse électronique" /></dd></div>
-      <div v-if="rental"><dt>Téléphone</dt><dd>{{ rental.client.phone }}
-        <CopyButton :value="rental.client.phone" label="le téléphone" /></dd></div>
+      <div>
+        <dt>Type</dt>
+        <dd>{{ inspection.type === "Departure" ? "Départ" : "Retour" }}</dd>
+      </div>
+      <div>
+        <dt>Statut</dt>
+        <dd>{{ inspection.status === "Validated" ? "Validé" : "Brouillon" }}</dd>
+      </div>
+      <div>
+        <dt>Opérateur</dt>
+        <dd>{{ inspection.operatorFirstName }}</dd>
+      </div>
+      <div>
+        <dt>Date</dt>
+        <dd>{{ date.format(new Date(inspection.validatedAt ?? inspection.startedAt)) }}</dd>
+      </div>
+      <div v-if="rental">
+        <dt>Client</dt>
+        <dd>{{ rental.client.displayName }}</dd>
+      </div>
+      <div v-if="rental">
+        <dt>Numéro de commande</dt>
+        <dd>
+          {{ rental.client.commandValue }}
+          <CopyButton
+            :value="rental.client.commandValue"
+            label="le numéro de commande"
+          />
+        </dd>
+      </div>
+      <div v-if="rental">
+        <dt>Email</dt>
+        <dd>
+          {{ rental.client.email }}
+          <CopyButton
+            :value="rental.client.email"
+            label="l’adresse électronique"
+          />
+        </dd>
+      </div>
+      <div v-if="rental">
+        <dt>Téléphone</dt>
+        <dd>
+          {{ rental.client.phone }}
+          <CopyButton
+            :value="rental.client.phone"
+            label="le téléphone"
+          />
+        </dd>
+      </div>
     </dl>
     <section>
       <h3>Points contrôlés</h3>
-      <ul><li v-for="point in [...(template?.points ?? [])].sort((a, b) => a.position - b.position)" :key="point.id">
-        <strong>{{ point.description }}</strong>
-        <template v-if="answerFor(point.id)">
-          : {{ answerFor(point.id)?.result === 'Compliant' ? 'Conforme' : 'Non conforme' }}
-          <p v-if="answerFor(point.id)?.observation">{{ answerFor(point.id)?.observation }}</p>
-          <a v-for="photoId in answerFor(point.id)?.photoIds ?? []" :key="photoId" :href="photos[photoId]"
-            target="_blank" rel="noopener noreferrer">Voir la photographie</a>
-        </template>
-        <span v-else> : sans réponse</span>
-      </li></ul>
+      <ul>
+        <li
+          v-for="point in [...(template?.points ?? [])].sort((a, b) => a.position - b.position)"
+          :key="point.id"
+        >
+          <strong>{{ point.description }}</strong>
+          <p class="detail__point-detail">{{ point.descriptionDetail }}</p>
+          <TemplateIllustration :photo-id="point.photoId" />
+          <template v-if="answerFor(point.id)">
+            : {{ answerFor(point.id)?.result === "Compliant" ? "Conforme" : "Non conforme" }}
+            <p v-if="answerFor(point.id)?.observation">{{ answerFor(point.id)?.observation }}</p>
+            <a
+              v-for="photoId in answerFor(point.id)?.photoIds ?? []"
+              :key="photoId"
+              :href="photos[photoId]"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Voir la photographie</a
+            >
+          </template>
+          <span v-else> : sans réponse</span>
+        </li>
+      </ul>
     </section>
     <section v-if="inspection.signedAt">
       <h3>Signature du client</h3>
       <p>{{ inspection.signerName }} - {{ date.format(new Date(inspection.signedAt)) }}</p>
       <p>{{ inspection.acceptanceText }}</p>
-      <img v-if="signatureUrl" :src="signatureUrl" alt="Signature du client" class="detail__signature" />
+      <img
+        v-if="signatureUrl"
+        :src="signatureUrl"
+        alt="Signature du client"
+        class="detail__signature"
+      />
     </section>
-    <button v-if="inspection.hasReport" type="button" @click="downloadReport">Télécharger le PDF</button>
+    <button
+      v-if="inspection.hasReport"
+      type="button"
+      @click="downloadReport"
+    >
+      Télécharger le PDF
+    </button>
   </article>
 </template>
 <style scoped lang="scss">
-.detail { display: grid; gap: 1.25rem; overflow-wrap: anywhere; }
-.detail dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .9rem; margin: 0; }
-.detail dt { color: var(--color-text-secondary); }
-.detail dd { margin: .25rem 0 0; }
-.detail li { padding: .65rem 0; border-bottom: 1px solid var(--color-border); }
-.detail li a { display: inline-block; margin-right: .65rem; }
-.detail__signature { max-width: 100%; max-height: 12rem; background: white; }
-button { min-height: 2.75rem; padding: .55rem .8rem; color: var(--color-text); background: var(--color-surface);
-  border: 1px solid var(--color-border); border-radius: .5rem; cursor: pointer; }
+.detail {
+  display: grid;
+  gap: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.detail dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.9rem;
+  margin: 0;
+}
+.detail dt {
+  color: var(--color-text-secondary);
+}
+.detail dd {
+  margin: 0.25rem 0 0;
+}
+.detail li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.detail li a {
+  display: inline-block;
+  margin-right: 0.65rem;
+}
+.detail__point-detail {
+  white-space: pre-wrap;
+  tab-size: 4;
+}
+.detail__signature {
+  max-width: 100%;
+  max-height: 12rem;
+  background: white;
+}
+button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.8rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
 </style>

@@ -4,8 +4,8 @@ using MatosKC.Domain.Entities;
 
 public class EquipmentCategory : BaseEntity
 {
-    public string Name { get; }
-    public string? Description { get; }
+    public string Name { get; private set; }
+    public string? Description { get; private set; }
 
     public EquipmentCategory(Guid id, string name, string? description)
     : base(id)
@@ -25,6 +25,14 @@ public class EquipmentCategory : BaseEntity
         Description = string.IsNullOrWhiteSpace(description)
             ? null
             : description.Trim();
+    }
+
+    public void UpdateDetails(string name, string? description)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        Name = name.Trim();
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
     }
 
     public EquipmentCategory(string name, string? description) : this(Guid.NewGuid(), name, description)
