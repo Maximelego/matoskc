@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { equipmentsApi } from "../../api/equipments";
-import type { InspectionDto } from "../../api/inspections";
+import type { InspectionDto, InspectionListItemDto } from "../../api/inspections";
 import { inspectionHttpApi } from "../../api/inspections";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
@@ -11,14 +10,16 @@ import InspectionDetails from "./InspectionDetails.vue";
 
 const route = useRoute();
 const router = useRouter();
-const inspections = ref<InspectionDto[]>([]);
-const equipmentNames = ref<Record<string, string>>({});
+const inspections = ref<InspectionListItemDto[]>([]);
 const loading = ref(false);
 const error = ref("");
 const search = ref("");
 const type = ref("all");
 const order = ref("newest");
 const selected = ref<InspectionDto | null>(null);
+const detailLoading = ref(false);
+const detailError = ref("");
+const selectedId = computed(() => typeof route.query.inspectionId === "string" ? route.query.inspectionId : "");
 const equipmentId = computed(() =>
   typeof route.query.equipmentId === "string" ? route.query.equipmentId : "",
 );
@@ -28,7 +29,7 @@ const filtered = computed(() =>
     .filter((item) => !equipmentId.value || item.equipmentId === equipmentId.value)
     .filter((item) => type.value === "all" || item.type === type.value)
     .filter((item) =>
-      `${equipmentNames.value[item.equipmentId] ?? ""} ${item.operatorFirstName}`
+      `${item.equipmentName} ${item.operatorFirstName} ${item.clientName} ${item.commandNumber}`
         .toLocaleLowerCase("fr")
         .includes(search.value.trim().toLocaleLowerCase("fr")),
     )
@@ -43,60 +44,49 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const all: InspectionDto[] = [];
-    // The API currently has no equipmentId filter. Read its pages before filtering locally.
+    const all: InspectionListItemDto[] = [];
     for (let offset = 0; ; offset += 100) {
-      const page = await inspectionHttpApi.list({ status: "Validated", offset, limit: 100 });
+      const page = await inspectionHttpApi.list({ status: "Validated", equipmentId: equipmentId.value || undefined,
+        offset, limit: 100 });
       all.push(...page.inspections);
-      if (page.inspections.length < 100) break;
+      if (offset + page.inspections.length >= page.total || !page.inspections.length) break;
     }
     inspections.value = all;
-    const ids = [...new Set(all.map((item) => item.equipmentId))];
-    const names = await Promise.all(
-      ids.map(async (id) => {
-        try {
-          return [id, (await equipmentsApi.getById(id)).name] as const;
-        } catch {
-          return [id, id] as const;
-        }
-      }),
-    );
-    equipmentNames.value = Object.fromEntries(names);
-    const selectedId = route.query.inspectionId;
-    selected.value =
-      typeof selectedId === "string" ? (all.find((item) => item.id === selectedId) ?? null) : null;
   } catch {
     error.value = "Impossible de charger les états des lieux. Veuillez réessayer.";
   } finally {
     loading.value = false;
   }
 }
-
-function show(item: InspectionDto): void {
-  selected.value = item;
+function show(item: InspectionListItemDto): void {
   void router.replace({ query: { ...route.query, inspectionId: item.id } });
 }
-
 function close(): void {
   selected.value = null;
   const query = { ...route.query };
   delete query.inspectionId;
   void router.replace({ query });
 }
-
 function clearEquipment(): void {
   const query = { ...route.query };
   delete query.equipmentId;
   void router.replace({ query });
 }
-
-watch(
-  () => route.query.inspectionId,
-  (id) => {
-    selected.value =
-      typeof id === "string" ? (inspections.value.find((item) => item.id === id) ?? null) : null;
-  },
-);
+watch(selectedId, async (id, _previous, onCleanup) => {
+  selected.value = null;
+  detailError.value = "";
+  if (!id) { detailLoading.value = false; return; }
+  let cancelled = false;
+  onCleanup(() => { cancelled = true; });
+  detailLoading.value = true;
+  try {
+    const detail = await inspectionHttpApi.getById(id);
+    if (!cancelled) selected.value = detail;
+  } catch {
+    if (!cancelled) detailError.value = "Impossible de charger le détail de l’état des lieux.";
+  } finally { if (!cancelled) detailLoading.value = false; }
+}, { immediate: true });
+watch(equipmentId, () => { void load(); });
 onMounted(() => {
   void load();
 });
@@ -132,7 +122,7 @@ onMounted(() => {
       v-if="equipmentId"
       class="inspection-admin__context"
     >
-      Équipement : {{ equipmentNames[equipmentId] ?? equipmentId }}
+      Équipement : {{ inspections[0]?.equipmentName ?? equipmentId }}
       <button
         type="button"
         @click="clearEquipment"
@@ -191,14 +181,13 @@ onMounted(() => {
           :key="item.id"
         >
           <div>
-            <strong>{{ equipmentNames[item.equipmentId] ?? item.equipmentId }}</strong>
+            <strong>{{ item.equipmentName }}</strong>
             <span
               >{{ item.type === "Departure" ? "Départ" : "Retour" }} -
               {{ date.format(new Date(item.validatedAt ?? item.startedAt)) }}</span
             >
             <span
-              >Opérateur : {{ item.operatorFirstName }} -
-              {{ item.answers?.filter((a) => a.result === "NonCompliant").length }} défaut(s)</span
+              >Opérateur : {{ item.operatorFirstName }} - Client : {{ item.clientName }}</span
             >
           </div>
           <button
@@ -211,10 +200,14 @@ onMounted(() => {
       </ul>
     </template>
     <BaseModal
-      :open="Boolean(selected)"
+      :open="Boolean(selectedId)"
       title="Détail de l’état des lieux"
       @close="close"
     >
+      <p v-if="detailLoading" role="status">Chargement du détail…</p>
+      <p v-else-if="detailError" role="alert">{{ detailError }}
+        <button type="button" @click="close">Fermer</button>
+      </p>
       <InspectionDetails
         v-if="selected"
         :inspection="selected"

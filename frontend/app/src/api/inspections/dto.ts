@@ -57,9 +57,20 @@ export type SaveDraftDto = {
   answers: { templatePointId: string; result: InspectionResultDto; observation: string | null }[];
 };
 export type SignInspectionDto = { signerName: string; signaturePngBase64: string; accepted: boolean };
-export type ListInspectionsDto = { inspections: InspectionDto[] };
+export type InspectionListItemDto = {
+  id: string; rentalId: string; equipmentId: string; equipmentName: string; serialNumber: string;
+  agencyId: string | null; agencyCode: number; clientName: string; commandNumber: string;
+  templateId: string; type: InspectionTypeDto; status: InspectionStatusDto;
+  operatorFirstName: string; startedAt: string; validatedAt: string | null;
+  cancelledAt: string | null; hasReport: boolean;
+};
+export type ListInspectionsDto = {
+  inspections: InspectionListItemDto[]; total: number; offset: number; limit: number;
+};
 export type InspectionFiltersDto = {
-  rentalId?: string; type?: InspectionTypeDto; status?: InspectionStatusDto; offset?: number; limit?: number;
+  rentalId?: string; equipmentId?: string; agencyId?: string; commandNumber?: string;
+  from?: string; to?: string; type?: InspectionTypeDto; status?: InspectionStatusDto;
+  offset?: number; limit?: number;
 };
 export type InspectionMediaDto = {
   id: string; inspectionId: string; answerId: string; fileName: string; contentType: string; contentLength: number;

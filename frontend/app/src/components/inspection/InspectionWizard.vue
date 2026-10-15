@@ -74,7 +74,8 @@ async function load(): Promise<void> {
     if (current) {
       const result = await inspectionHttpApi.list({ rentalId: current.id,
         type: item.status === "Available" ? "Departure" : "Return", status: "Draft" });
-      draft = result.inspections[0] ?? null;
+      const summary = result.inspections[0];
+      draft = summary ? await inspectionHttpApi.getById(summary.id) : null;
     }
     inspection.value = draft;
     operatorFirstName.value = draft?.operatorFirstName ?? "";
