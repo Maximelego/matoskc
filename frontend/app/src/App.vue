@@ -12,6 +12,7 @@ const loggingOut = ref(false);
 const logoutError = ref("");
 const route = useRoute();
 const showBack = computed(() => route.name !== "Home" && route.name !== "Login");
+
 function goBack(): void {
   const previous = window.history.state?.back;
   if (typeof previous === "string" && previous !== route.fullPath && !previous.startsWith("/login"))

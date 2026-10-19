@@ -13,15 +13,18 @@ const signatureUrl = ref("");
 const error = ref("");
 const loading = ref(false);
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
+
 function answerFor(pointId: string) {
   return props.inspection.answers.find((answer) => answer.templatePointId === pointId);
 }
+
 function release(): void {
   Object.values(photos.value).forEach((url) => URL.revokeObjectURL(url));
   if (signatureUrl.value) URL.revokeObjectURL(signatureUrl.value);
   photos.value = {};
   signatureUrl.value = "";
 }
+
 watch(
   () => props.inspection.id,
   async (id, _old, onCleanup) => {
@@ -107,7 +110,15 @@ async function downloadReport(): Promise<void> {
       </div>
       <div>
         <dt>Statut</dt>
-        <dd>{{ inspection.status === "Validated" ? "Validé" : inspection.status === "Cancelled" ? "Annulé" : "Brouillon" }}</dd>
+        <dd>
+          {{
+            inspection.status === "Validated"
+              ? "Validé"
+              : inspection.status === "Cancelled"
+                ? "Annulé"
+                : "Brouillon"
+          }}
+        </dd>
       </div>
       <div>
         <dt>Opérateur</dt>
@@ -118,7 +129,8 @@ async function downloadReport(): Promise<void> {
         <dd>{{ date.format(new Date(inspection.validatedAt ?? inspection.startedAt)) }}</dd>
       </div>
       <div v-if="inspection.cancellationReason">
-        <dt>Motif d’annulation</dt><dd>{{ inspection.cancellationReason }}</dd>
+        <dt>Motif d’annulation</dt>
+        <dd>{{ inspection.cancellationReason }}</dd>
       </div>
       <div v-if="rental">
         <dt>Client</dt>

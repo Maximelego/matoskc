@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { authSession } from "../../api/auth/session";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts";
 import type { EquipmentDto, EquipmentStatus } from "../../api/equipments/dto";
 import BaseModal from "../common/modal/BaseModal.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
-import EquipmentPhoto from "./EquipmentPhoto.vue";
 import EquipmentHistory from "./EquipmentHistory.vue";
+import EquipmentPhoto from "./EquipmentPhoto.vue";
 import EquipmentQRCode from "./EquipmentQRCode.vue";
-import { authSession } from "../../api/auth/session";
 
 const props = defineProps<{
   equipment: EquipmentDto | null;
@@ -51,14 +51,17 @@ const showHistory = ref(false);
 watch(
   () => props.equipment,
   () => {
-    selectedStatus.value = ""; reason.value = "";
+    selectedStatus.value = "";
+    reason.value = "";
     editName.value = props.equipment?.name ?? "";
     editCategoryId.value = props.equipment?.equipmentCategoryId ?? "";
     showHistory.value = false;
   },
 );
 
-const isAdministrator = computed(() => ["Admin", "SuperAdmin"].includes(authSession.account.value?.role ?? ""));
+const isAdministrator = computed(() =>
+  ["Admin", "SuperAdmin"].includes(authSession.account.value?.role ?? ""),
+);
 
 const availableStatuses = computed(() =>
   props.equipment ? (transitions[props.equipment.status] ?? []) : [],
@@ -124,24 +127,59 @@ function saveEquipment(): void {
         </div>
       </dl>
 
-      <form v-if="isAdministrator" class="equipment-details__status" @submit.prevent="saveEquipment">
+      <form
+        v-if="isAdministrator"
+        class="equipment-details__status"
+        @submit.prevent="saveEquipment"
+      >
         <h3>Modifier le matériel</h3>
         <label for="equipment-edit-name">Nom</label>
-        <input id="equipment-edit-name" v-model="editName" required :disabled="busy" />
+        <input
+          id="equipment-edit-name"
+          v-model="editName"
+          required
+          :disabled="busy"
+        />
         <label for="equipment-edit-category">Catégorie</label>
-        <select id="equipment-edit-category" v-model="editCategoryId" required :disabled="busy">
-          <option v-for="category in equipmentCategories" :key="category.id" :value="category.id">{{ category.name }}</option>
+        <select
+          id="equipment-edit-category"
+          v-model="editCategoryId"
+          required
+          :disabled="busy"
+        >
+          <option
+            v-for="category in equipmentCategories"
+            :key="category.id"
+            :value="category.id"
+          >
+            {{ category.name }}
+          </option>
         </select>
-        <button type="submit" :disabled="busy || !editName.trim() || !editCategoryId">Enregistrer les modifications</button>
+        <button
+          type="submit"
+          :disabled="busy || !editName.trim() || !editCategoryId"
+        >
+          Enregistrer les modifications
+        </button>
       </form>
-      <RouterLink v-if="isAdministrator" :to="{ name: 'ManageMaintenances', query: { equipmentId: equipment.id } }">
+      <RouterLink
+        v-if="isAdministrator"
+        :to="{ name: 'ManageMaintenances', query: { equipmentId: equipment.id } }"
+      >
         Voir les défauts et les entretiens
       </RouterLink>
       <div v-if="isAdministrator">
-        <button type="button" class="equipment-details__history" @click="showHistory = !showHistory">
-          {{ showHistory ? 'Masquer l’historique' : 'Afficher l’historique du matériel' }}
+        <button
+          type="button"
+          class="equipment-details__history"
+          @click="showHistory = !showHistory"
+        >
+          {{ showHistory ? "Masquer l’historique" : "Afficher l’historique du matériel" }}
         </button>
-        <EquipmentHistory v-if="showHistory" :equipment-id="equipment.id" />
+        <EquipmentHistory
+          v-if="showHistory"
+          :equipment-id="equipment.id"
+        />
       </div>
 
       <form
@@ -172,8 +210,15 @@ function saveEquipment(): void {
           </select>
 
           <label for="equipment-status-reason">Motif du changement *</label>
-          <textarea id="equipment-status-reason" v-model="reason" required maxlength="1000" rows="3"
-            :disabled="busy" placeholder="Précisez la raison de cette décision" />
+          <textarea
+            id="equipment-status-reason"
+            v-model="reason"
+            required
+            maxlength="1000"
+            rows="3"
+            :disabled="busy"
+            placeholder="Précisez la raison de cette décision"
+          />
 
           <p
             v-if="error"
@@ -250,7 +295,9 @@ function saveEquipment(): void {
       margin: 0;
     }
 
-    input, select, textarea {
+    input,
+    select,
+    textarea {
       width: 100%;
       padding: 0.625rem;
       border: 1px solid var(--color-border);
@@ -281,7 +328,11 @@ function saveEquipment(): void {
 
   &__history {
     justify-self: start;
-    padding: .5rem 0; border: 0; background: none; font: inherit; cursor: pointer;
+    padding: 0.5rem 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    cursor: pointer;
     color: var(--color-primary);
     text-decoration: underline;
   }

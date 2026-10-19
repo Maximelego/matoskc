@@ -2,7 +2,6 @@
 import BaseSpinner from "../spinner/BaseSpinner.vue";
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
-
 type ButtonSize = "small" | "medium" | "large";
 
 const props = withDefaults(
