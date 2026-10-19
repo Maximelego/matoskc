@@ -186,17 +186,17 @@ async function submit() {
   </main>
 </template>
 <style scoped>
-.care { display: grid; gap: 1.4rem; max-width: 65rem; margin: auto; }
+.care { display: grid; gap: 1.4rem; max-width: 65rem; min-width: 0; margin: auto; }
 .care header p, .care small { color: var(--color-text-secondary); }
-.care__panel { display: grid; gap: .7rem; padding: 1.4rem; border: 1px solid var(--color-border); border-radius: .7rem; background: var(--color-surface); }
+.care__panel { display: grid; gap: .7rem; min-width: 0; padding: 1.4rem; border: 1px solid var(--color-border); border-radius: .7rem; background: var(--color-surface); overflow-wrap: anywhere; }
 .care__panel h2 { margin: 0; } .care__defects, .care__panel ol { padding-left: 1.4rem; }
 .care__defects > li, .care__panel ol > li { padding: .8rem 0; border-bottom: 1px solid var(--color-border); }
 .care__defects p { margin: .35rem 0; } .care__photos { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; }
 .care__checkbox { display: flex; gap: .5rem; align-items: center; margin-bottom: .4rem; }
-.care select, .care input:not([type="checkbox"]), .care textarea { box-sizing: border-box; min-height: 2.75rem; padding: .65rem; border: 1px solid var(--color-border); border-radius: .4rem; color: var(--color-text); background: var(--color-input-background); }
+.care select, .care input:not([type="checkbox"]), .care textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 2.75rem; padding: .65rem; border: 1px solid var(--color-border); border-radius: .4rem; color: var(--color-text); background: var(--color-input-background); }
 .care button { box-sizing: border-box; justify-self: start; min-height: 2.75rem; padding: .65rem .9rem; border: 1px solid var(--color-border); border-radius: .4rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
 .care form button { color: var(--color-text-on-primary); background: var(--color-primary); border: 0; font-weight: 600; }
-.care button:disabled { opacity: .5; cursor: not-allowed; } .care nav { display: flex; align-items: center; gap: .6rem; }
+.care button:disabled { opacity: .5; cursor: not-allowed; } .care nav { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
 .care__work { white-space: pre-wrap; } .care__error { color: var(--color-danger); } .care__success { color: var(--color-success); }
 @media (max-width: 42rem) { .care__panel { padding: 1rem; } .care select, .care input:not([type="checkbox"]), .care button { min-height: 3rem; } }
 </style>

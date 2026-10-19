@@ -15,6 +15,7 @@
   &__content {
     width: 100%;
     max-width: 90rem;
+    min-width: 0;
     box-sizing: border-box;
     margin-inline: auto;
     padding: 2rem 1.5rem;

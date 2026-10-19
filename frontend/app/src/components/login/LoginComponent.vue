@@ -58,7 +58,7 @@ async function loadAgencies(): Promise<void> {
 }
 
 onMounted(() => {
-  void loadAgencies();
+  loadAgencies();
 });
 
 function selectMode(value: LoginMode): void {

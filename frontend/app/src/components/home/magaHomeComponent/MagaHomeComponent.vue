@@ -21,6 +21,7 @@ import { AgencyMenus } from "../menus.ts";
 .home {
   display: grid;
   gap: 1.5rem;
+  min-width: 0;
 
   &__header {
     h1 {

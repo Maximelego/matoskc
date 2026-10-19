@@ -66,8 +66,6 @@ defineProps<HomeTileProps>();
   min-width: 0;
   min-height: 11rem;
 
-  max-width: 18rem;
-
   box-sizing: border-box;
   overflow: hidden;
   padding: 1.25rem;
@@ -132,10 +130,12 @@ defineProps<HomeTileProps>();
     color: var(--color-text);
     font-size: 1.1rem;
     line-height: 1.3;
+    overflow-wrap: anywhere;
   }
 
   &__description {
     line-height: 1.45;
+    overflow-wrap: anywhere;
   }
 
   &__soon {

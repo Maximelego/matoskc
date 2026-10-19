@@ -347,6 +347,7 @@ onMounted(() => {
   display: grid;
   gap: 1.25rem;
   max-width: 78rem;
+  min-width: 0;
   margin-inline: auto;
 }
 header {
@@ -418,6 +419,8 @@ header p {
 .inspection-admin__list li div {
   display: grid;
   gap: 0.3rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .inspection-admin__list span {
   color: var(--color-text-secondary);

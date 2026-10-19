@@ -297,7 +297,7 @@ onMounted(() => { void load(); });
 .wizard__point-detail { white-space: pre-wrap; tab-size: 4; }
 .wizard__cancel { display: grid; gap: .5rem; border-top: 1px solid var(--color-border); padding-top: 1rem; }
 .wizard__cancel button { justify-self: start; }
-.wizard { display: grid; gap: 1.25rem; max-width: 48rem; margin-inline: auto; }
+.wizard { display: grid; gap: 1.25rem; max-width: 48rem; min-width: 0; margin-inline: auto; overflow-wrap: anywhere; }
 .wizard h1 { margin: 0; }
 .wizard progress { width: 100%; accent-color: var(--color-primary); }
 .wizard__summary { display: grid; gap: .9rem; }
@@ -316,4 +316,8 @@ button:disabled { opacity: .55; cursor: wait; }
 .wizard__previous li { margin-block: .6rem; }
 .wizard__previous small { display: block; }
 .wizard__photos { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
+@media (max-width: 42rem) {
+  .wizard__summary input:not([type="checkbox"]), .wizard__actions button { min-height: 3rem; }
+  .wizard__actions button { flex: 1 1 10rem; }
+}
 </style>

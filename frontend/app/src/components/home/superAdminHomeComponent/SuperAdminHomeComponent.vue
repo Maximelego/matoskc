@@ -50,6 +50,7 @@ import { AdminMenus, AgencyMenus, SuperAdminMenus } from "../menus.ts";
 .super-admin-home {
   display: grid;
   gap: 2.5rem;
+  min-width: 0;
 }
 .super-admin-home__header {
   h1 {

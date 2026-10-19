@@ -19,9 +19,9 @@ import { AdminMenus } from "../menus.ts";
 
 <style scoped lang="scss">
 .home {
+  display: grid;
   gap: 1.5rem;
-  display: flex;
-  flex-direction: row;
+  min-width: 0;
 
   &__header {
     h1 {
