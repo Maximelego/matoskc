@@ -15,6 +15,7 @@ import InspectionIdentity from "./InspectionIdentity.vue";
 import InspectionPoint from "./InspectionPoint.vue";
 import type { PointValue } from "./InspectionPoint.vue";
 import InspectionSignaturePad from "./InspectionSignaturePad.vue";
+import DefectPhoto from "../maintenance/DefectPhoto.vue";
 import TemplateIllustration from "./TemplateIllustration.vue";
 
 const props = defineProps<{ equipmentId: string }>();
@@ -23,8 +24,6 @@ const equipment = ref<EquipmentDto | null>(null);
 const rental = ref<RentalDto | null>(null);
 const inspection = ref<InspectionDto | null>(null);
 const template = ref<InspectionTemplateDto | null>(null);
-const departure = ref<InspectionDto | null>(null);
-const departureTemplate = ref<InspectionTemplateDto | null>(null);
 const client = ref<ClientInputDto>({ displayName: "", email: "", phone: "", agencyCode: 83, commandValue: "" });
 const operatorFirstName = ref("");
 const points = ref<Record<string, PointValue>>({});
@@ -40,6 +39,9 @@ const error = ref("");
 const isDeparture = computed(() => equipment.value?.status === "Available");
 const orderedPoints = computed(() => [...(template.value?.points ?? [])].sort((a, b) => a.position - b.position));
 const currentPoint = computed(() => orderedPoints.value[step.value - 1]);
+function hasOpenDefect(description: string): boolean {
+  return openDefects.value.some(defect => defect.description.trim().toLocaleLowerCase("fr") === description.trim().toLocaleLowerCase("fr"));
+}
 const finalStep = computed(() => orderedPoints.value.length + 1);
 const defaultPoint = (): PointValue => ({ result: null, observation: "", files: [], photoIds: [], existingDefectId: null });
 
@@ -76,10 +78,6 @@ async function load(): Promise<void> {
       const own = agencies.agencies.find(a => a.id === authSession.account.value?.agencyId);
       client.value.agencyCode = own?.code ?? agencies.agencies.find(a => a.code === 83)?.code ?? 83;
     }
-    departure.value = item.status === "Borrowed" && current
-      ? await inspectionHttpApi.getDeparture(current.id) : null;
-    departureTemplate.value = departure.value
-      ? await inspectionHttpApi.getTemplate(departure.value.templateId) : null;
     let draft: InspectionDto | null = null;
     if (current) {
       const result = await inspectionHttpApi.list({ rentalId: current.id,
@@ -157,6 +155,10 @@ async function persist(): Promise<void> {
 
 async function save(): Promise<boolean> {
   if (busy.value || !checkIdentity()) return false;
+  if (orderedPoints.value.some(point => points.value[point.id]?.result === "Compliant" && hasOpenDefect(point.description))) {
+    error.value = "Un défaut encore ouvert ne peut pas être déclaré conforme. Indiquez « Non conforme » ou faites résoudre le défaut lors d’un entretien.";
+    return false;
+  }
   busy.value = true; error.value = "";
   try { await persist(); return true; }
   catch (cause) { error.value = message(cause); return false; }
@@ -165,6 +167,10 @@ async function save(): Promise<boolean> {
 async function next(): Promise<void> {
   if (currentPoint.value) {
     const value = points.value[currentPoint.value.id];
+    if (value?.result === "Compliant" && hasOpenDefect(currentPoint.value.description)) {
+      error.value = "Ce point présente encore un défaut ouvert. Indiquez « Non conforme » jusqu’à sa résolution lors d’un entretien.";
+      return;
+    }
     if (!value?.result || (value.result === "NonCompliant" &&
       (!value.observation.trim() || !(value.files.length || value.photoIds.length)))) {
       error.value = "Renseignez le résultat et, en cas de non-conformité, une observation et une photographie.";
@@ -207,7 +213,8 @@ async function validate(): Promise<void> {
   if (orderedPoints.value.some(point => {
     const value = points.value[point.id];
     return !value?.result || (value.result === "NonCompliant" &&
-      (!value.observation.trim() || !value.files.length && !value.photoIds.length));
+      (!value.observation.trim() || !value.files.length && !value.photoIds.length)) ||
+      (value.result === "Compliant" && hasOpenDefect(point.description));
   })) { error.value = "Complétez tous les points avant la validation."; return; }
   if (!await save() || !inspection.value) return;
   busy.value = true;
@@ -233,15 +240,20 @@ onMounted(() => { void load(); });
       <template v-if="step === 0">
       <InspectionIdentity v-model:operator-first-name="operatorFirstName"
         v-model:client="client" :departure="isDeparture" :locked="Boolean(inspection)" />
-      <section v-if="departure" class="wizard__previous">
-        <h2>Défauts relevés au départ</h2>
-        <ul v-if="departure.answers.some(answer => answer.result === 'NonCompliant')">
-          <li v-for="answer in departure.answers.filter(answer => answer.result === 'NonCompliant')" :key="answer.id">
-            <strong>{{ departureTemplate?.points.find(point => point.id === answer.templatePointId)?.description ?? 'Point de contrôle' }}</strong>
-            : {{ answer.observation }}
-          </li>
-        </ul>
-        <p v-else>Aucun défaut relevé au départ.</p>
+      <section class="wizard__previous" aria-label="Défauts ouverts">
+        <h2>Défauts encore ouverts sur cet équipement</h2>
+        <p v-if="!openDefects.length">Aucun défaut ouvert connu.</p>
+        <ul v-else><li v-for="defect in openDefects" :key="defect.id">
+          <strong>{{ defect.description }}</strong> : {{ defect.observation }}
+          <small>Constaté le {{ new Date(defect.reportedAt).toLocaleDateString('fr-FR') }}</small>
+          <details v-if="defect.occurrences.length"><summary>Constats et photographies</summary>
+            <ul><li v-for="occurrence in defect.occurrences" :key="occurrence.id">
+              {{ occurrence.observation }} · {{ new Date(occurrence.observedAt).toLocaleDateString('fr-FR') }}
+              <div class="wizard__photos"><DefectPhoto v-for="photoId in occurrence.photoIds" :key="photoId"
+                :equipment-id="equipmentId" :defect-id="defect.id" :photo-id="photoId" /></div>
+            </li></ul>
+          </details>
+        </li></ul>
       </section>
       </template>
       <section v-else-if="currentPoint">
@@ -301,4 +313,7 @@ button:focus-visible { outline: 3px solid var(--color-focus); }
 button:disabled { opacity: .55; cursor: wait; }
 .wizard__error { color: var(--color-danger); }
 .wizard__previous { padding: 1rem; border-radius: .6rem; background: var(--color-warning-soft); }
+.wizard__previous li { margin-block: .6rem; }
+.wizard__previous small { display: block; }
+.wizard__photos { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
 </style>

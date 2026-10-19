@@ -11,10 +11,6 @@ defineProps<{
 <template>
   <div class="app-layout">
     <AppHeader :title="title">
-      <template #navigation>
-        <slot name="navigation" />
-      </template>
-
       <template #actions>
         <slot name="header-actions" />
       </template>

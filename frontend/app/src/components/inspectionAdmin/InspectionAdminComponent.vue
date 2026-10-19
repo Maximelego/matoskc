@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import type { InspectionDto, InspectionListItemDto } from "../../api/inspections";
-import { inspectionHttpApi } from "../../api/inspections";
 import { agenciesApi } from "../../api/agencies";
 import type { AgencyDto } from "../../api/agencies/dto";
+import type { InspectionDto, InspectionListItemDto } from "../../api/inspections";
+import { inspectionHttpApi } from "../../api/inspections";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
@@ -27,23 +27,31 @@ const order = ref("newest");
 const selected = ref<InspectionDto | null>(null);
 const detailLoading = ref(false);
 const detailError = ref("");
-const selectedId = computed(() => typeof route.query.inspectionId === "string" ? route.query.inspectionId : "");
+const selectedId = computed(() =>
+  typeof route.query.inspectionId === "string" ? route.query.inspectionId : "",
+);
 const equipmentId = computed(() =>
   typeof route.query.equipmentId === "string" ? route.query.equipmentId : "",
 );
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
+
 const filtered = computed(() =>
-  inspections.value
-    .sort((a, b) =>
-      order.value === "newest"
-        ? (b.validatedAt ?? b.startedAt).localeCompare(a.validatedAt ?? a.startedAt)
-        : (a.validatedAt ?? a.startedAt).localeCompare(b.validatedAt ?? b.startedAt),
-    ),
+  inspections.value.sort((a, b) =>
+    order.value === "newest"
+      ? (b.validatedAt ?? b.startedAt).localeCompare(a.validatedAt ?? a.startedAt)
+      : (a.validatedAt ?? a.startedAt).localeCompare(b.validatedAt ?? b.startedAt),
+  ),
 );
+
 const invalidDates = computed(() => Boolean(from.value && to.value && from.value > to.value));
 function resetFilters(): void {
-  commandNumber.value = ""; agencyId.value = ""; rentalId.value = "";
-  from.value = ""; to.value = ""; type.value = "all"; status.value = "Validated";
+  commandNumber.value = "";
+  agencyId.value = "";
+  rentalId.value = "";
+  from.value = "";
+  to.value = "";
+  type.value = "all";
+  status.value = "Validated";
   order.value = "newest";
   void load();
 }
@@ -62,15 +70,20 @@ async function load(): Promise<void> {
     const all: InspectionListItemDto[] = [];
     for (let offset = 0; ; offset += 100) {
       const page = await inspectionHttpApi.list({
-        status: status.value === "all" ? undefined : status.value as "Draft" | "Validated" | "Cancelled",
-        type: type.value === "all" ? undefined : type.value as "Departure" | "Return",
+        status:
+          status.value === "all"
+            ? undefined
+            : (status.value as "Draft" | "Validated" | "Cancelled"),
+        type: type.value === "all" ? undefined : (type.value as "Departure" | "Return"),
         equipmentId: equipmentId.value || undefined,
         agencyId: agencyId.value || undefined,
         rentalId: rentalId.value.trim() || undefined,
         commandNumber: commandNumber.value.trim() || undefined,
         from: from.value ? new Date(`${from.value}T00:00:00`).toISOString() : undefined,
         to: to.value ? new Date(`${to.value}T23:59:59.999`).toISOString() : undefined,
-        offset, limit: 100 });
+        offset,
+        limit: 100,
+      });
       all.push(...page.inspections);
       if (offset + page.inspections.length >= page.total || !page.inspections.length) break;
     }
@@ -95,23 +108,41 @@ function clearEquipment(): void {
   delete query.equipmentId;
   void router.replace({ query });
 }
-watch(selectedId, async (id, _previous, onCleanup) => {
-  selected.value = null;
-  detailError.value = "";
-  if (!id) { detailLoading.value = false; return; }
-  let cancelled = false;
-  onCleanup(() => { cancelled = true; });
-  detailLoading.value = true;
-  try {
-    const detail = await inspectionHttpApi.getById(id);
-    if (!cancelled) selected.value = detail;
-  } catch {
-    if (!cancelled) detailError.value = "Impossible de charger le détail de l’état des lieux.";
-  } finally { if (!cancelled) detailLoading.value = false; }
-}, { immediate: true });
-watch(equipmentId, () => { void load(); });
+watch(
+  selectedId,
+  async (id, _previous, onCleanup) => {
+    selected.value = null;
+    detailError.value = "";
+    if (!id) {
+      detailLoading.value = false;
+      return;
+    }
+    let cancelled = false;
+    onCleanup(() => {
+      cancelled = true;
+    });
+    detailLoading.value = true;
+    try {
+      const detail = await inspectionHttpApi.getById(id);
+      if (!cancelled) selected.value = detail;
+    } catch {
+      if (!cancelled) detailError.value = "Impossible de charger le détail de l’état des lieux.";
+    } finally {
+      if (!cancelled) detailLoading.value = false;
+    }
+  },
+  { immediate: true },
+);
+watch(equipmentId, () => {
+  void load();
+});
 onMounted(() => {
-  void agenciesApi.list().then(result => { agencies.value = result.agencies; }).catch(() => {});
+  void agenciesApi
+    .list()
+    .then((result) => {
+      agencies.value = result.agencies;
+    })
+    .catch(() => {});
   void load();
 });
 </script>
@@ -174,11 +205,41 @@ onMounted(() => {
     </p>
     <template v-else-if="!error">
       <div class="inspection-admin__filters">
-        <label>Numéro de commande<input v-model="commandNumber" inputmode="numeric" maxlength="6" placeholder="6 chiffres" /></label>
-        <label>Agence<select v-model="agencyId"><option value="">Toutes les agences</option><option v-for="agency in agencies" :key="agency.id" :value="agency.id">{{ agency.code }} — {{ agency.name }}</option></select></label>
-        <label>Identifiant de location<input v-model="rentalId" type="text" placeholder="UUID de la location" /></label>
-        <label>Du<input v-model="from" type="date" /></label>
-        <label>Au<input v-model="to" type="date" /></label>
+        <label
+          >Numéro de commande<input
+            v-model="commandNumber"
+            inputmode="numeric"
+            maxlength="6"
+            placeholder="6 chiffres"
+        /></label>
+        <label
+          >Agence<select v-model="agencyId">
+            <option value="">Toutes les agences</option>
+            <option
+              v-for="agency in agencies"
+              :key="agency.id"
+              :value="agency.id"
+            >
+              {{ agency.code }} — {{ agency.name }}
+            </option>
+          </select></label
+        >
+        <label
+          >Identifiant de location<input
+            v-model="rentalId"
+            type="text"
+            placeholder="UUID de la location"
+        /></label>
+        <label
+          >Du<input
+            v-model="from"
+            type="date"
+        /></label>
+        <label
+          >Au<input
+            v-model="to"
+            type="date"
+        /></label>
         <label
           >Type<select v-model="type">
             <option value="all">Tous</option>
@@ -186,19 +247,35 @@ onMounted(() => {
             <option value="Return">Retours</option>
           </select></label
         >
-        <label>Statut<select v-model="status">
-          <option value="Validated">Validés</option>
-          <option value="Draft">Brouillons</option>
-          <option value="Cancelled">Annulés</option>
-          <option value="all">Tous</option>
-        </select></label>
+        <label
+          >Statut<select v-model="status">
+            <option value="Validated">Validés</option>
+            <option value="Draft">Brouillons</option>
+            <option value="Cancelled">Annulés</option>
+            <option value="all">Tous</option>
+          </select></label
+        >
         <label
           >Ordre<select v-model="order">
             <option value="newest">Plus récents</option>
             <option value="oldest">Plus anciens</option>
           </select></label
         >
-        <div class="inspection-admin__filter-actions"><button type="button" :disabled="loading" @click="load">Rechercher</button><button type="button" :disabled="loading" @click="resetFilters">Réinitialiser</button></div>
+        <div class="inspection-admin__filter-actions">
+          <button
+            type="button"
+            :disabled="loading"
+            @click="load"
+          >
+            Rechercher</button
+          ><button
+            type="button"
+            :disabled="loading"
+            @click="resetFilters"
+          >
+            Réinitialiser
+          </button>
+        </div>
       </div>
       <p role="status">{{ filtered.length }} état(s) des lieux</p>
       <p v-if="!filtered.length">Aucun état des lieux ne correspond à ces critères.</p>
@@ -213,12 +290,17 @@ onMounted(() => {
           <div>
             <strong>{{ item.equipmentName }}</strong>
             <span
-              >{{ item.type === "Departure" ? "Départ" : "Retour" }} - {{ item.status === "Validated" ? "Validé" : item.status === "Cancelled" ? "Annulé" : "Brouillon" }} -
-              {{ date.format(new Date(item.validatedAt ?? item.startedAt)) }}</span
+              >{{ item.type === "Departure" ? "Départ" : "Retour" }} -
+              {{
+                item.status === "Validated"
+                  ? "Validé"
+                  : item.status === "Cancelled"
+                    ? "Annulé"
+                    : "Brouillon"
+              }}
+              - {{ date.format(new Date(item.validatedAt ?? item.startedAt)) }}</span
             >
-            <span
-              >Opérateur : {{ item.operatorFirstName }} - Client : {{ item.clientName }}</span
-            >
+            <span>Opérateur : {{ item.operatorFirstName }} - Client : {{ item.clientName }}</span>
           </div>
           <button
             type="button"
@@ -234,9 +316,23 @@ onMounted(() => {
       title="Détail de l’état des lieux"
       @close="close"
     >
-      <p v-if="detailLoading" role="status">Chargement du détail…</p>
-      <p v-else-if="detailError" role="alert">{{ detailError }}
-        <button type="button" @click="close">Fermer</button>
+      <p
+        v-if="detailLoading"
+        role="status"
+      >
+        Chargement du détail…
+      </p>
+      <p
+        v-else-if="detailError"
+        role="alert"
+      >
+        {{ detailError }}
+        <button
+          type="button"
+          @click="close"
+        >
+          Fermer
+        </button>
       </p>
       <InspectionDetails
         v-if="selected"
@@ -259,7 +355,6 @@ header {
   flex-wrap: wrap;
 
   .header__tools {
-    max-height: 1rem;
     display: flex;
     gap: 0.5rem;
     margin-left: auto;
@@ -289,7 +384,12 @@ header p {
   display: grid;
   gap: 0.35rem;
 }
-.inspection-admin__filter-actions { display: flex; align-items: end; gap: 0.5rem; }
+.inspection-admin__filter-actions {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
 .inspection-admin__filters input,
 .inspection-admin__filters select {
   min-height: 2.75rem;
@@ -323,13 +423,20 @@ header p {
   color: var(--color-text-secondary);
 }
 button {
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0.45rem 0.7rem;
   color: var(--color-text);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   cursor: pointer;
+}
+@media (max-width: 48rem) {
+  .inspection-admin__filters input,
+  .inspection-admin__filters select,
+  .inspection-admin__filters button {
+    min-height: 3rem;
+  }
 }
 button:focus-visible {
   outline: 3px solid var(--color-focus);

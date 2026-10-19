@@ -89,20 +89,20 @@ public sealed class DevelopmentDataSeeder
             (12, "12 - Laneuveville")
         ];
 
-        foreach (var definition in agencyDefinitions)
+        foreach (var (Code, Name) in agencyDefinitions)
         {
             Agency? agency = await DbContext.Agencies.SingleOrDefaultAsync(
-                candidate => candidate.Code == definition.Code,
+                candidate => candidate.Code == Code,
                 cancellationToken
             );
 
             if (agency is null)
             {
-                agency = new Agency(definition.Name, definition.Code);
+                agency = new Agency(Name, Code);
                 DbContext.Agencies.Add(agency);
             }
 
-            string administratorEmail = $"admin{definition.Code}@example.test";
+            string administratorEmail = $"admin{Code}@example.test";
 
             Account? administrator = await DbContext.Accounts.SingleOrDefaultAsync(
                 account => account.Email == administratorEmail,
@@ -112,7 +112,7 @@ public sealed class DevelopmentDataSeeder
             if (administrator is null)
             {
                 DbContext.Accounts.Add(new Account(
-                    displayName: $"Administrateur - {definition.Name}",
+                    displayName: $"Administrateur - {Name}",
                     email: administratorEmail,
                     hashedPassword: PasswordHasher.HashPassword(developmentPassword),
                     isActive: true,
@@ -135,7 +135,7 @@ public sealed class DevelopmentDataSeeder
             if (!hasAgencyAccount)
             {
                 DbContext.Accounts.Add(new Account(
-                    displayName: $"Accès partagé - {definition.Name}",
+                    displayName: $"Accès partagé - {Name}",
                     email: null,
                     hashedPassword: PasswordHasher.HashPassword(developmentPassword),
                     isActive: true,

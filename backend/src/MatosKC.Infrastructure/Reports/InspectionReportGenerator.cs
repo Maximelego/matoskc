@@ -75,7 +75,7 @@ public sealed class InspectionReportGenerator(
                 var content = await storage.RetrieveAsync(photo.ObjectKey, ct)
                     ?? throw new InspectionOperationException(409, "An inspection photo is unavailable.");
                 await using var source = content.Content;
-                using var bytes = new MemoryStream();
+                await using var bytes = new MemoryStream();
                 await source.CopyToAsync(bytes, ct);
                 report.Image(bytes.ToArray(), 210);
             }

@@ -44,6 +44,9 @@ public sealed class SaveInspectionDraftUseCase(InspectionWorkflowContext context
                 inspection.LinkAnswerToExistingDefect(answer.TemplatePointId, answer.ExistingDefectId);
             }
 
+            OpenInspectionDefects.EnsureConsistent(inspection, template,
+                await OpenInspectionDefects.ListAsync(context, rental.EquipmentId, ct));
+
             await context.Inspections.UpdateInspectionAsync(inspection, ct);
 
             return InspectionWorkflowContext.Response(inspection, rental);

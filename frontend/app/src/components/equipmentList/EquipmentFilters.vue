@@ -148,7 +148,7 @@ function update(patch: Partial<EquipmentFilters>): void {
   &__field select {
     box-sizing: border-box;
     width: 100%;
-    min-height: 2.5rem;
+    min-height: 2.75rem;
     padding: 0.5rem 0.75rem;
     color: var(--color-text);
     background: var(--color-input-background);
@@ -162,7 +162,7 @@ function update(patch: Partial<EquipmentFilters>): void {
     outline-offset: 0.125rem;
   }
   &__reset {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
     padding: 0.5rem 0.75rem;
     color: var(--color-primary);
     background: transparent;
@@ -197,6 +197,7 @@ function update(patch: Partial<EquipmentFilters>): void {
   .equipment-filters__field { min-width: 0; }
   .equipment-filters__field--search, .equipment-filters__message { grid-column: 1 / -1; }
   .equipment-filters__reset { grid-column: 1 / -1; justify-self: stretch; border: 1px solid var(--color-border); }
+  .equipment-filters__field input, .equipment-filters__field select, .equipment-filters__reset { min-height: 3rem; }
 }
 @media (max-width: 23rem) {
   .equipment-filters { grid-template-columns: minmax(0, 1fr); }

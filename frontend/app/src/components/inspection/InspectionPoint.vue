@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type { InspectionResultDto } from "../../api/inspections";
 import InspectionAnswerPhoto from "./InspectionAnswerPhoto.vue";
 import type { DefectDto } from "../../api/defects/dto";
 export type PointValue = { result: InspectionResultDto | null; observation: string; files: File[]; photoIds: string[]; existingDefectId: string | null };
 const props = defineProps<{ id: string; label: string; value: PointValue; openDefects?: DefectDto[]; inspectionId?: string | null; disabled?: boolean }>();
+const matchingDefects = computed(() => props.openDefects?.filter(defect =>
+  defect.description.trim().toLocaleLowerCase("fr") === props.label.trim().toLocaleLowerCase("fr")) ?? []);
 const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: string] }>();
 function update(patch: Partial<PointValue>): void { emit("update", { ...props.value, ...patch }); }
 function addFiles(event: Event): void {
@@ -15,10 +18,13 @@ function addFiles(event: Event): void {
 <template>
   <fieldset class="point" :disabled="disabled">
     <legend>{{ label }}</legend>
-    <label><input type="radio" :name="id" :checked="value.result === 'Compliant'"
+    <p v-if="matchingDefects.length" class="point__warning" role="status">
+      {{ matchingDefects.length }} défaut(s) encore ouvert(s) pour ce point. Indiquez « Non conforme » jusqu’à leur résolution lors d’un entretien.
+    </p>
+    <label><input type="radio" :name="id" :checked="value.result === 'Compliant'" :disabled="disabled || Boolean(matchingDefects.length)"
       @change="update({ result: 'Compliant', observation: '', existingDefectId: null })" /> Conforme</label>
     <label><input type="radio" :name="id" :checked="value.result === 'NonCompliant'"
-      @change="update({ result: 'NonCompliant' })" /> Non conforme</label>
+      @change="update({ result: 'NonCompliant', existingDefectId: value.existingDefectId ?? matchingDefects[0]?.id ?? null })" /> Non conforme</label>
     <div v-if="value.result === 'NonCompliant'" class="point__defect">
       <label v-if="openDefects?.length">Défaut déjà constaté (facultatif)
         <select :value="value.existingDefectId ?? ''"
@@ -50,6 +56,7 @@ function addFiles(event: Event): void {
 .point label { display: block; }
 .point__defect { display: grid; gap: .7rem; }
 .point__defect label { display: grid; gap: .35rem; }
+.point__warning { margin: 0; padding: .7rem; border-radius: .5rem; background: var(--color-warning-soft); }
 textarea, select, input[type="file"] { box-sizing: border-box; width: 100%; padding: .55rem; color: var(--color-text);
   background: var(--color-input-background); border: 1px solid var(--color-border); border-radius: .5rem; font: inherit; }
 button { color: var(--color-primary); background: none; border: 0; cursor: pointer; }

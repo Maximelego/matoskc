@@ -40,6 +40,8 @@ public sealed class ValidateReturnInspectionUseCase(InspectionWorkflowContext co
 
             var template = await context.Templates.GetTemplateByIdAsync(inspection.TemplateId, ct)
                 ?? throw new InspectionOperationException(404, "Template not found.");
+            var openDefects = await OpenInspectionDefects.ListAsync(context, equipment.Id, ct);
+            OpenInspectionDefects.EnsureConsistent(inspection, template, openDefects);
             var now = context.Time.GetUtcNow();
             inspection.Validate(template, now);
             inspection.AttachReport(await context.Reports.GenerateAsync(inspection, rental, template, ct));
@@ -47,7 +49,7 @@ public sealed class ValidateReturnInspectionUseCase(InspectionWorkflowContext co
                 context, inspection, equipment.Id, template, now, ct);
             rental.ConfirmReturn(inspection, now);
 
-            EquipmentStatus nextStatus = inspection.Answers.Any(answer => answer.Result == InspectionResult.NonCompliant)
+            EquipmentStatus nextStatus = openDefects.Count > 0 || inspection.Answers.Any(answer => answer.Result == InspectionResult.NonCompliant)
                 ? EquipmentStatus.ToBeDecided
                 : EquipmentStatus.Available;
             equipment.ChangeStatus(nextStatus);

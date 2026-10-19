@@ -193,10 +193,10 @@ async function submit() {
 .care__defects > li, .care__panel ol > li { padding: .8rem 0; border-bottom: 1px solid var(--color-border); }
 .care__defects p { margin: .35rem 0; } .care__photos { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; }
 .care__checkbox { display: flex; gap: .5rem; align-items: center; margin-bottom: .4rem; }
-.care select, .care input:not([type="checkbox"]), .care textarea { padding: .65rem; border: 1px solid var(--color-border); border-radius: .4rem; color: var(--color-text); background: var(--color-input-background); }
-.care button { justify-self: start; padding: .65rem .9rem; border: 1px solid var(--color-border); border-radius: .4rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
+.care select, .care input:not([type="checkbox"]), .care textarea { box-sizing: border-box; min-height: 2.75rem; padding: .65rem; border: 1px solid var(--color-border); border-radius: .4rem; color: var(--color-text); background: var(--color-input-background); }
+.care button { box-sizing: border-box; justify-self: start; min-height: 2.75rem; padding: .65rem .9rem; border: 1px solid var(--color-border); border-radius: .4rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; }
 .care form button { color: var(--color-text-on-primary); background: var(--color-primary); border: 0; font-weight: 600; }
 .care button:disabled { opacity: .5; cursor: not-allowed; } .care nav { display: flex; align-items: center; gap: .6rem; }
 .care__work { white-space: pre-wrap; } .care__error { color: var(--color-danger); } .care__success { color: var(--color-success); }
-@media (max-width: 42rem) { .care__panel { padding: 1rem; } }
+@media (max-width: 42rem) { .care__panel { padding: 1rem; } .care select, .care input:not([type="checkbox"]), .care button { min-height: 3rem; } }
 </style>

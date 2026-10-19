@@ -51,11 +51,11 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
             this, Storage, this, Clock, this, this, this, ImageValidator, Care);
     }
 
-    internal InspectionTemplate AddTemplate()
+    internal InspectionTemplate AddTemplate(string description = "Etat extérieur")
     {
         Guid id = Guid.NewGuid();
         var template = new InspectionTemplate(id,
-            [new InspectionTemplatePoint(Guid.NewGuid(), id, "Etat extérieur", "Merci de vérifier la présence de...", null)], Equipment.CategoryId);
+            [new InspectionTemplatePoint(Guid.NewGuid(), id, description, "Merci de vérifier la présence de...", null)], Equipment.CategoryId);
         Templates.Add(template);
 
         return template;
