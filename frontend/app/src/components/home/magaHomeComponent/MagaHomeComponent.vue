@@ -1,14 +1,6 @@
 <script setup lang="ts">
-import HomeTile, { type HomeTileProps } from "../HomeTile.vue";
-
-const menus = [
-  {
-    title: "Etats des Lieux",
-    description: "Liste des Etats des Lieux.",
-    icon: "clipboard",
-    to: "/inspections",
-  },
-] as HomeTileProps[];
+import HomeTilingGrid from "../HomeTilingGrid.vue";
+import { AgencyMenus } from "../menus.ts";
 </script>
 
 <template>
@@ -21,13 +13,7 @@ const menus = [
       <p>Choisissez l’opération à réaliser sur le matériel.</p>
     </header>
 
-    <div class="home__grid">
-      <HomeTile
-        v-for="menu in menus"
-        :key="menu.title"
-        v-bind="menu"
-      />
-    </div>
+    <HomeTilingGrid :tiles="AgencyMenus" />
   </section>
 </template>
 
@@ -46,22 +32,11 @@ const menus = [
       color: var(--color-text-secondary);
     }
   }
-
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
-    gap: 1rem;
-  }
 }
 
 @media (max-width: 42rem) {
   .home {
     gap: 1rem;
-
-    &__grid {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0.75rem;
-    }
   }
 }
 </style>

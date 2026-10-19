@@ -36,7 +36,7 @@ const equipmentId = computed(() =>
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 
 const filtered = computed(() =>
-  inspections.value.sort((a, b) =>
+  [...inspections.value].sort((a, b) =>
     order.value === "newest"
       ? (b.validatedAt ?? b.startedAt).localeCompare(a.validatedAt ?? a.startedAt)
       : (a.validatedAt ?? a.startedAt).localeCompare(b.validatedAt ?? b.startedAt),

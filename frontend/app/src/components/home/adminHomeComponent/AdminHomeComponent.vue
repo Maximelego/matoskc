@@ -1,22 +1,6 @@
 <script setup lang="ts">
-import HomeTile, { type HomeTileProps } from "../HomeTile.vue";
-
-const menus: HomeTileProps[] = [
-  {
-    title: "Equipment",
-    description: "Suivi des Equipments.",
-    icon: "equipment",
-    to: "/equipments",
-  },
-  { title: "Entretiens", description: "Consigner les travaux et résoudre les défauts.", icon: "maintenance", to: "/admin/maintenances" },
-  { title: "Modèles d’état des lieux", description: "Créer les points de contrôle par catégorie.", icon: "clipboard", to: "/admin/inspection-templates" },
-  {
-    title: "Etats des Lieux",
-    description: "Liste des Etats des Lieux.",
-    icon: "clipboard",
-    to: "/admin/inspections",
-  },
-];
+import HomeTilingGrid from "../HomeTilingGrid.vue";
+import { AdminMenus } from "../menus.ts";
 </script>
 
 <template>
@@ -29,20 +13,15 @@ const menus: HomeTileProps[] = [
       <p>Accédez au suivi du matériel et aux fonctions de gestion.</p>
     </header>
 
-    <div class="home__grid">
-      <HomeTile
-        v-for="menu in menus"
-        :key="menu.title"
-        v-bind="menu"
-      />
-    </div>
+    <HomeTilingGrid :tiles="AdminMenus" />
   </section>
 </template>
 
 <style scoped lang="scss">
 .home {
-  display: grid;
   gap: 1.5rem;
+  display: flex;
+  flex-direction: row;
 
   &__header {
     h1 {
@@ -54,22 +33,11 @@ const menus: HomeTileProps[] = [
       color: var(--color-text-secondary);
     }
   }
-
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
-    gap: 1rem;
-  }
 }
 
 @media (max-width: 42rem) {
   .home {
     gap: 1rem;
-
-    &__grid {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0.75rem;
-    }
   }
 }
 </style>

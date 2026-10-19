@@ -337,6 +337,7 @@ function submit(event: Event): void {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0 1.75rem;
+  gap: 0.5rem;
   padding: 0.3rem;
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;

@@ -66,6 +66,8 @@ defineProps<HomeTileProps>();
   min-width: 0;
   min-height: 11rem;
 
+  max-width: 18rem;
+
   box-sizing: border-box;
   overflow: hidden;
   padding: 1.25rem;
