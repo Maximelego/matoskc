@@ -15,13 +15,18 @@ import type {
   RentalDto,
 } from "../../api/inspections";
 import { inspectionHttpApi } from "../../api/inspections";
+import {
+  validateAgencyCode,
+  validateCommandNumber,
+  validateEmail,
+  validatePhoneNumber,
+} from "../common/form/validators";
 import { normalizeCommandNumber } from "../common/input/commandNumber";
-import DefectPhoto from "../maintenance/DefectPhoto.vue";
-import InspectionIdentity from "./InspectionIdentity.vue";
 import type { PointValue } from "./InspectionPoint.vue";
-import InspectionPoint from "./InspectionPoint.vue";
-import InspectionSignaturePad from "./InspectionSignaturePad.vue";
-import TemplateIllustration from "./TemplateIllustration.vue";
+import InspectionDraftCancellation from "./inspectionWizard/InspectionDraftCancellation.vue";
+import InspectionIdentityStep from "./inspectionWizard/InspectionIdentityStep.vue";
+import InspectionPointStep from "./inspectionWizard/InspectionPointStep.vue";
+import InspectionReviewStep from "./inspectionWizard/InspectionReviewStep.vue";
 
 const props = defineProps<{ equipmentId: string }>();
 const router = useRouter();
@@ -171,17 +176,19 @@ function checkIdentity(): boolean {
 
   const number = normalizeCommandNumber(client.value.commandValue);
 
-  if (
-    !client.value.displayName.trim() ||
-    !client.value.email.trim() ||
-    !client.value.phone.trim() ||
-    client.value.agencyCode <= 0 ||
-    !number
-  ) {
-    error.value =
-      "Renseignez les coordonnées du client, l’agence et un numéro de commande de 1 à 6 chiffres.";
+  if (!client.value.displayName.trim()) {
+    error.value = "Veuillez saisir le nom du client.";
     return false;
   }
+  const validationError = validateEmail(client.value.email) ??
+    validatePhoneNumber(client.value.phone) ??
+    validateAgencyCode(client.value.agencyCode) ??
+    validateCommandNumber(number ?? client.value.commandValue);
+  if (validationError) {
+    error.value = validationError;
+    return false;
+  }
+  if (!number) return false;
   client.value.commandValue = number;
   return true;
 }
@@ -401,112 +408,39 @@ onMounted(() => {
         :value="step"
         :max="finalStep"
       />
-      <template v-if="step === 0">
-        <InspectionIdentity
-          v-model:operator-first-name="operatorFirstName"
-          v-model:client="client"
-          :departure="isDeparture"
-          :locked="Boolean(inspection)"
-        />
-        <section
-          class="wizard__previous"
-          aria-label="Défauts ouverts"
-        >
-          <h2>Défauts encore ouverts sur cet équipement</h2>
-          <p v-if="!openDefects.length">Aucun défaut ouvert connu.</p>
-          <ul v-else>
-            <li
-              v-for="defect in openDefects"
-              :key="defect.id"
-            >
-              <strong>{{ defect.description }}</strong> : {{ defect.observation }}
-              <small
-                >Constaté le {{ new Date(defect.reportedAt).toLocaleDateString("fr-FR") }}</small
-              >
-              <details v-if="defect.occurrences.length">
-                <summary>Constats et photographies</summary>
-                <ul>
-                  <li
-                    v-for="occurrence in defect.occurrences"
-                    :key="occurrence.id"
-                  >
-                    {{ occurrence.observation }} ·
-                    {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }}
-                    <div class="wizard__photos">
-                      <DefectPhoto
-                        v-for="photoId in occurrence.photoIds"
-                        :key="photoId"
-                        :equipment-id="equipmentId"
-                        :defect-id="defect.id"
-                        :photo-id="photoId"
-                      />
-                    </div>
-                  </li>
-                </ul>
-              </details>
-            </li>
-          </ul>
-        </section>
-      </template>
-      <section v-else-if="currentPoint">
-        <h2>Point {{ step }} sur {{ orderedPoints.length }}</h2>
-        <p class="wizard__point-detail">{{ currentPoint.descriptionDetail }}</p>
-        <TemplateIllustration :photo-id="currentPoint.photoId" />
-        <InspectionPoint
-          :id="currentPoint.id"
-          :label="currentPoint.description"
-          :value="points[currentPoint.id]"
-          :open-defects="openDefects"
-          :inspection-id="inspection?.id"
-          :disabled="busy"
-          @update="points[currentPoint.id] = $event"
-          @remove-photo="removePhoto(currentPoint.id, $event)"
-        />
-      </section>
-      <section
+      <InspectionIdentityStep
+        v-if="step === 0"
+        v-model:operator-first-name="operatorFirstName"
+        v-model:client="client"
+        :departure="isDeparture"
+        :locked="Boolean(inspection)"
+        :defects="openDefects"
+        :equipment-id="equipmentId"
+      />
+      <InspectionPointStep
+        v-else-if="currentPoint"
+        :point="currentPoint"
+        :position="step"
+        :total="orderedPoints.length"
+        :value="points[currentPoint.id]"
+        :open-defects="openDefects"
+        :inspection-id="inspection?.id ?? null"
+        :disabled="busy"
+        @update="points[currentPoint.id] = $event"
+        @remove-photo="removePhoto(currentPoint.id, $event)"
+      />
+      <InspectionReviewStep
         v-else
-        class="wizard__summary"
-      >
-        <h2>Récapitulatif et signature</h2>
-        <p>Client : {{ client.displayName }} - commande {{ client.commandValue }}</p>
-        <ul>
-          <li
-            v-for="point in orderedPoints"
-            :key="point.id"
-          >
-            {{ point.description }} :
-            {{ points[point.id]?.result === "Compliant" ? "Conforme" : "Non conforme" }}
-            <span v-if="points[point.id]?.observation"> - {{ points[point.id].observation }}</span>
-            <button
-              type="button"
-              @click="step = orderedPoints.indexOf(point) + 1"
-            >
-              Modifier
-            </button>
-          </li>
-        </ul>
-        <label
-          >Nom du client signataire *<input
-            v-model="signerName"
-            required
-        /></label>
-        <label
-          ><input
-            v-model="accepted"
-            type="checkbox"
-          />
-          Je reconnais avoir pris connaissance du présent état des lieux et en accepte le
-          contenu.</label
-        >
-        <InspectionSignaturePad @change="signatureFile = $event" />
-        <button
-          type="button"
-          :disabled="busy"
-          @click="validate"
-        >
-          Signer et valider l’état des lieux
-        </button>
-      </section>
+        v-model:signer-name="signerName"
+        v-model:accepted="accepted"
+        :client="client"
+        :points="orderedPoints"
+        :values="points"
+        :busy="busy"
+        @signature="signatureFile = $event"
+        @edit="step = orderedPoints.findIndex((point) => point.id === $event) + 1"
+        @validate="validate"
+      />
       <p
         v-if="error"
         role="alert"
@@ -514,27 +448,12 @@ onMounted(() => {
       >
         {{ error }}
       </p>
-      <section
+      <InspectionDraftCancellation
         v-if="inspection?.status === 'Draft'"
-        class="wizard__cancel"
-      >
-        <label for="cancel-reason">Annuler ce brouillon</label>
-        <textarea
-          id="cancel-reason"
-          v-model="cancellationReason"
-          rows="2"
-          maxlength="1000"
-          placeholder="Motif de l’annulation"
-          :disabled="busy"
-        />
-        <button
-          type="button"
-          :disabled="busy || !cancellationReason.trim()"
-          @click="cancelDraft"
-        >
-          Annuler l’état des lieux
-        </button>
-      </section>
+        v-model:reason="cancellationReason"
+        :busy="busy"
+        @cancel="cancelDraft"
+      />
       <nav class="wizard__actions">
         <button
           v-if="step > 0"
@@ -565,19 +484,6 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-.wizard__point-detail {
-  white-space: pre-wrap;
-  tab-size: 4;
-}
-.wizard__cancel {
-  display: grid;
-  gap: 0.5rem;
-  border-top: 1px solid var(--color-border);
-  padding-top: 1rem;
-}
-.wizard__cancel button {
-  justify-self: start;
-}
 .wizard {
   display: grid;
   gap: 1.25rem;
@@ -592,29 +498,6 @@ onMounted(() => {
 .wizard progress {
   width: 100%;
   accent-color: var(--color-primary);
-}
-.wizard__summary {
-  display: grid;
-  gap: 0.9rem;
-}
-.wizard__summary label {
-  display: grid;
-  gap: 0.4rem;
-}
-.wizard__summary label:has([type="checkbox"]) {
-  display: flex;
-  align-items: flex-start;
-}
-.wizard__summary input:not([type="checkbox"]) {
-  min-height: 2.75rem;
-  padding: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-input-background);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-}
-.wizard__summary li {
-  margin-block: 0.5rem;
 }
 .wizard__actions {
   display: flex;
@@ -641,29 +524,9 @@ button:disabled {
 .wizard__error {
   color: var(--color-danger);
 }
-.wizard__previous {
-  padding: 1rem;
-  border-radius: 0.6rem;
-  background: var(--color-warning-soft);
-}
-.wizard__previous li {
-  margin-block: 0.6rem;
-}
-.wizard__previous small {
-  display: block;
-}
-.wizard__photos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-block: 0.5rem;
-}
 @media (max-width: 42rem) {
-  .wizard__summary input:not([type="checkbox"]),
   .wizard__actions button {
     min-height: 3rem;
-  }
-  .wizard__actions button {
     flex: 1 1 10rem;
   }
 }

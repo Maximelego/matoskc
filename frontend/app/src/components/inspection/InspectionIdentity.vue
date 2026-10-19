@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { computed, reactive } from "vue";
 import type { ClientInputDto } from "../../api/inspections";
+import {
+  validateAgencyCode,
+  validateCommandNumber,
+  validateEmail,
+  validatePhoneNumber,
+} from "../../utils/validators.ts";
 import CommandNumberInput from "../common/input/CommandNumberInput.vue";
+import { normalizeCommandNumber } from "../common/input/commandNumber";
 
 const props = defineProps<{
   operatorFirstName: string;
@@ -18,6 +26,23 @@ const emit = defineEmits<{
 function update<K extends keyof ClientInputDto>(key: K, value: ClientInputDto[K]): void {
   emit("update:client", { ...props.client, [key]: value });
 }
+
+type ValidatedField = "email" | "phone" | "command";
+const touched = reactive<Record<ValidatedField, boolean>>({
+  email: false,
+  phone: false,
+  command: false,
+});
+const emailError = computed(() => (touched.email ? validateEmail(props.client.email) : null));
+const phoneError = computed(() => (touched.phone ? validatePhoneNumber(props.client.phone) : null));
+const commandError = computed(() =>
+  touched.command
+    ? (validateAgencyCode(props.client.agencyCode) ??
+      validateCommandNumber(
+        normalizeCommandNumber(props.client.commandValue) ?? props.client.commandValue,
+      ))
+    : null,
+);
 </script>
 
 <template>
@@ -51,9 +76,19 @@ function update<K extends keyof ClientInputDto>(key: K, value: ClientInputDto[K]
           :disabled="locked"
           required
           autocomplete="email"
+          :aria-invalid="Boolean(emailError)"
+          :aria-describedby="emailError ? 'client-email-error' : undefined"
           @input="update('email', ($event.target as HTMLInputElement).value)"
+          @blur="touched.email = true"
         />
       </label>
+      <small
+        v-if="emailError"
+        id="client-email-error"
+        class="identity__field-error"
+        role="alert"
+        >{{ emailError }}</small
+      >
       <label
         >Téléphone *
         <input
@@ -62,24 +97,27 @@ function update<K extends keyof ClientInputDto>(key: K, value: ClientInputDto[K]
           :disabled="locked"
           required
           autocomplete="tel"
+          :aria-invalid="Boolean(phoneError)"
+          :aria-describedby="phoneError ? 'client-phone-error' : undefined"
           @input="update('phone', ($event.target as HTMLInputElement).value)"
+          @blur="touched.phone = true"
         />
       </label>
-      <label
-        >Code de l’agence *
-        <input
-          type="number"
-          min="1"
-          :value="client.agencyCode || ''"
-          :disabled="locked"
-          required
-          @input="update('agencyCode', Number(($event.target as HTMLInputElement).value))"
-        />
-      </label>
+      <small
+        v-if="phoneError"
+        id="client-phone-error"
+        class="identity__field-error"
+        role="alert"
+        >{{ phoneError }}</small
+      >
       <CommandNumberInput
         :model-value="client.commandValue"
+        :agency-code="client.agencyCode"
         :disabled="locked"
+        :error="commandError ?? undefined"
         @update:model-value="update('commandValue', $event)"
+        @update:agency-code="update('agencyCode', $event)"
+        @focusout="touched.command = true"
       />
     </template>
     <p v-else>
@@ -123,5 +161,12 @@ function update<K extends keyof ClientInputDto>(key: K, value: ClientInputDto[K]
 }
 .identity__error {
   color: var(--color-danger);
+}
+.identity__field-error {
+  margin-top: -0.6rem;
+  color: var(--color-danger);
+}
+.identity input[aria-invalid="true"] {
+  border-color: var(--color-danger);
 }
 </style>

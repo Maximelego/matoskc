@@ -1,0 +1,121 @@
+<script setup lang="ts">
+import type { ClientInputDto, InspectionTemplateDto } from "../../../api/inspections";
+import type { PointValue } from "../InspectionPoint.vue";
+import InspectionSignaturePad from "../InspectionSignaturePad.vue";
+
+defineProps<{
+  client: ClientInputDto;
+  points: InspectionTemplateDto["points"];
+  values: Record<string, PointValue>;
+  signerName: string;
+  accepted: boolean;
+  busy: boolean;
+}>();
+const emit = defineEmits<{
+  "update:signerName": [value: string];
+  "update:accepted": [value: boolean];
+  signature: [file: File | null];
+  edit: [pointId: string];
+  validate: [];
+}>();
+</script>
+
+<template>
+  <section class="review-step">
+    <h2>Récapitulatif et signature</h2>
+    <p>Client : {{ client.displayName }} - commande {{ client.commandValue }}</p>
+    <ul>
+      <li
+        v-for="point in points"
+        :key="point.id"
+      >
+        {{ point.description }} :
+        {{ values[point.id]?.result === "Compliant" ? "Conforme" : "Non conforme" }}
+        <span v-if="values[point.id]?.observation"> - {{ values[point.id].observation }}</span>
+        <button
+          type="button"
+          :disabled="busy"
+          @click="emit('edit', point.id)"
+        >
+          Modifier
+        </button>
+      </li>
+    </ul>
+    <label
+      >Nom du client signataire *
+      <input
+        :value="signerName"
+        :disabled="busy"
+        required
+        @input="emit('update:signerName', ($event.target as HTMLInputElement).value)"
+      />
+    </label>
+    <label class="review-step__acceptance">
+      <input
+        type="checkbox"
+        :checked="accepted"
+        :disabled="busy"
+        @change="emit('update:accepted', ($event.target as HTMLInputElement).checked)"
+      />
+      Je reconnais avoir pris connaissance du présent état des lieux et en accepte le contenu.
+    </label>
+    <InspectionSignaturePad @change="emit('signature', $event)" />
+    <button
+      type="button"
+      :disabled="busy"
+      @click="emit('validate')"
+    >
+      Signer et valider l’état des lieux
+    </button>
+  </section>
+</template>
+
+<style scoped lang="scss">
+.review-step {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.review-step label {
+  display: grid;
+  gap: 0.4rem;
+}
+.review-step__acceptance {
+  display: flex !important;
+  align-items: flex-start;
+}
+.review-step input:not([type="checkbox"]) {
+  min-height: 2.75rem;
+  padding: 0.5rem;
+  color: var(--color-text);
+  background: var(--color-input-background);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+.review-step li {
+  margin-block: 0.5rem;
+}
+.review-step button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+.review-step button:focus-visible {
+  outline: 3px solid var(--color-focus);
+}
+.review-step button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+@media (max-width: 42rem) {
+  .review-step input:not([type="checkbox"]),
+  .review-step button {
+    min-height: 3rem;
+  }
+}
+</style>
