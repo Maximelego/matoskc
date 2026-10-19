@@ -1,77 +1,18 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { AgencyDto } from "../../api/agencies/dto";
 import type { LoginRequestDto } from "../../api/auth";
 import AdminLoginComponent from "./AdminLoginComponent.vue";
 import AgencyLoginComponent from "./AgencyLoginComponent.vue";
-
-const props = withDefaults(
-  defineProps<{
-    busy?: boolean;
-    error?: string | null;
-  }>(),
-  {
-    busy: false,
-    error: null,
-  },
-);
 
 const emit = defineEmits<{
   submit: [credentials: LoginRequestDto];
 }>();
 
 type LoginMode = LoginRequestDto["mode"];
-
 const mode = ref<LoginMode>("agency");
-const agencyId = ref("");
-const agencies = ref<AgencyDto[]>([]);
-const agenciesLoading = ref(false);
-const agenciesError = ref("");
-const email = ref("");
-const password = ref("");
 
 function selectMode(value: LoginMode): void {
-  if (props.busy || mode.value === value) return;
-
   mode.value = value;
-  password.value = "";
-}
-
-function submit(event: Event): void {
-  if (props.busy) return;
-
-  const form = event.target as HTMLFormElement;
-  const fields = new FormData(form);
-  const enteredPassword = String(fields.get("password") ?? "");
-
-  if (!enteredPassword) return;
-
-  if (mode.value === "admin") {
-    const enteredEmail = String(fields.get("username") ?? "").trim();
-
-    if (!enteredEmail) return;
-
-    emit("submit", {
-      mode: "admin",
-      email: enteredEmail,
-      password: enteredPassword,
-    });
-
-    return;
-  }
-
-  if (
-    agenciesLoading.value ||
-    !agencies.value.some((agency) => String(agency.code) === agencyId.value)
-  ) {
-    return;
-  }
-
-  emit("submit", {
-    mode: "agency",
-    agencyId: agencyId.value,
-    password: enteredPassword,
-  });
 }
 </script>
 
@@ -101,7 +42,6 @@ function submit(event: Event): void {
           class="login__mode"
           :class="{ 'login__mode--active': mode === 'agency' }"
           :aria-pressed="mode === 'agency'"
-          :disabled="busy"
           @click="selectMode('agency')"
         >
           <span class="login__mode-label">Connexion</span>
@@ -113,7 +53,6 @@ function submit(event: Event): void {
           class="login__mode"
           :class="{ 'login__mode--active': mode === 'admin' }"
           :aria-pressed="mode === 'admin'"
-          :disabled="busy"
           @click="selectMode('admin')"
         >
           <span class="login__mode-label">Connexion</span>
@@ -123,18 +62,10 @@ function submit(event: Event): void {
 
       <AdminLoginComponent
         v-if="mode === 'admin'"
-        :busy="busy"
-        :error="error"
         @submit="emit('submit', $event)"
       />
       <AgencyLoginComponent
         v-else
-        v-model:agency-id="agencyId"
-        :busy="busy"
-        :error="error"
-        :agencies="agencies"
-        :agencies-loading="agenciesLoading"
-        :agencies-error="agenciesError"
         @submit="emit('submit', $event)"
       />
     </section>
