@@ -6,7 +6,7 @@ import type { EquipmentDto } from "../../api/equipments/dto";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseSpinner from "../common/spinner/BaseSpinner.vue";
-import InspectionEquipmentPicker from "./InspectionEquipmentPicker.vue";
+import InspectionEquipmentPicker from "./equipmentPicker/InspectionEquipmentPicker.vue";
 
 const equipment = ref<EquipmentDto[]>([]);
 const loading = ref(true);
