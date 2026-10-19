@@ -1,18 +1,61 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import type { LoginRequestDto } from "../../api/auth";
+import { authSession } from "../../api/auth/session";
+import { ApiError } from "../../api/client";
+import SlideAndFadeLateral from "../common/transition/SlideAndFadeLateral.vue";
 import AdminLoginComponent from "./AdminLoginComponent.vue";
 import AgencyLoginComponent from "./AgencyLoginComponent.vue";
 
-const emit = defineEmits<{
-  submit: [credentials: LoginRequestDto];
-}>();
-
 type LoginMode = LoginRequestDto["mode"];
 const mode = ref<LoginMode>("agency");
+const route = useRoute();
+const router = useRouter();
+const busy = ref(false);
+const error = ref<string | null>(null);
+const displayError = computed(
+  () =>
+    error.value ??
+    (route.query.unavailable === "1"
+      ? "Le serveur est momentanément inaccessible. Vous pouvez réessayer de vous connecter."
+      : null),
+);
 
 function selectMode(value: LoginMode): void {
+  if (busy.value || mode.value === value) return;
   mode.value = value;
+  error.value = null;
+}
+
+async function submit(credentials: LoginRequestDto): Promise<void> {
+  if (busy.value) return;
+  busy.value = true;
+  error.value = null;
+  try {
+    await authSession.login(credentials);
+    const redirect = route.query.redirect;
+    const destination =
+      typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//")
+        ? redirect
+        : "/";
+    await router.replace(destination);
+  } catch (cause) {
+    if (cause instanceof ApiError) {
+      error.value =
+        cause.status === 401
+          ? "Identifiants incorrects. Veuillez réessayer."
+          : cause.status === 429
+            ? "Trop de tentatives de connexion. Veuillez patienter avant de réessayer."
+            : cause.status >= 500
+              ? "Le serveur est momentanément indisponible. Veuillez réessayer."
+              : cause.status === 400
+                ? "La demande de connexion est invalide. Veuillez vérifier les informations saisies."
+                : "La connexion a échoué. Veuillez réessayer.";
+    } else error.value = "Impossible de joindre le serveur. Veuillez vérifier votre connexion.";
+  } finally {
+    busy.value = false;
+  }
 }
 </script>
 
@@ -42,6 +85,7 @@ function selectMode(value: LoginMode): void {
           class="login__mode"
           :class="{ 'login__mode--active': mode === 'agency' }"
           :aria-pressed="mode === 'agency'"
+          :disabled="busy"
           @click="selectMode('agency')"
         >
           <span class="login__mode-label">Connexion</span>
@@ -53,21 +97,27 @@ function selectMode(value: LoginMode): void {
           class="login__mode"
           :class="{ 'login__mode--active': mode === 'admin' }"
           :aria-pressed="mode === 'admin'"
+          :disabled="busy"
           @click="selectMode('admin')"
         >
           <span class="login__mode-label">Connexion</span>
           <strong>Admin</strong>
         </button>
       </div>
-
-      <AdminLoginComponent
-        v-if="mode === 'admin'"
-        @submit="emit('submit', $event)"
-      />
-      <AgencyLoginComponent
-        v-else
-        @submit="emit('submit', $event)"
-      />
+      <SlideAndFadeLateral>
+        <AdminLoginComponent
+          v-if="mode === 'admin'"
+          :busy="busy"
+          :error="displayError"
+          @submit="submit"
+        />
+        <AgencyLoginComponent
+          v-else
+          :busy="busy"
+          :error="displayError"
+          @submit="submit"
+        />
+      </SlideAndFadeLateral>
     </section>
   </main>
 </template>
@@ -194,101 +244,6 @@ function selectMode(value: LoginMode): void {
   cursor: not-allowed;
 }
 
-.login__form {
-  display: grid;
-  gap: 1.25rem;
-  padding: 1.75rem;
-}
-
-.login__form-heading h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.login__form-heading p {
-  margin: 0.4rem 0 0;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-
-.login__field {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.login__field label {
-  font-weight: var(--font-weight-semibold);
-}
-
-.login__field input,
-.login__field select {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 3rem;
-  padding: 0.7rem 0.875rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.55rem;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-}
-
-.login__field input::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 0.8;
-}
-
-.login__field input:focus-visible,
-.login__field select:focus-visible {
-  outline: 0.1875rem solid var(--color-focus);
-  outline-offset: 0.125rem;
-}
-
-.login__field input:disabled,
-.login__field select:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.login__error {
-  margin: 0;
-  padding: 0.75rem 0.875rem;
-  border: 1px solid var(--color-danger);
-  border-radius: 0.55rem;
-  color: var(--color-danger);
-}
-
-.login__hint {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.login__agency-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 0;
-  color: var(--color-danger);
-  font-size: var(--font-size-sm);
-}
-
-.login__agency-error button {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.4rem;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.login__agency-error button:focus-visible {
-  outline: 0.1875rem solid var(--color-focus);
-}
-
 @media (max-width: 36rem) {
   .login {
     padding: 1rem 0.75rem;
@@ -304,10 +259,6 @@ function selectMode(value: LoginMode): void {
 
   .login__mode {
     padding: 0.6rem 0.7rem;
-  }
-
-  .login__form {
-    padding: 1.5rem 1rem 1.25rem;
   }
 }
 
