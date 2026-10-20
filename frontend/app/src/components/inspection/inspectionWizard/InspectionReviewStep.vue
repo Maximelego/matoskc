@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ClientInputDto, InspectionTemplateDto } from "../../../api/inspections";
 import CopyButton from "../../common/copy/CopyButton.vue";
+import BaseIcon from "../../common/icon/BaseIcon.vue";
 import type { PointValue } from "../InspectionPoint.vue";
 import InspectionSignaturePad from "../InspectionSignaturePad.vue";
 
@@ -24,18 +25,27 @@ const emit = defineEmits<{
 <template>
   <section class="review-step">
     <h2>Récapitulatif et signature</h2>
-    <strong
-      >Client : {{ client.displayName }} - {{ client.agencyCode }}/{{ client.commandValue }}</strong
-    >
-    <CopyButton
-      :value="client.commandValue"
-      label="Copier le numéro de commande"
-    />
+    <div class="review-step__client">
+      <strong
+        >Client : {{ client.displayName }} - {{ client.agencyCode }}/{{
+          client.commandValue
+        }}</strong
+      >
+      <CopyButton
+        :value="client.commandValue"
+        label="Copier le numéro de commande"
+      />
+    </div>
 
     <ul class="review-step__list">
       <li
         v-for="point in points"
         :key="point.id"
+        :class="[
+          values[point.id]?.result === 'Compliant'
+            ? 'review-step__list-item--compliant'
+            : 'review-step__list-item--non-compliant',
+        ]"
       >
         {{ point.description }} :
         {{ values[point.id]?.result === "Compliant" ? "Conforme" : "Non conforme" }}
@@ -45,7 +55,10 @@ const emit = defineEmits<{
           :disabled="busy"
           @click="emit('edit', point.id)"
         >
-          Modifier
+          <BaseIcon
+            name="edit"
+            :size="24"
+          />
         </button>
       </li>
     </ul>
@@ -90,6 +103,11 @@ const emit = defineEmits<{
   display: grid;
   gap: 0.4rem;
 }
+.review-step__client {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 .review-step__acceptance {
   display: flex !important;
   align-items: flex-start;
@@ -119,6 +137,13 @@ const emit = defineEmits<{
     gap: 0.5rem;
     display: flex;
     align-items: center;
+
+    &.review-step__list-item--compliant {
+      color: var(--color-success);
+    }
+    &.review-step__list-item--non-compliant {
+      color: var(--color-danger);
+    }
   }
 
   button {

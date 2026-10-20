@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { DefectDto } from "../../api/defects/dto";
 import type { InspectionResultDto } from "../../api/inspections";
+import BaseIcon from "../common/icon/BaseIcon.vue";
 import InspectionAnswerPhoto from "./InspectionAnswerPhoto.vue";
 
 export type PointValue = {
@@ -125,7 +126,10 @@ function addFiles(event: Event): void {
             type="button"
             @click="update({ files: value.files.filter((_, i) => i !== index) })"
           >
-            Retirer
+            <BaseIcon
+              name="delete"
+              :size="24"
+            />
           </button>
         </li>
         <li
@@ -142,7 +146,10 @@ function addFiles(event: Event): void {
             type="button"
             @click="emit('removePhoto', photoId)"
           >
-            Retirer
+            <BaseIcon
+              name="delete"
+              :size="24"
+            />
           </button>
         </li>
       </ul>
@@ -173,6 +180,26 @@ function addFiles(event: Event): void {
   display: grid;
   gap: 0.35rem;
 }
+.point__defect ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 50%;
+  flex-wrap: wrap;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+  }
+}
 .point__warning {
   margin: 0;
   padding: 0.7rem;
@@ -192,9 +219,17 @@ input[type="file"] {
   font: inherit;
 }
 button {
-  color: var(--color-primary);
+  color: var(--color-danger);
+
   background: none;
   border: 0;
   cursor: pointer;
+
+  &:hover {
+    svg {
+      scale: 1.1;
+      transition: scale 150ms ease-in-out;
+    }
+  }
 }
 </style>

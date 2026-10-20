@@ -22,6 +22,7 @@ import {
   validatePhoneNumber,
 } from "../../utils/validators.ts";
 import { normalizeCommandNumber } from "../common/input/commandNumber";
+import SlideAndFadeLateral from "../common/transition/SlideAndFadeLateral.vue";
 import type { PointValue } from "./InspectionPoint.vue";
 import InspectionDraftCancellation from "./inspectionWizard/InspectionDraftCancellation.vue";
 import InspectionIdentityStep from "./inspectionWizard/InspectionIdentityStep.vue";
@@ -411,39 +412,41 @@ onMounted(() => {
         :value="step"
         :max="finalStep"
       />
-      <InspectionIdentityStep
-        v-if="step === 0"
-        v-model:operator-first-name="operatorFirstName"
-        v-model:client="client"
-        :departure="isDeparture"
-        :locked="Boolean(inspection)"
-        :defects="openDefects"
-        :equipment-id="equipmentId"
-      />
-      <InspectionPointStep
-        v-else-if="currentPoint"
-        :point="currentPoint"
-        :position="step"
-        :total="orderedPoints.length"
-        :value="points[currentPoint.id]"
-        :open-defects="openDefects"
-        :inspection-id="inspection?.id ?? null"
-        :disabled="busy"
-        @update="points[currentPoint.id] = $event"
-        @remove-photo="removePhoto(currentPoint.id, $event)"
-      />
-      <InspectionReviewStep
-        v-else
-        v-model:signer-name="signerName"
-        v-model:accepted="accepted"
-        :client="client"
-        :points="orderedPoints"
-        :values="points"
-        :busy="busy"
-        @signature="signatureFile = $event"
-        @edit="step = orderedPoints.findIndex((point) => point.id === $event) + 1"
-        @validate="validate"
-      />
+      <SlideAndFadeLateral>
+        <InspectionIdentityStep
+          v-if="step === 0"
+          v-model:operator-first-name="operatorFirstName"
+          v-model:client="client"
+          :departure="isDeparture"
+          :locked="Boolean(inspection)"
+          :defects="openDefects"
+          :equipment-id="equipmentId"
+        />
+        <InspectionPointStep
+          v-else-if="currentPoint"
+          :point="currentPoint"
+          :position="step"
+          :total="orderedPoints.length"
+          :value="points[currentPoint.id]"
+          :open-defects="openDefects"
+          :inspection-id="inspection?.id ?? null"
+          :disabled="busy"
+          @update="points[currentPoint.id] = $event"
+          @remove-photo="removePhoto(currentPoint.id, $event)"
+        />
+        <InspectionReviewStep
+          v-else
+          v-model:signer-name="signerName"
+          v-model:accepted="accepted"
+          :client="client"
+          :points="orderedPoints"
+          :values="points"
+          :busy="busy"
+          @signature="signatureFile = $event"
+          @edit="step = orderedPoints.findIndex((point) => point.id === $event) + 1"
+          @validate="validate"
+        />
+      </SlideAndFadeLateral>
       <p
         v-if="error"
         role="alert"
