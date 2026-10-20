@@ -172,22 +172,19 @@ $theme-dark: (
 :root,
 [data-theme="light"] {
   color-scheme: light;
-
   @include generate-theme($theme-light);
 }
 
 // Thème sombre choisi manuellement
 [data-theme="dark"] {
   color-scheme: dark;
-
   @include generate-theme($theme-dark);
 }
 
 // Préférence du système, en l'absence de choix manuel
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    color-scheme: dark;
-
-    @include generate-theme($theme-dark);
+    color-scheme: light;
+    @include generate-theme($theme-light);
   }
 }

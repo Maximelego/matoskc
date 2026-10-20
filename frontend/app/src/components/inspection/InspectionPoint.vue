@@ -102,7 +102,7 @@ function addFiles(event: Event): void {
         </select>
       </label>
       <label
-        >Observation *<textarea
+        >Observation(s) *<textarea
           :value="value.observation"
           rows="3"
           @input="update({ observation: ($event.target as HTMLTextAreaElement).value })"

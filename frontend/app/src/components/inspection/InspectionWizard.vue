@@ -20,7 +20,7 @@ import {
   validateCommandNumber,
   validateEmail,
   validatePhoneNumber,
-} from "../common/form/validators";
+} from "../../utils/validators.ts";
 import { normalizeCommandNumber } from "../common/input/commandNumber";
 import type { PointValue } from "./InspectionPoint.vue";
 import InspectionDraftCancellation from "./inspectionWizard/InspectionDraftCancellation.vue";
@@ -180,7 +180,8 @@ function checkIdentity(): boolean {
     error.value = "Veuillez saisir le nom du client.";
     return false;
   }
-  const validationError = validateEmail(client.value.email) ??
+  const validationError =
+    validateEmail(client.value.email) ??
     validatePhoneNumber(client.value.phone) ??
     validateAgencyCode(client.value.agencyCode) ??
     validateCommandNumber(number ?? client.value.commandValue);
@@ -307,6 +308,7 @@ async function removePhoto(pointId: string, photoId: string): Promise<void> {
   if (!inspection.value || busy.value) return;
   busy.value = true;
   error.value = "";
+
   try {
     await inspectionHttpApi.removePhoto(inspection.value.id, photoId);
     points.value[pointId].photoIds = points.value[pointId].photoIds.filter((id) => id !== photoId);
@@ -322,6 +324,7 @@ async function cancelDraft(): Promise<void> {
   if (!inspection.value || busy.value || !cancellationReason.value.trim()) return;
   busy.value = true;
   error.value = "";
+
   try {
     await inspectionHttpApi.cancel(inspection.value.id, cancellationReason.value.trim());
     await router.push({ name: "Inspections" });

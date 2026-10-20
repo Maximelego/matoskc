@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ClientInputDto, InspectionTemplateDto } from "../../../api/inspections";
+import CopyButton from "../../common/copy/CopyButton.vue";
 import type { PointValue } from "../InspectionPoint.vue";
 import InspectionSignaturePad from "../InspectionSignaturePad.vue";
 
@@ -23,8 +24,15 @@ const emit = defineEmits<{
 <template>
   <section class="review-step">
     <h2>Récapitulatif et signature</h2>
-    <p>Client : {{ client.displayName }} - commande {{ client.commandValue }}</p>
-    <ul>
+    <strong
+      >Client : {{ client.displayName }} - {{ client.agencyCode }}/{{ client.commandValue }}</strong
+    >
+    <CopyButton
+      :value="client.commandValue"
+      label="Copier le numéro de commande"
+    />
+
+    <ul class="review-step__list">
       <li
         v-for="point in points"
         :key="point.id"
@@ -41,6 +49,7 @@ const emit = defineEmits<{
         </button>
       </li>
     </ul>
+
     <label
       >Nom du client signataire *
       <input
@@ -93,17 +102,34 @@ const emit = defineEmits<{
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
 }
-.review-step li {
-  margin-block: 0.5rem;
-}
-.review-step button {
-  min-height: 2.75rem;
-  padding: 0.55rem 0.85rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-surface);
-  cursor: pointer;
+.review-step {
+  ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  li {
+    margin-left: 1rem;
+    margin-right: 1rem;
+    display: flex;
+    justify-content: space-between;
+    margin-block: 0.5rem;
+    gap: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+
+  button {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    color: var(--color-text);
+    background: var(--color-surface);
+    cursor: pointer;
+  }
 }
 .review-step button:focus-visible {
   outline: 3px solid var(--color-focus);
