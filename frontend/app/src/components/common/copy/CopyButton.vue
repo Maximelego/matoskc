@@ -81,10 +81,10 @@ button:disabled {
 }
 
 span[role="status"] {
-  .success {
+  &.success {
     color: var(--color-success);
   }
-  .error {
+  &.error {
     color: var(--color-danger);
   }
   font-size: var(--font-size-sm);
