@@ -55,11 +55,13 @@ defineProps<{ equipment: EquipmentDto }>();
     text-align: center;
 
     &--available {
-      color: green;
+      color: var(--color-success);
+      background: var(--color-success-soft);
     }
 
     &--borrowed {
-      color: red;
+      color: var(--color-info);
+      background: var(--color-info-soft);
     }
   }
 }

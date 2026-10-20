@@ -66,6 +66,7 @@ function submit(): void {
     </p>
     <BaseButton
       type="submit"
+      variant="secondary"
       full-width
       :loading="busy"
       >Se connecter</BaseButton

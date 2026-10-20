@@ -354,17 +354,23 @@ onBeforeUnmount(cleanupPrintFrame);
 
 .button {
   padding: 0.7rem 1rem;
-  border: 1px solid #d6d6df;
+  border: 1px solid var(--color-border);
   border-radius: 0.6rem;
-  background: white;
-  color: #252532;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 
   &.primary {
-    background: #ef6cad;
-    border-color: #ef6cad;
+    background: var(--color-secondary);
+    border-color: var(--color-secondary);
+    color: var(--color-text-on-secondary);
+  }
+
+  &.primary:hover:not(:disabled) {
+    background: var(--color-secondary-hover);
+    border-color: var(--color-secondary-hover);
   }
 
   &:disabled {
@@ -373,7 +379,7 @@ onBeforeUnmount(cleanupPrintFrame);
   }
 
   &:focus-visible {
-    outline: 3px solid #43adef;
+    outline: 3px solid var(--color-focus);
     outline-offset: 3px;
   }
 }
@@ -386,9 +392,9 @@ onBeforeUnmount(cleanupPrintFrame);
   border: none;
   border-radius: 1rem;
   overflow-y: auto;
-  background: white;
-  color: #252532;
-  box-shadow: 0 20px 70px rgb(0 0 0 / 25%);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 20px 70px var(--color-shadow);
   font-family: inherit;
 
   &::backdrop {
@@ -437,18 +443,18 @@ onBeforeUnmount(cleanupPrintFrame);
     align-items: center;
     gap: 0.6rem;
     padding: 0.8rem;
-    border: 2px solid #e4e4eb;
+    border: 2px solid var(--color-border);
     border-radius: 0.75rem;
     cursor: pointer;
 
     &.selected {
-      border-color: #ef6cad;
-      background: #fff4f9;
+      border-color: var(--color-secondary);
+      background: var(--color-secondary-soft);
     }
   }
 
   input {
-    accent-color: #b82e72;
+    accent-color: var(--color-secondary);
   }
 
   strong,
@@ -458,7 +464,7 @@ onBeforeUnmount(cleanupPrintFrame);
 
   small {
     margin-top: 0.25rem;
-    color: #616170;
+    color: var(--color-text-secondary);
   }
 }
 
@@ -531,13 +537,13 @@ onBeforeUnmount(cleanupPrintFrame);
 }
 
 .print-help {
-  color: #616170;
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
   line-height: 1.5;
 }
 
 .error {
-  color: #b42318;
+  color: var(--color-danger);
 }
 
 .dialog-actions {

@@ -63,7 +63,7 @@ import { AdminMenus, AgencyMenus, SuperAdminMenus } from "../menus.ts";
 }
 .super-admin-home__eyebrow {
   margin: 0 0 0.4rem;
-  color: var(--color-primary);
+  color: var(--color-secondary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
 }

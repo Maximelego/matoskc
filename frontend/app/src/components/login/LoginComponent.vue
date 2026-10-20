@@ -94,7 +94,7 @@ async function submit(credentials: LoginRequestDto): Promise<void> {
 
         <button
           type="button"
-          class="login__mode"
+          class="login__mode login__mode--admin"
           :class="{ 'login__mode--active': mode === 'admin' }"
           :aria-pressed="mode === 'admin'"
           :disabled="busy"
@@ -224,6 +224,15 @@ async function submit(credentials: LoginRequestDto): Promise<void> {
 
 .login__mode--active strong {
   color: var(--color-primary);
+}
+
+.login__mode--admin.login__mode--active {
+  border-color: var(--color-secondary);
+  background: var(--color-secondary-soft);
+}
+
+.login__mode--admin.login__mode--active strong {
+  color: var(--color-secondary);
 }
 
 .login__mode-label {

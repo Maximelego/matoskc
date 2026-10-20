@@ -9,6 +9,7 @@ export type HomeTileProps = {
   icon: IconName;
   to?: string;
   featured?: boolean;
+  accent?: "primary" | "secondary";
 };
 
 defineProps<HomeTileProps>();
@@ -19,7 +20,7 @@ defineProps<HomeTileProps>();
     v-if="to"
     :to="to"
     class="home-tile"
-    :class="{ 'home-tile--featured': featured }"
+    :class="{ 'home-tile--featured': featured, 'home-tile--secondary': accent === 'secondary' }"
   >
     <BaseIcon
       class="home-tile__background-icon"
@@ -42,7 +43,7 @@ defineProps<HomeTileProps>();
   <div
     v-else
     class="home-tile home-tile--disabled"
-    :class="{ 'home-tile--featured': featured }"
+    :class="{ 'home-tile--featured': featured, 'home-tile--secondary': accent === 'secondary' }"
   >
     <BaseIcon
       class="home-tile__background-icon"
@@ -60,6 +61,8 @@ defineProps<HomeTileProps>();
 
 <style scoped lang="scss">
 .home-tile {
+  --tile-accent: var(--color-primary);
+  --tile-accent-soft: var(--color-primary-soft);
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -75,14 +78,18 @@ defineProps<HomeTileProps>();
   background: var(--color-surface);
   text-decoration: none;
   isolation: isolate;
+  &--secondary {
+    --tile-accent: var(--color-secondary);
+    --tile-accent-soft: var(--color-secondary-soft);
+  }
   transition:
     border-color 150ms ease,
     background-color 150ms ease,
     transform 150ms ease;
 
   &[href]:hover {
-    border-color: var(--color-primary);
-    background: var(--color-primary-soft);
+    border-color: var(--tile-accent);
+    background: var(--tile-accent-soft);
     transform: translateY(-2px);
   }
 
@@ -92,8 +99,8 @@ defineProps<HomeTileProps>();
   }
 
   &--featured {
-    border-color: var(--color-primary);
-    background: var(--color-primary-soft);
+    border-color: var(--tile-accent);
+    background: var(--tile-accent-soft);
   }
 
   &--disabled {
@@ -105,7 +112,7 @@ defineProps<HomeTileProps>();
     z-index: -1;
     top: -0.75rem;
     right: -0.75rem;
-    color: var(--color-primary);
+    color: var(--tile-accent);
     opacity: 0.12;
     pointer-events: none;
   }
@@ -152,7 +159,7 @@ defineProps<HomeTileProps>();
     flex: none;
     align-self: flex-end;
     margin-left: auto;
-    color: var(--color-primary);
+    color: var(--tile-accent);
   }
 }
 
