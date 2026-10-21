@@ -40,8 +40,11 @@ public sealed class ValidateDepartureInspectionUseCase(InspectionWorkflowContext
 
             var template = await context.Templates.GetTemplateByIdAsync(inspection.TemplateId, ct)
                 ?? throw new InspectionOperationException(404, "Template not found.");
-            OpenInspectionDefects.EnsureConsistent(inspection, template,
+            OpenInspectionDefects.EnsureConsistent(inspection,
                 await OpenInspectionDefects.ListAsync(context, equipment.Id, ct));
+            await OpenInspectionDefects.EnsureCurrentAsync(context, inspection, equipment.Id, ct);
+            foreach (var review in inspection.KnownDefects.Where(value => value.Result == DefectReviewResult.Worsened))
+                await MatosKC.Application.Maintenance.RecordInspectionDefects.RequireOpenAsync(context.Care, review.DefectId, equipment.Id, ct);
             var now = context.Time.GetUtcNow();
             inspection.Validate(template, now);
             inspection.AttachReport(await context.Reports.GenerateAsync(inspection, rental, template, ct));

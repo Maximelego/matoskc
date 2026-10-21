@@ -10,7 +10,8 @@ public sealed class EquipmentDefect : BaseEntity
 {
     public Guid EquipmentId { get; private set; }
     public Guid InspectionId { get; private set; }
-    public Guid InspectionAnswerId { get; private set; }
+    public Guid? InspectionAnswerId { get; private set; }
+    public Guid? InspectionFindingId { get; private set; }
     public string Description { get; private set; } = null!;
     public string Observation { get; private set; } = null!;
     public DateTimeOffset ReportedAt { get; private set; }
@@ -62,5 +63,14 @@ public sealed class EquipmentDefect : BaseEntity
         ResolvedByMaintenanceId = maintenanceId;
         ResolvedByAccountId = accountId;
         ResolvedAt = performedAt.ToUniversalTime();
+    }
+
+    public static EquipmentDefect FromFinding(Guid id, Guid equipmentId, Guid inspectionId,
+        Guid evidenceId, string description, string observation, DateTimeOffset at)
+    {
+        var value = new EquipmentDefect(id, equipmentId, inspectionId, evidenceId, description, observation, at);
+        value.InspectionAnswerId = null;
+        value.InspectionFindingId = evidenceId;
+        return value;
     }
 }

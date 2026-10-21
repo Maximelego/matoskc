@@ -21,7 +21,20 @@ public sealed record CreateReturnRequest(string OperatorFirstName);
 public sealed record SaveAnswerRequest(Guid TemplatePointId, InspectionResult? Result, string? Observation, Guid? ExistingDefectId = null);
 
 // A partial update: omitted answers and attached photos are preserved.
-public sealed record SaveDraftRequest(string OperatorFirstName, IReadOnlyList<SaveAnswerRequest> Answers);
+public sealed record SaveDefectReviewRequest(Guid DefectId,
+    [property: System.Text.Json.Serialization.JsonRequired] DefectReviewResult Result, string? Observation = null);
+public sealed record SaveFindingRequest(Guid Id, Guid TemplatePointId, string Observation);
+
+// Collections are partial updates. Explicit finding removals preserve omitted evidence.
+public sealed record SaveDraftRequest(string OperatorFirstName, IReadOnlyList<SaveAnswerRequest> Answers,
+    IReadOnlyList<SaveDefectReviewRequest>? KnownDefects = null,
+    IReadOnlyList<SaveFindingRequest>? Findings = null,
+    IReadOnlyList<Guid>? RemovedFindingIds = null);
+
+public sealed record DefectReviewResponse(Guid Id, Guid DefectId, string Description,
+    string HistoricalObservation, DateTimeOffset ObservedAt, IReadOnlyList<Guid> HistoricalPhotoIds,
+    DefectReviewResult? Result, string? Observation, IReadOnlyList<Guid> PhotoIds);
+public sealed record FindingResponse(Guid Id, Guid TemplatePointId, string Observation, IReadOnlyList<Guid> PhotoIds);
 
 public sealed record TemplatePointInput(string Description, string DescriptionDetail, Guid? PhotoId);
 
@@ -54,7 +67,9 @@ public sealed record InspectionResponse(
     bool HasReport,
     DateTimeOffset? CancelledAt,
     Guid? CancelledByAccountId,
-    string? CancellationReason
+    string? CancellationReason,
+    IReadOnlyList<DefectReviewResponse> KnownDefects,
+    IReadOnlyList<FindingResponse> Findings
 );
 
 public sealed record SignInspectionRequest(string SignerName, string SignaturePngBase64, bool Accepted);

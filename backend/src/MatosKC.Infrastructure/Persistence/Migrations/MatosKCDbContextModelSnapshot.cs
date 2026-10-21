@@ -338,13 +338,107 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.ToTable("inspection_answers", (string)null);
                 });
 
+            modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionDefectReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("DefectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("defect_id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("HistoricalObservation")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("historical_observation");
+
+                    b.Property<Guid>("InspectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_id");
+
+                    b.Property<string>("Observation")
+                        .HasColumnType("text")
+                        .HasColumnName("observation");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("observed_at");
+
+                    b.Property<string>("Result")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("result");
+
+                    b.PrimitiveCollection<List<Guid>>("_historicalPhotoIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("historical_photo_ids");
+
+                    b.PrimitiveCollection<List<Guid>>("_photoIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("photo_ids");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DefectId");
+
+                    b.HasIndex("InspectionId", "DefectId")
+                        .IsUnique();
+
+                    b.ToTable("inspection_defect_reviews", (string)null);
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionFinding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("InspectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_id");
+
+                    b.Property<bool>("IsRemoved")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_removed");
+
+                    b.Property<string>("Observation")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("observation");
+
+                    b.Property<Guid>("TemplatePointId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("template_point_id");
+
+                    b.PrimitiveCollection<List<Guid>>("_photoIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("photo_ids");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InspectionId");
+
+                    b.HasIndex("TemplatePointId");
+
+                    b.ToTable("inspection_findings", (string)null);
+                });
+
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionMedia", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid>("AnswerId")
+                    b.Property<Guid?>("AnswerId")
                         .HasColumnType("uuid")
                         .HasColumnName("answer_id");
 
@@ -357,10 +451,18 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("content_type");
 
+                    b.Property<Guid?>("DefectReviewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("defect_review_id");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("file_name");
+
+                    b.Property<Guid?>("FindingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("finding_id");
 
                     b.Property<Guid>("InspectionId")
                         .HasColumnType("uuid")
@@ -375,12 +477,19 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AnswerId");
 
+                    b.HasIndex("DefectReviewId");
+
+                    b.HasIndex("FindingId");
+
                     b.HasIndex("InspectionId");
 
                     b.HasIndex("ObjectKey")
                         .IsUnique();
 
-                    b.ToTable("inspection_media", (string)null);
+                    b.ToTable("inspection_media", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_media_source", "num_nonnulls(answer_id, finding_id, defect_review_id) = 1");
+                        });
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionTemplate", b =>
@@ -497,9 +606,17 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<Guid>("InspectionAnswerId")
+                    b.Property<Guid?>("InspectionAnswerId")
                         .HasColumnType("uuid")
                         .HasColumnName("inspection_answer_id");
+
+                    b.Property<Guid?>("InspectionDefectReviewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_defect_review_id");
+
+                    b.Property<Guid?>("InspectionFindingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_finding_id");
 
                     b.Property<Guid>("InspectionId")
                         .HasColumnType("uuid")
@@ -526,9 +643,18 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasIndex("InspectionAnswerId")
                         .IsUnique();
 
+                    b.HasIndex("InspectionDefectReviewId")
+                        .IsUnique();
+
+                    b.HasIndex("InspectionFindingId")
+                        .IsUnique();
+
                     b.HasIndex("InspectionId");
 
-                    b.ToTable("equipment_defect_occurrences", (string)null);
+                    b.ToTable("equipment_defect_occurrences", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_occurrence_source", "num_nonnulls(inspection_answer_id, inspection_finding_id, inspection_defect_review_id) = 1");
+                        });
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.EquipmentDefect", b =>
@@ -546,9 +672,13 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("equipment_id");
 
-                    b.Property<Guid>("InspectionAnswerId")
+                    b.Property<Guid?>("InspectionAnswerId")
                         .HasColumnType("uuid")
                         .HasColumnName("inspection_answer_id");
+
+                    b.Property<Guid?>("InspectionFindingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_finding_id");
 
                     b.Property<Guid>("InspectionId")
                         .HasColumnType("uuid")
@@ -592,6 +722,9 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasIndex("InspectionAnswerId")
                         .IsUnique();
 
+                    b.HasIndex("InspectionFindingId")
+                        .IsUnique();
+
                     b.HasIndex("InspectionId");
 
                     b.HasIndex("ResolvedByAccountId");
@@ -600,7 +733,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("EquipmentId", "Status", "ReportedAt");
 
-                    b.ToTable("equipment_defects", (string)null);
+                    b.ToTable("equipment_defects", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_defect_source", "num_nonnulls(inspection_answer_id, inspection_finding_id) = 1");
+                        });
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.EquipmentMaintenance", b =>
@@ -939,13 +1075,52 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionDefectReview", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Entities.Maintenance.EquipmentDefect", null)
+                        .WithMany()
+                        .HasForeignKey("DefectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
+                        .WithMany("KnownDefects")
+                        .HasForeignKey("InspectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionFinding", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
+                        .WithMany("Findings")
+                        .HasForeignKey("InspectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionTemplatePoint", null)
+                        .WithMany()
+                        .HasForeignKey("TemplatePointId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionMedia", b =>
                 {
                     b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionAnswer", null)
                         .WithMany()
                         .HasForeignKey("AnswerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionDefectReview", null)
+                        .WithMany()
+                        .HasForeignKey("DefectReviewId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionFinding", null)
+                        .WithMany()
+                        .HasForeignKey("FindingId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
                         .WithMany()
@@ -992,8 +1167,17 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionAnswer", null)
                         .WithMany()
                         .HasForeignKey("InspectionAnswerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionDefectReview", null)
+                        .WithMany()
+                        .HasForeignKey("InspectionDefectReviewId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionFinding", null)
+                        .WithMany()
+                        .HasForeignKey("InspectionFindingId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
                         .WithMany()
@@ -1013,8 +1197,12 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionAnswer", null)
                         .WithMany()
                         .HasForeignKey("InspectionAnswerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MatosKC.Domain.Entities.Inspection.InspectionFinding", null)
+                        .WithMany()
+                        .HasForeignKey("InspectionFindingId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
                         .WithMany()
@@ -1089,6 +1277,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.Inspection", b =>
                 {
                     b.Navigation("Answers");
+
+                    b.Navigation("Findings");
+
+                    b.Navigation("KnownDefects");
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionTemplate", b =>

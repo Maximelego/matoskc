@@ -17,16 +17,45 @@ internal static class OpenInspectionDefects
         }
     }
 
-    public static void EnsureConsistent(Inspection inspection, InspectionTemplate template,
+    public static async Task CaptureAsync(InspectionWorkflowContext context, Inspection inspection,
+        Guid equipmentId, CancellationToken ct)
+    {
+        var defects = await ListAsync(context, equipmentId, ct);
+        var occurrences = await context.Care.GetOccurrencesAsync(defects.Select(value => value.Id).ToArray(), ct);
+        foreach (var defect in defects)
+        {
+            var last = occurrences.Where(value => value.DefectId == defect.Id)
+                .OrderByDescending(value => value.ObservedAt).ThenByDescending(value => value.Id).FirstOrDefault();
+            inspection.PresentDefect(defect.Id, last?.Description ?? defect.Description,
+                last?.Observation ?? defect.Observation, last?.ObservedAt ?? defect.ReportedAt,
+                last?.PhotoIds ?? Array.Empty<Guid>());
+        }
+    }
+
+    public static async Task EnsureCurrentAsync(InspectionWorkflowContext context, Inspection inspection,
+        Guid equipmentId, CancellationToken ct)
+    {
+        var defects = await ListAsync(context, equipmentId, ct);
+        EnsureConsistent(inspection, defects);
+        var occurrences = await context.Care.GetOccurrencesAsync(defects.Select(value => value.Id).ToArray(), ct);
+        foreach (var defect in defects)
+        {
+            var review = inspection.KnownDefects.Single(value => value.DefectId == defect.Id);
+            var last = occurrences.Where(value => value.DefectId == defect.Id)
+                .OrderByDescending(value => value.ObservedAt).ThenByDescending(value => value.Id).FirstOrDefault();
+            if (review.ObservedAt != (last?.ObservedAt ?? defect.ReportedAt)
+                || review.HistoricalObservation != (last?.Observation ?? defect.Observation)
+                || !review.HistoricalPhotoIds.SequenceEqual(last?.PhotoIds ?? Array.Empty<Guid>()))
+                throw new InspectionOperationException(409, "A known defect changed. Save the draft, review it and sign again.");
+        }
+    }
+
+    public static void EnsureConsistent(Inspection inspection,
         IReadOnlyList<EquipmentDefect> defects)
     {
-        foreach (var answer in inspection.Answers.Where(answer => answer.Result == InspectionResult.Compliant))
-        {
-            var point = template.Points.Single(point => point.Id == answer.TemplatePointId);
-            if (defects.Any(defect => string.Equals(defect.Description.Trim(), point.Description.Trim(),
-                    StringComparison.OrdinalIgnoreCase)))
-                throw new InspectionOperationException(409,
-                    "A matching defect is still open. Record it as non-compliant or resolve it through maintenance.");
-        }
+        // Live additions must be presented and reviewed before signing again. Resolved defects
+        // already presented remain in the historical snapshot and are never silently removed.
+        if (defects.Any(defect => !inspection.KnownDefects.Any(review => review.DefectId == defect.Id)))
+            throw new InspectionOperationException(409, "New known defects exist. Save the draft, review them and sign again.");
     }
 }

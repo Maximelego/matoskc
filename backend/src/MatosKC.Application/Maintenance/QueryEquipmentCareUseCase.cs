@@ -38,7 +38,7 @@ public sealed class QueryEquipmentCareUseCase(InspectionWorkflowContext context)
             defect.ResolvedAt, occurrences.Where(occurrence => occurrence.DefectId == defect.Id)
                 .Select(occurrence => new DefectOccurrenceResponse(occurrence.Id, occurrence.InspectionId,
                     occurrence.InspectionAnswerId, occurrence.Description, occurrence.Observation,
-                    occurrence.ObservedAt, occurrence.PhotoIds.ToArray())).ToArray())).ToArray();
+                    occurrence.ObservedAt, occurrence.PhotoIds.ToArray(), occurrence.InspectionFindingId, occurrence.InspectionDefectReviewId)).ToArray(), defect.InspectionFindingId)).ToArray();
 
         return new(items, page.Total, offset, limit);
     }
@@ -81,6 +81,7 @@ public sealed class QueryEquipmentCareUseCase(InspectionWorkflowContext context)
         var media = await context.Media.GetByIdAsync(photoId, ct);
 
         if (media is null || !occurrences.Any(occurrence => occurrence.InspectionAnswerId == media.AnswerId
+                && occurrence.InspectionFindingId == media.FindingId && occurrence.InspectionDefectReviewId == media.DefectReviewId
                 && occurrence.InspectionId == media.InspectionId && occurrence.PhotoIds.Contains(photoId)))
         {
             throw new InspectionOperationException(404, "Photo not attached to this defect.");

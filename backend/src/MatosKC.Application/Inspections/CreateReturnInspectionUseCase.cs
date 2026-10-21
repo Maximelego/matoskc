@@ -39,6 +39,7 @@ public sealed class CreateReturnInspectionUseCase(InspectionWorkflowContext cont
             var inspection = new InspectionEntity(Guid.NewGuid(), rental.Id, template.Id,
                 InspectionType.Return, actor.AccountId, request.OperatorFirstName, context.Time.GetUtcNow());
 
+            await OpenInspectionDefects.CaptureAsync(context, inspection, equipment.Id, ct);
             await context.Inspections.AddInspectionAsync(inspection, ct);
 
             return InspectionWorkflowContext.Response(inspection, rental);

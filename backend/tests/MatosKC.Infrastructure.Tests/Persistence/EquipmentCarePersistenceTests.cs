@@ -46,6 +46,46 @@ public sealed class EquipmentCarePersistenceTests(PostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task IndependentReviewAndFinding_RoundTripAndRemovedEvidenceStaysDetached()
+    {
+        var seed = await SeedAsync();
+        Guid inspectionId; Guid findingId = Guid.NewGuid(); Guid photoId = Guid.NewGuid();
+        await using (var db = fixture.CreateDbContext())
+        {
+            var defect = await db.EquipmentDefects.SingleAsync(value => value.Id == seed.DefectId, TestContext.Current.CancellationToken);
+            var original = await db.Inspections.SingleAsync(value => value.Id == defect.InspectionId, TestContext.Current.CancellationToken);
+            var template = await db.InspectionTemplates.Include(value => value.Points)
+                .SingleAsync(value => value.Id == original.TemplateId, TestContext.Current.CancellationToken);
+            var inspection = new InspectionEntity(Guid.NewGuid(), original.RentalId, template.Id, InspectionType.Return,
+                seed.AccountId, "Maxime", DateTimeOffset.UtcNow);
+            inspectionId = inspection.Id;
+            inspection.PresentDefect(defect.Id, defect.Description, defect.Observation, defect.ReportedAt, [Guid.NewGuid()]);
+            inspection.ReviewDefect(defect.Id, DefectReviewResult.Unchanged, null);
+            inspection.SetAnswer(template.Points[0].Id, InspectionResult.NonCompliant, null);
+            inspection.SetFinding(findingId, template.Points[0].Id, "Nouveau défaut");
+            inspection.AddEvidencePhoto(findingId, photoId);
+            db.Add(inspection);
+            db.Add(InspectionMedia.ForEvidence(photoId, inspection.Id, findingId, false,
+                "tests/" + photoId, "photo.png", "image/png", 1));
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        await using (var db = fixture.CreateDbContext())
+        {
+            var inspection = (await new InspectionsRepository(db).GetInspectionByIdAsync(inspectionId, TestContext.Current.CancellationToken))!;
+            Assert.Equal(DefectReviewResult.Unchanged, Assert.Single(inspection.KnownDefects).Result);
+            Assert.Equal(photoId, Assert.Single(Assert.Single(inspection.Findings).PhotoIds));
+            inspection.RemoveFinding(findingId);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        await using var read = fixture.CreateDbContext();
+        var result = (await new InspectionsRepository(read).GetInspectionByIdAsync(inspectionId, TestContext.Current.CancellationToken))!;
+        Assert.Empty(result.Findings);
+        Assert.True((await read.Set<InspectionFinding>().SingleAsync(value => value.Id == findingId,
+            TestContext.Current.CancellationToken)).IsRemoved);
+        Assert.True(await read.Set<InspectionMedia>().AnyAsync(value => value.Id == photoId, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task MaintenanceAndResolution_RoundTripWithOriginalConstatAndAudit()
     {
         var seed = await SeedAsync();
@@ -117,7 +157,7 @@ public sealed class EquipmentCarePersistenceTests(PostgreSqlFixture fixture)
         var original = await db.DefectOccurrences.SingleAsync(occurrence => occurrence.DefectId == seed.DefectId,
             TestContext.Current.CancellationToken);
         db.DefectOccurrences.Add(new DefectOccurrence(Guid.NewGuid(), original.DefectId, original.InspectionId,
-            original.InspectionAnswerId, original.Description, original.Observation, original.ObservedAt, original.PhotoIds));
+            original.InspectionAnswerId!.Value, original.Description, original.Observation, original.ObservedAt, original.PhotoIds));
 
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(TestContext.Current.CancellationToken));
     }

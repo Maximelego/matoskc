@@ -57,6 +57,7 @@ public sealed class CreateDepartureInspectionUseCase(InspectionWorkflowContext c
 
             await context.Clients.AddClientAsync(client, ct);
             await context.Rentals.AddAsync(rental, ct);
+            await OpenInspectionDefects.CaptureAsync(context, inspection, equipment.Id, ct);
             await context.Inspections.AddInspectionAsync(inspection, ct);
 
             return InspectionWorkflowContext.Response(inspection, rental);

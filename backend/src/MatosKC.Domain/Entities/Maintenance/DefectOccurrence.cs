@@ -6,7 +6,9 @@ public sealed class DefectOccurrence : BaseEntity
 
     public Guid DefectId { get; private set; }
     public Guid InspectionId { get; private set; }
-    public Guid InspectionAnswerId { get; private set; }
+    public Guid? InspectionAnswerId { get; private set; }
+    public Guid? InspectionFindingId { get; private set; }
+    public Guid? InspectionDefectReviewId { get; private set; }
     public string Description { get; private set; } = null!;
     public string Observation { get; private set; } = null!;
     public DateTimeOffset ObservedAt { get; private set; }
@@ -40,5 +42,15 @@ public sealed class DefectOccurrence : BaseEntity
         Observation = observation;
         ObservedAt = observedAt.ToUniversalTime();
         _photoIds = photos;
+    }
+
+    public static DefectOccurrence FromEvidence(Guid id, Guid defectId, Guid inspectionId,
+        Guid evidenceId, bool isReview, string description, string observation, DateTimeOffset at, IEnumerable<Guid> photos)
+    {
+        var value = new DefectOccurrence(id, defectId, inspectionId, evidenceId, description, observation, at, photos);
+        value.InspectionAnswerId = null;
+        if (isReview) value.InspectionDefectReviewId = evidenceId;
+        else value.InspectionFindingId = evidenceId;
+        return value;
     }
 }

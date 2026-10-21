@@ -47,7 +47,8 @@ public sealed class RentalRepository(MatosKCDbContext db) : IRentalRepository
 
 public sealed class InspectionsRepository(MatosKCDbContext db) : IInspectionsRepository
 {
-    private IQueryable<InspectionEntity> Complete => db.Inspections.Include(inspection => inspection.Answers);
+    private IQueryable<InspectionEntity> Complete => db.Inspections.Include(inspection => inspection.Answers)
+        .Include(inspection => inspection.KnownDefects).Include(inspection => inspection.Findings);
 
     public Task<InspectionEntity?> GetInspectionByIdAsync(Guid inspectionId, CancellationToken ct = default) =>
         Complete.SingleOrDefaultAsync(inspection => inspection.Id == inspectionId, ct);

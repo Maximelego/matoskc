@@ -4,7 +4,9 @@ public sealed class InspectionMedia : BaseEntity
 {
     public Guid InspectionId { get; private set; }
 
-    public Guid AnswerId { get; private set; }
+    public Guid? AnswerId { get; private set; }
+    public Guid? FindingId { get; private set; }
+    public Guid? DefectReviewId { get; private set; }
 
     public string ObjectKey { get; private set; }
 
@@ -13,6 +15,8 @@ public sealed class InspectionMedia : BaseEntity
     public string ContentType { get; private set; }
 
     public long ContentLength { get; private set; }
+
+    private InspectionMedia() { ObjectKey = null!; FileName = null!; ContentType = null!; }
 
     public InspectionMedia(
         Guid id,
@@ -44,5 +48,13 @@ public sealed class InspectionMedia : BaseEntity
         FileName = fileName;
         ContentType = contentType;
         ContentLength = contentLength;
+    }
+    public static InspectionMedia ForEvidence(Guid id, Guid inspectionId, Guid targetId, bool isReview,
+        string objectKey, string fileName, string contentType, long contentLength)
+    {
+        var value = new InspectionMedia(id, inspectionId, targetId, objectKey, fileName, contentType, contentLength);
+        value.AnswerId = null;
+        if (isReview) value.DefectReviewId = targetId; else value.FindingId = targetId;
+        return value;
     }
 }

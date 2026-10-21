@@ -88,6 +88,80 @@ public class Inspection : BaseEntity
         _signaturePng = null;
     }
 
+    private readonly List<InspectionDefectReview> _knownDefects = [];
+    private readonly List<InspectionFinding> _findings = [];
+    public IReadOnlyList<InspectionDefectReview> KnownDefects => _knownDefects.AsReadOnly();
+    public IReadOnlyList<InspectionFinding> Findings => _findings.Where(value => !value.IsRemoved).ToArray();
+
+    public void PresentDefect(Guid defectId, string description, string observation,
+        DateTimeOffset observedAt, IEnumerable<Guid> historicalPhotos)
+    {
+        EnsureDraft();
+        var existing = _knownDefects.SingleOrDefault(value => value.DefectId == defectId);
+        if (existing is not null)
+        {
+            if (existing.Refresh(description, observation, observedAt, historicalPhotos)) InvalidateSignature();
+            return;
+        }
+        _knownDefects.Add(new InspectionDefectReview(Id, defectId, description, observation, observedAt, historicalPhotos));
+        InvalidateSignature();
+    }
+
+    public void ReviewDefect(Guid defectId, DefectReviewResult result, string? observation)
+    {
+        EnsureDraft();
+        var review = _knownDefects.SingleOrDefault(value => value.DefectId == defectId)
+            ?? throw new ArgumentException("Defect was not presented in this inspection.");
+        review.Update(result, observation); InvalidateSignature();
+    }
+
+    public void SetFinding(Guid id, Guid pointId, string observation)
+    {
+        EnsureDraft();
+        if (_knownDefects.Any(value => value.Id == id) || _answers.Any(value => value.Id == id))
+            throw new ArgumentException("Finding identifier is already used.");
+        var existing = _findings.SingleOrDefault(value => value.Id == id);
+        if (existing is not null)
+        {
+            if (existing.IsRemoved) throw new ArgumentException("A removed finding identifier cannot be reused.");
+            if (existing.TemplatePointId != pointId) throw new ArgumentException("A finding cannot change its template point.");
+            existing.Update(observation);
+        }
+        else _findings.Add(new InspectionFinding(id, Id, pointId, observation));
+        InvalidateSignature();
+    }
+
+    public void RemoveFinding(Guid id)
+    {
+        EnsureDraft();
+        (_findings.SingleOrDefault(value => value.Id == id)
+            ?? throw new ArgumentException("Finding not found.")).Remove();
+        InvalidateSignature();
+    }
+
+    public bool HasEvidenceTarget(Guid id) => _findings.Any(value => value.Id == id && !value.IsRemoved)
+        || _knownDefects.Any(value => value.Id == id);
+
+    public void AddEvidencePhoto(Guid targetId, Guid photoId)
+    {
+        EnsureDraft();
+        var finding = _findings.SingleOrDefault(value => value.Id == targetId && !value.IsRemoved);
+        if (finding is not null) finding.AddPhoto(photoId);
+        else (_knownDefects.SingleOrDefault(value => value.Id == targetId)
+            ?? throw new ArgumentException("Evidence target not found.")).AddPhoto(photoId);
+        InvalidateSignature();
+    }
+
+    public void RemoveEvidencePhoto(Guid targetId, Guid photoId)
+    {
+        EnsureDraft();
+        var finding = _findings.SingleOrDefault(value => value.Id == targetId && !value.IsRemoved);
+        if (finding is not null) finding.RemovePhoto(photoId);
+        else (_knownDefects.SingleOrDefault(value => value.Id == targetId)
+            ?? throw new ArgumentException("Evidence target not found.")).RemovePhoto(photoId);
+        InvalidateSignature();
+    }
+
     private readonly List<InspectionAnswer> _answers = [];
 
     public IReadOnlyList<InspectionAnswer> Answers =>
@@ -170,10 +244,27 @@ public class Inspection : BaseEntity
             );
         }
 
+        if (_answers.Any(answer => answer.ExistingDefectId.HasValue))
+            throw new InvalidOperationException("Review existing defects independently from questionnaire answers.");
+        foreach (var review in _knownDefects) review.EnsureComplete();
+        foreach (var finding in Findings)
+        {
+            if (!expectedPointIds.Contains(finding.TemplatePointId) || finding.PhotoIds.Count == 0
+                || !_answers.Any(answer => answer.TemplatePointId == finding.TemplatePointId && answer.Result == InspectionResult.NonCompliant))
+                throw new InvalidOperationException("Every new finding requires a non-compliant answer and a photo.");
+        }
+
         foreach (InspectionAnswer answer in _answers)
         {
             if (answer.Result != InspectionResult.NonCompliant)
             {
+                continue;
+            }
+
+            if (Findings.Any(value => value.TemplatePointId == answer.TemplatePointId))
+            {
+                if (!string.IsNullOrWhiteSpace(answer.Comment) || answer.PhotosIds.Count > 0 || answer.ExistingDefectId.HasValue)
+                    throw new InvalidOperationException("Use either findings or legacy answer evidence, not both.");
                 continue;
             }
 

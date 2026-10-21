@@ -41,7 +41,7 @@ public sealed class ManageInspectionPhotosUseCase(InspectionWorkflowContext cont
                     throw new InspectionOperationException(409, "A validated inspection cannot accept photos.");
                 }
 
-                if (!inspection.Answers.Any(answer => answer.Id == answerId))
+                if (!inspection.Answers.Any(answer => answer.Id == answerId) && !inspection.HasEvidenceTarget(answerId))
                 {
                     throw new InspectionOperationException(404, "Inspection answer not found.");
                 }
@@ -53,7 +53,14 @@ public sealed class ManageInspectionPhotosUseCase(InspectionWorkflowContext cont
                 await context.Storage.StoreAsync(key, validated, contentType, token);
                 var media = new InspectionMedia(photoId, inspection.Id, answerId, key,
                     Path.GetFileName(fileName), contentType, contentLength);
-                inspection.AddAnswerPhoto(answerId, photoId);
+                if (inspection.HasEvidenceTarget(answerId))
+                {
+                    media = InspectionMedia.ForEvidence(photoId, inspection.Id, answerId,
+                        inspection.KnownDefects.Any(value => value.Id == answerId), key,
+                        Path.GetFileName(fileName), contentType, contentLength);
+                    inspection.AddEvidencePhoto(answerId, photoId);
+                }
+                else inspection.AddAnswerPhoto(answerId, photoId);
 
                 await context.Media.AddAsync(media, token);
                 await context.Inspections.UpdateInspectionAsync(inspection, token);
@@ -84,8 +91,11 @@ public sealed class ManageInspectionPhotosUseCase(InspectionWorkflowContext cont
         var media = await context.Media.GetByIdAsync(photoId, ct)
             ?? throw new InspectionOperationException(404, "Inspection photo not found.");
 
-        if (media.InspectionId != inspection.Id
-            || !inspection.Answers.Any(answer => answer.PhotosIds.Contains(media.Id)))
+        var historical = inspection.KnownDefects.Any(value => value.HistoricalPhotoIds.Contains(media.Id));
+        var attached = inspection.Answers.Any(value => value.PhotosIds.Contains(media.Id))
+            || inspection.Findings.Any(value => value.PhotoIds.Contains(media.Id))
+            || inspection.KnownDefects.Any(value => value.PhotoIds.Contains(media.Id));
+        if (!historical && (media.InspectionId != inspection.Id || !attached))
         {
             throw new InspectionOperationException(404, "Photo is not attached to this inspection.");
         }
@@ -109,7 +119,8 @@ public sealed class ManageInspectionPhotosUseCase(InspectionWorkflowContext cont
                 throw new InspectionOperationException(404, "Photo does not belong to this inspection.");
             }
 
-            inspection.RemoveAnswerPhoto(media.AnswerId, media.Id);
+            if (media.AnswerId.HasValue) inspection.RemoveAnswerPhoto(media.AnswerId.Value, media.Id);
+            else inspection.RemoveEvidencePhoto(media.FindingId ?? media.DefectReviewId!.Value, media.Id);
             await context.Inspections.UpdateInspectionAsync(inspection, token);
 
             // Keep the object until a separate cleanup can safely delete unreferenced media.

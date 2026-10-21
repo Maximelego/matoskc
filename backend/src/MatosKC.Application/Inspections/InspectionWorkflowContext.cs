@@ -128,7 +128,12 @@ public sealed class InspectionWorkflowContext(
         inspection.HasReport,
         inspection.CancelledAt,
         inspection.CancelledByAccountId,
-        inspection.CancellationReason
+        inspection.CancellationReason,
+        inspection.KnownDefects.Select(value => new DefectReviewResponse(value.Id, value.DefectId,
+            value.Description, value.HistoricalObservation, value.ObservedAt, value.HistoricalPhotoIds.ToArray(),
+            value.Result, value.Observation, value.PhotoIds.ToArray())).ToArray(),
+        inspection.Findings.Select(value => new FindingResponse(value.Id, value.TemplatePointId,
+            value.Observation, value.PhotoIds.ToArray())).ToArray()
     );
 
     public async Task<RentalResponse> RentalResponseAsync(Rental rental, CancellationToken ct)

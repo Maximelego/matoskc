@@ -15,7 +15,7 @@ public sealed class EquipmentCareTests
         Guid equipmentId = Guid.NewGuid();
         var first = Defect(equipmentId);
         var second = Defect(equipmentId);
-        Guid sourceId = first.InspectionAnswerId;
+        Guid? sourceId = first.InspectionAnswerId;
         Guid actorId = Guid.NewGuid();
 
         var maintenance = EquipmentMaintenance.Record(Guid.NewGuid(), equipmentId, Now,

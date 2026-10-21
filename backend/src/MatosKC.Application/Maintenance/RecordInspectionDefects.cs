@@ -11,7 +11,23 @@ public static class RecordInspectionDefects
     public static async Task ExecuteAsync(InspectionWorkflowContext context, InspectionEntity inspection,
         Guid equipmentId, InspectionTemplate template, DateTimeOffset now, CancellationToken ct)
     {
-        foreach (var answer in inspection.Answers.Where(answer => answer.Result == InspectionResult.NonCompliant))
+        foreach (var review in inspection.KnownDefects.Where(value => value.Result == DefectReviewResult.Worsened))
+        {
+            await RequireOpenAsync(context.Care, review.DefectId, equipmentId, ct);
+            await context.Care.AddOccurrenceAsync(DefectOccurrence.FromEvidence(Guid.NewGuid(), review.DefectId,
+                inspection.Id, review.Id, true, review.Description, review.Observation!, now, review.PhotoIds), ct);
+        }
+        foreach (var finding in inspection.Findings)
+        {
+            var point = template.Points.Single(value => value.Id == finding.TemplatePointId);
+            var defect = EquipmentDefect.FromFinding(Guid.NewGuid(), equipmentId, inspection.Id,
+                finding.Id, point.Description, finding.Observation, now);
+            await context.Care.AddDefectAsync(defect, ct);
+            await context.Care.AddOccurrenceAsync(DefectOccurrence.FromEvidence(Guid.NewGuid(), defect.Id,
+                inspection.Id, finding.Id, false, point.Description, finding.Observation, now, finding.PhotoIds), ct);
+        }
+        foreach (var answer in inspection.Answers.Where(answer => answer.Result == InspectionResult.NonCompliant
+            && !inspection.Findings.Any(value => value.TemplatePointId == answer.TemplatePointId)))
         {
             var point = template.Points.Single(point => point.Id == answer.TemplatePointId);
             EquipmentDefect defect;

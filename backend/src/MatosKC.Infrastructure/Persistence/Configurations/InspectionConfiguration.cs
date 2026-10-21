@@ -86,6 +86,12 @@ public sealed class InspectionConfiguration : IEntityTypeConfiguration<Inspectio
             .HasForeignKey(answer => answer.InspectionId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(inspection => inspection.Answers).HasField("_answers")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasMany(inspection => inspection.KnownDefects).WithOne()
+            .HasForeignKey(value => value.InspectionId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(inspection => inspection.KnownDefects).HasField("_knownDefects").UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasMany(inspection => inspection.Findings).WithOne()
+            .HasForeignKey(value => value.InspectionId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(inspection => inspection.Findings).HasField("_findings").UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.HasIndex(inspection => new { inspection.RentalId, inspection.Type }).IsUnique()
             .HasFilter("status <> 'Cancelled'");
         InspectionColumns.Apply(builder);
@@ -141,7 +147,8 @@ public sealed class InspectionMediaConfiguration : IEntityTypeConfiguration<Insp
 {
     public void Configure(EntityTypeBuilder<InspectionMedia> builder)
     {
-        builder.ToTable("inspection_media");
+        builder.ToTable("inspection_media", table => table.HasCheckConstraint("ck_media_source",
+            "num_nonnulls(answer_id, finding_id, defect_review_id) = 1"));
         builder.Property(media => media.ObjectKey).IsRequired();
         builder.Property(media => media.FileName).IsRequired();
         builder.Property(media => media.ContentType).IsRequired();
@@ -149,7 +156,41 @@ public sealed class InspectionMediaConfiguration : IEntityTypeConfiguration<Insp
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<InspectionAnswer>().WithMany().HasForeignKey(media => media.AnswerId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<InspectionFinding>().WithMany().HasForeignKey(value => value.FindingId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<InspectionDefectReview>().WithMany().HasForeignKey(value => value.DefectReviewId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(media => media.ObjectKey).IsUnique();
         InspectionColumns.Apply(builder);
+    }
+}
+
+public sealed class InspectionDefectReviewConfiguration : IEntityTypeConfiguration<InspectionDefectReview>
+{
+    public void Configure(EntityTypeBuilder<InspectionDefectReview> builder)
+    {
+        builder.ToTable("inspection_defect_reviews");
+        builder.Property(value => value.Result).HasConversion<string>().HasMaxLength(32);
+        builder.HasOne<MatosKC.Domain.Entities.Maintenance.EquipmentDefect>().WithMany()
+            .HasForeignKey(value => value.DefectId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(value => new { value.InspectionId, value.DefectId }).IsUnique();
+        builder.Ignore(value => value.HistoricalPhotoIds);
+        builder.Ignore(value => value.PhotoIds);
+        builder.Property<List<Guid>>("_historicalPhotoIds").HasColumnType("uuid[]");
+        builder.Property<List<Guid>>("_photoIds").HasColumnType("uuid[]");
+        InspectionColumns.Apply(builder);
+        builder.Property<List<Guid>>("_historicalPhotoIds").HasColumnName("historical_photo_ids");
+        builder.Property<List<Guid>>("_photoIds").HasColumnName("photo_ids");
+    }
+}
+
+public sealed class InspectionFindingConfiguration : IEntityTypeConfiguration<InspectionFinding>
+{
+    public void Configure(EntityTypeBuilder<InspectionFinding> builder)
+    {
+        builder.ToTable("inspection_findings");
+        builder.HasOne<InspectionTemplatePoint>().WithMany().HasForeignKey(value => value.TemplatePointId).OnDelete(DeleteBehavior.Restrict);
+        builder.Ignore(value => value.PhotoIds);
+        builder.Property<List<Guid>>("_photoIds").HasColumnType("uuid[]");
+        InspectionColumns.Apply(builder);
+        builder.Property<List<Guid>>("_photoIds").HasColumnName("photo_ids");
     }
 }

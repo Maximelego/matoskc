@@ -40,6 +40,8 @@ public static class InspectionEndpoints
             .RequireAuthorization("PerformInspections")
             .DisableAntiforgery();
 
+        group.MapPost("/{id:guid}/evidence/{answerId:guid}/photos", UploadPhotoAsync)
+            .RequireAuthorization("PerformInspections").DisableAntiforgery();
         group.MapGet("/{id:guid}/photos/{photoId:guid}", DownloadPhotoAsync);
         group.MapDelete("/{id:guid}/photos/{photoId:guid}", RemovePhotoAsync)
             .RequireAuthorization("PerformInspections");
@@ -256,7 +258,7 @@ public static class InspectionEndpoints
 
         return Results.Created($"/inspections/{id}/photos/{media.Id}", new
         {
-            media.Id, media.InspectionId, media.AnswerId, media.FileName, media.ContentType, media.ContentLength
+            media.Id, media.InspectionId, media.AnswerId, media.FindingId, media.DefectReviewId, media.FileName, media.ContentType, media.ContentLength
         });
     }
 

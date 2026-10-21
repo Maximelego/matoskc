@@ -169,13 +169,13 @@ function saveEquipment(): void {
         Voir les défauts et les maintenances
       </RouterLink>
       <div v-if="isAdministrator">
-        <button
+        <BaseButton
           type="button"
           class="equipment-details__history"
           @click="showHistory = !showHistory"
         >
           {{ showHistory ? "Masquer l’historique" : "Afficher l’historique du matériel" }}
-        </button>
+        </BaseButton>
         <EquipmentHistory
           v-if="showHistory"
           :equipment-id="equipment.id"
@@ -284,6 +284,10 @@ function saveEquipment(): void {
     }
   }
 
+  a {
+    text-decoration: none;
+  }
+
   &__status {
     display: grid;
     gap: 0.75rem;
@@ -291,7 +295,7 @@ function saveEquipment(): void {
     border-top: 1px solid var(--color-border);
 
     h3,
-    p {
+    x p {
       margin: 0;
     }
 
@@ -328,13 +332,14 @@ function saveEquipment(): void {
 
   &__history {
     justify-self: start;
-    padding: 0.5rem 0;
+    padding: 0.5rem;
+    margin: 0.2rem 0.2rem 0.2rem 0;
     border: 0;
-    background: none;
+    border-radius: 0.5rem;
     font: inherit;
     cursor: pointer;
     color: var(--color-primary);
-    text-decoration: underline;
+    text-decoration: none;
   }
 }
 

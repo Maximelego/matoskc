@@ -22,8 +22,7 @@ public sealed class InspectionReportGenerator(
     IEquipmentRepository equipment,
     IAgencyRepository agencies,
     IInspectionMediaRepository media,
-    IObjectStorage storage,
-    IEquipmentCareRepository? care = null
+    IObjectStorage storage
 ) : IInspectionReportGenerator
 {
     // Keep browser memory bounded when several agencies validate at once.
@@ -51,36 +50,28 @@ public sealed class InspectionReportGenerator(
             ct.ThrowIfCancellationRequested();
             var answer = inspection.Answers.Single(value => value.TemplatePointId == point.Id);
             points.Append(await CardAsync(point.Description, answer.Comment,
-                answer.Result == InspectionResult.Compliant ? "Conforme" : "Non conforme",
+                answer.Result == InspectionResult.Compliant ? "Aucun nouveau défaut" : "Nouveau défaut signalé",
                 answer.Result == InspectionResult.Compliant ? "success" : "danger", answer.PhotosIds, ct));
         }
 
         var known = new StringBuilder();
-        if (care is not null)
+        foreach (var review in inspection.KnownDefects)
         {
-            // Reconstruct defects open at the start, not those currently open.
-            // Use the historical occurrence, never an observation from this inspection.
-            for (int offset = 0; ; offset += 100)
+            known.Append(await CardAsync(review.Description, review.HistoricalObservation,
+                "Défaut préexistant", "warning", review.HistoricalPhotoIds, ct));
+            var status = review.Result switch
             {
-                var page = await care.ListDefectsAsync(item.Id, null, offset, 100, ct);
-                var previous = page.Items.Where(d => d.InspectionId != inspection.Id
-                    && d.ReportedAt < inspection.StartedAt
-                    && (d.ResolvedAt is null || d.ResolvedAt > inspection.StartedAt)).ToList();
-                if (previous.Count > 0)
-                {
-                    var occurrences = await care.GetOccurrencesAsync(previous.Select(d => d.Id).ToArray(), ct);
-                    foreach (var defect in previous.OrderBy(d => d.ReportedAt))
-                    {
-                        var last = occurrences.Where(o => o.DefectId == defect.Id
-                            && o.InspectionId != inspection.Id && o.ObservedAt < inspection.StartedAt)
-                            .OrderByDescending(o => o.ObservedAt).FirstOrDefault();
-                        known.Append(await CardAsync(last?.Description ?? defect.Description,
-                            last?.Observation ?? defect.Observation, "Défaut préexistant", "warning",
-                            last?.PhotoIds ?? Array.Empty<Guid>(), ct));
-                    }
-                }
-                if (offset + page.Items.Count >= page.Total || page.Items.Count == 0) break;
-            }
+                DefectReviewResult.Unchanged => "Toujours présent, inchangé",
+                DefectReviewResult.Worsened => "Aggravé",
+                _ => "À vérifier par la maintenance"
+            };
+            known.Append(await CardAsync(review.Description, review.Observation, status,
+                review.Result == DefectReviewResult.Worsened ? "danger" : "warning", review.PhotoIds, ct));
+        }
+        foreach (var finding in inspection.Findings)
+        {
+            var point = template.Points.Single(value => value.Id == finding.TemplatePointId);
+            points.Append(await CardAsync(point.Description, finding.Observation, "Nouveau défaut", "danger", finding.PhotoIds, ct));
         }
 
         var values = new Dictionary<string, string>

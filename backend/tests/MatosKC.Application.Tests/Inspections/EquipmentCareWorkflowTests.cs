@@ -48,58 +48,40 @@ public sealed class EquipmentCareWorkflowTests
     }
 
     [Fact]
-    public async Task NewTemplate_ReturnCanReferenceExistingDefectWithoutCreatingDuplicate()
+    public async Task NewTemplate_ReturnReviewsKnownDefectIndependentlyOfQuestions()
     {
         var fake = new WorkflowFake();
         await DefectiveDepartureAsync(fake);
         var defect = Assert.Single(fake.Care.Defects);
-        var template = fake.AddTemplate();
-        var response = await new CreateReturnInspectionUseCase(fake.Context).ExecuteAsync(fake.Rentals[0].Id,
-            new("Maxime"), fake.Actor);
-        var inspection = fake.Inspections.Single(value => value.Id == response.Id);
-        await new SaveInspectionDraftUseCase(fake.Context).ExecuteAsync(inspection.Id,
-            new("Maxime", [new(template.Points[0].Id, InspectionResult.NonCompliant, "Défaut toujours présent", defect.Id)]), fake.Actor);
-        inspection.AddAnswerPhoto(inspection.Answers[0].Id, Guid.NewGuid());
-        inspection.Sign("Client", [1], fake.Clock.Now);
-        await new ValidateReturnInspectionUseCase(fake.Context).ExecuteAsync(inspection.Id, fake.Actor);
-
-        Assert.Single(fake.Care.Defects);
-        Assert.Equal(2, fake.Care.Occurrences.Count);
-        Assert.All(fake.Care.Occurrences, occurrence => Assert.Equal(defect.Id, occurrence.DefectId));
-        Assert.Equal(EquipmentStatus.ToBeDecided, fake.Equipment.Status);
-    }
-
-    [Fact]
-    public async Task Return_CannotMarkAnOpenDepartureDefectCompliant()
-    {
-        var fake = new WorkflowFake();
-        await DefectiveDepartureAsync(fake);
-        var response = await new CreateReturnInspectionUseCase(fake.Context).ExecuteAsync(fake.Rentals[0].Id,
-            new("Maxime"), fake.Actor);
-        var pointId = fake.Templates[0].Points[0].Id;
-
-        var conflict = await Assert.ThrowsAsync<InspectionOperationException>(() =>
-            new SaveInspectionDraftUseCase(fake.Context).ExecuteAsync(response.Id,
-                new("Maxime", [new(pointId, InspectionResult.Compliant, null)]), fake.Actor));
-
-        Assert.Equal(409, conflict.StatusCode);
-    }
-
-    [Fact]
-    public async Task Return_WithOtherCompliantPointsKeepsEquipmentPendingWhileDefectIsOpen()
-    {
-        var fake = new WorkflowFake();
-        await DefectiveDepartureAsync(fake);
         var template = fake.AddTemplate("Freinage");
         var response = await new CreateReturnInspectionUseCase(fake.Context).ExecuteAsync(fake.Rentals[0].Id,
             new("Maxime"), fake.Actor);
         var inspection = fake.Inspections.Single(value => value.Id == response.Id);
-        inspection.SetAnswer(template.Points[0].Id, InspectionResult.Compliant, null);
+        Assert.Equal("Etat extérieur", Assert.Single(response.KnownDefects).Description);
+        await new SaveInspectionDraftUseCase(fake.Context).ExecuteAsync(inspection.Id,
+            new("Maxime", [new(template.Points[0].Id, InspectionResult.Compliant, null)],
+                [new(defect.Id, DefectReviewResult.Unchanged)]), fake.Actor);
         inspection.Sign("Client", [1], fake.Clock.Now);
-
         await new ValidateReturnInspectionUseCase(fake.Context).ExecuteAsync(inspection.Id, fake.Actor);
-
+        Assert.Single(fake.Care.Defects);
+        Assert.Single(fake.Care.Occurrences);
         Assert.Equal(EquipmentStatus.ToBeDecided, fake.Equipment.Status);
+    }
+
+    [Fact]
+    public async Task Return_CompliantMeansNoNewDefect_AndStillRequiresReview()
+    {
+        var fake = new WorkflowFake();
+        await DefectiveDepartureAsync(fake);
+        var response = await new CreateReturnInspectionUseCase(fake.Context).ExecuteAsync(fake.Rentals[0].Id,
+            new("Maxime"), fake.Actor);
+        await new SaveInspectionDraftUseCase(fake.Context).ExecuteAsync(response.Id,
+            new("Maxime", [new(fake.Templates[0].Points[0].Id, InspectionResult.Compliant, null)]), fake.Actor);
+        var inspection = fake.Inspections.Single(value => value.Id == response.Id);
+        inspection.Sign("Client", [1], fake.Clock.Now);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new ValidateReturnInspectionUseCase(fake.Context).ExecuteAsync(response.Id, fake.Actor));
+        Assert.Equal(InspectionStatus.Draft, inspection.Status);
     }
 
     [Fact]
@@ -166,44 +148,36 @@ public sealed class EquipmentCareWorkflowTests
     }
 
     [Fact]
-    public async Task DraftLinkChange_InvalidatesSignature_AndCompliantAnswerCannotLink()
+    public async Task LegacyAnswerLinksAreRejected_UseIndependentReviews()
     {
         var fake = new WorkflowFake();
         var inspection = await fake.DepartureAsync();
-        var pointId = inspection.Answers[0].TemplatePointId;
-        var defect = new EquipmentDefect(Guid.NewGuid(), fake.Equipment.Id, Guid.NewGuid(), Guid.NewGuid(),
-            "Tuyau", "Déchiré", fake.Clock.Now);
-        fake.Care.Defects.Add(defect);
-        var useCase = new SaveInspectionDraftUseCase(fake.Context);
-        await useCase.ExecuteAsync(inspection.Id, new("Maxime", [new(pointId, InspectionResult.NonCompliant, "Défaut", defect.Id)]), fake.Actor);
-        Assert.Null(inspection.SignaturePng);
-        Assert.Equal(defect.Id, inspection.Answers[0].ExistingDefectId);
-
-        var error = await Assert.ThrowsAsync<InspectionOperationException>(() => useCase.ExecuteAsync(inspection.Id,
-            new("Maxime", [new(pointId, InspectionResult.Compliant, null, defect.Id)]), fake.Actor));
+        var error = await Assert.ThrowsAsync<InspectionOperationException>(() =>
+            new SaveInspectionDraftUseCase(fake.Context).ExecuteAsync(inspection.Id,
+                new("Maxime", [new(inspection.Answers[0].TemplatePointId, InspectionResult.NonCompliant,
+                    "Défaut", Guid.NewGuid())]), fake.Actor));
         Assert.Equal(400, error.StatusCode);
     }
 
     [Fact]
-    public async Task Validation_RechecksLinkedDefectWhenMaintenanceResolvedItAfterDraftSave()
+    public async Task WorsenedReview_RechecksMaintenanceBeforeValidation()
     {
         var fake = new WorkflowFake();
-        var inspection = await fake.DepartureAsync();
-        var defect = new EquipmentDefect(Guid.NewGuid(), fake.Equipment.Id, Guid.NewGuid(), Guid.NewGuid(),
-            "Tuyau", "Déchiré", fake.Clock.Now);
-        fake.Care.Defects.Add(defect);
-        var pointId = inspection.Answers[0].TemplatePointId;
-        await new SaveInspectionDraftUseCase(fake.Context).ExecuteAsync(inspection.Id,
-            new("Maxime", [new(pointId, InspectionResult.NonCompliant, "Défaut", defect.Id)]), fake.Actor);
-        inspection.AddAnswerPhoto(inspection.Answers[0].Id, Guid.NewGuid());
+        await DefectiveDepartureAsync(fake);
+        var defect = Assert.Single(fake.Care.Defects);
+        var response = await new CreateReturnInspectionUseCase(fake.Context).ExecuteAsync(fake.Rentals[0].Id, new("Maxime"), fake.Actor);
+        var inspection = fake.Inspections.Single(value => value.Id == response.Id);
+        inspection.SetAnswer(fake.Templates[0].Points[0].Id, InspectionResult.Compliant, null);
+        inspection.ReviewDefect(defect.Id, DefectReviewResult.Worsened, "Plus grand");
+        inspection.AddEvidencePhoto(inspection.KnownDefects[0].Id, Guid.NewGuid());
         inspection.Sign("Client", [1], fake.Clock.Now);
         await new RecordMaintenanceUseCase(fake.Context).ExecuteAsync(fake.Equipment.Id,
             new(Guid.NewGuid(), fake.Clock.Now, "Atelier", "Réparation", [defect.Id]), Admin);
-
         var error = await Assert.ThrowsAsync<InspectionOperationException>(() =>
-            new ValidateDepartureInspectionUseCase(fake.Context).ExecuteAsync(inspection.Id, fake.Actor));
+            new ValidateReturnInspectionUseCase(fake.Context).ExecuteAsync(inspection.Id, fake.Actor));
         Assert.Equal(409, error.StatusCode);
-        Assert.Empty(fake.Care.Occurrences);
+        Assert.Single(fake.Care.Occurrences);
+        Assert.Equal(InspectionStatus.Draft, inspection.Status);
     }
 
     [Fact]
