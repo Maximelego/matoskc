@@ -1,29 +1,24 @@
 <script setup lang="ts">
 import type { EquipmentDto } from "../../../api/equipments/dto";
+import EquipmentStatusBadge from "../../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentThumbnail from "./EquipmentThumbnail.vue";
 
-const props = defineProps<{
+defineProps<{
   equipment: EquipmentDto;
   selected?: boolean;
 }>();
-
-const statusLabels: Record<EquipmentDto["status"], string> = {
-  Available: "Disponible",
-  Borrowed: "Emprunté",
-  ToBeDecided: "À déterminer",
-  Unavailable: "Indisponible",
-  Maintenance: "En maintenance",
-  Decommissioned: "Réformé",
-};
 </script>
 
 <template>
-  <span class="equipment-card" :class="{ 'equipment-card--selected': selected }">
+  <span
+    class="equipment-card"
+    :class="{ 'equipment-card--selected': selected }"
+  >
     <EquipmentThumbnail :equipment-id="equipment.id" />
     <strong>{{ equipment.name }}</strong>
     <span class="equipment-card__details">
       <span class="equipment-card__details-content">
-        <span class="equipment-card__status">{{ statusLabels[props.equipment.status] }}</span>
+        <EquipmentStatusBadge :status="equipment.status" />
         <span class="equipment-card__reference">N° de série : {{ equipment.serialNumber }}</span>
       </span>
     </span>
@@ -40,7 +35,9 @@ const statusLabels: Record<EquipmentDto["status"], string> = {
   border-radius: 0.75rem;
   background: var(--color-surface);
   color: var(--color-text);
-  transition: border-color 150ms ease, transform 150ms ease;
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease;
 }
 .equipment-card--selected {
   border-color: var(--color-secondary);
@@ -75,6 +72,8 @@ const statusLabels: Record<EquipmentDto["status"], string> = {
   overflow-wrap: anywhere;
 }
 @media (prefers-reduced-motion: reduce) {
-  .equipment-card__details { transition: none; }
+  .equipment-card__details {
+    transition: none;
+  }
 }
 </style>

@@ -309,6 +309,7 @@ async function submit() {
               </label>
               <strong>{{ defect.description }}</strong>
               <p>{{ defect.observation }}</p>
+              <p>Constaté par {{ defect.operatorFirstName }}</p>
               <small
                 >Signalé le {{ new Date(defect.reportedAt).toLocaleString("fr-FR") }} ·
                 {{ defect.occurrences.length }} constat(s)</small
@@ -321,7 +322,8 @@ async function submit() {
                     :key="occurrence.id"
                   >
                     {{ occurrence.observation }} ·
-                    {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }}
+                    {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }} ·
+                    constaté par {{ occurrence.operatorFirstName }}
                     <div class="care__photos">
                       <DefectPhoto
                         v-for="id in occurrence.photoIds"

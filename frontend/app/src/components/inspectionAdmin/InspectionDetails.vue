@@ -2,6 +2,7 @@
 import { onUnmounted, ref, watch } from "vue";
 import type { InspectionDto, InspectionTemplateDto, RentalDto } from "../../api/inspections";
 import { inspectionHttpApi } from "../../api/inspections";
+import { defectsApi } from "../../api/defects";
 import CopyButton from "../common/copy/CopyButton.vue";
 import TemplateIllustration from "../inspection/TemplateIllustration.vue";
 
@@ -9,6 +10,7 @@ const props = defineProps<{ inspection: InspectionDto }>();
 const rental = ref<RentalDto | null>(null);
 const template = ref<InspectionTemplateDto | null>(null);
 const photos = ref<Record<string, string>>({});
+const knownOperatorNames = ref<Record<string, string>>({});
 const signatureUrl = ref("");
 const error = ref("");
 const loading = ref(false);
@@ -29,6 +31,7 @@ watch(
   () => props.inspection.id,
   async (id, _old, onCleanup) => {
     release();
+    knownOperatorNames.value = {};
     loading.value = true;
     error.value = "";
     let cancelled = false;
@@ -37,13 +40,15 @@ watch(
       release();
     });
     try {
-      const [r, t] = await Promise.all([
+      const [r, t, defects] = await Promise.all([
         inspectionHttpApi.getRental(props.inspection.rentalId),
         inspectionHttpApi.getTemplate(props.inspection.templateId),
+        defectsApi.listAll(props.inspection.equipmentId).catch(() => []),
       ]);
       if (cancelled) return;
       rental.value = r;
       template.value = t;
+      knownOperatorNames.value = Object.fromEntries(defects.map((defect) => [defect.id, defect.operatorFirstName]));
       const entries = await Promise.all(
         [...props.inspection.knownDefects.flatMap((defect) =>
           [...defect.historicalPhotoIds, ...defect.photoIds]),
@@ -169,11 +174,14 @@ async function downloadReport(): Promise<void> {
       <ul v-else>
         <li v-for="defect in inspection.knownDefects" :key="defect.id">
           <strong>{{ defect.description }}</strong> : {{ defect.historicalObservation }}
+          <p>Constaté par {{ knownOperatorNames[defect.defectId] ?? "opérateur non renseigné" }}</p>
           <p>Constaté le {{ date.format(new Date(defect.observedAt)) }}</p>
           <p>{{ defect.result === 'Unchanged' ? 'Toujours présent, inchangé' :
             defect.result === 'Worsened' ? 'Aggravé' :
             defect.result === 'MaintenanceCheckRequired' ? 'À vérifier par la maintenance' : 'À confirmer' }}</p>
-          <p v-if="defect.observation">Nouvelle observation : {{ defect.observation }}</p>
+          <p v-if="defect.observation">
+            Nouvelle observation : {{ defect.observation }} · Aggravation constatée par {{ inspection.operatorFirstName }}
+          </p>
           <a v-for="photoId in defect.historicalPhotoIds" :key="photoId"
             :href="photos[photoId]" target="_blank" rel="noopener noreferrer">Photo historique</a>
           <a v-for="photoId in defect.photoIds" :key="photoId"
@@ -197,6 +205,7 @@ async function downloadReport(): Promise<void> {
               <li v-for="finding in inspection.findings.filter((item) => item.templatePointId === point.id)"
                 :key="finding.id">
                 {{ finding.observation }}
+                <span> · Constaté par {{ inspection.operatorFirstName }}</span>
                 <a v-for="photoId in finding.photoIds" :key="photoId"
                   :href="photos[photoId]" target="_blank" rel="noopener noreferrer">Voir la photographie</a>
               </li>

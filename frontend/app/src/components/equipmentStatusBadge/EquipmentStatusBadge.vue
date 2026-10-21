@@ -7,9 +7,9 @@ const props = defineProps<{ status: EquipmentStatus }>();
 const statuses = {
   Available: { label: "Disponible", tone: "success" },
   Unavailable: { label: "Indisponible", tone: "danger" },
-  ToBeDecided: { label: "À déterminer", tone: "neutral" },
+  ToBeDecided: { label: "À déterminer", tone: "warning" },
   Decommissioned: { label: "Réformé", tone: "neutral" },
-  Maintenance: { label: "En maintenance", tone: "warning" },
+  Maintenance: { label: "En maintenance", tone: "secondary" },
   Borrowed: { label: "Emprunté", tone: "info" },
 } as const;
 
@@ -65,6 +65,10 @@ const display = computed(
   &--neutral {
     color: var(--color-text-secondary);
     background: var(--color-surface-secondary);
+  }
+  &--secondary {
+    color: var(--color-secondary);
+    background: var(--color-secondary-soft);
   }
 }
 </style>

@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { agenciesApi } from "../../api/agencies";
 import { authSession } from "../../api/auth/session";
 import { ApiError } from "../../api/client";
+import { defectsApi } from "../../api/defects";
 import { equipmentsApi } from "../../api/equipments";
 import type { EquipmentDto } from "../../api/equipments/dto";
 import type {
@@ -47,6 +48,7 @@ const client = ref<ClientInputDto>({
 const operatorFirstName = ref("");
 const points = ref<Record<string, PointValue>>({});
 const knownDefects = ref<KnownDefectValue[]>([]);
+const knownOperatorNames = ref<Record<string, string>>({});
 const cancellationReason = ref("");
 const signerName = ref("");
 const accepted = ref(false);
@@ -116,6 +118,9 @@ async function load(): Promise<void> {
       throw new Error("Cet équipement ne peut pas faire l’objet d’un état des lieux.");
 
     equipment.value = item;
+    knownOperatorNames.value = Object.fromEntries(
+      (await defectsApi.listAll(item.id, "Open")).map((defect) => [defect.id, defect.operatorFirstName]),
+    );
     const current = await inspectionHttpApi.getCurrentRental(item.id);
 
     rental.value = current;
@@ -435,6 +440,7 @@ onMounted(() => {
         <InspectionKnownDefectsStep
           v-else-if="step === 1"
           :defects="knownDefects"
+          :operator-names="knownOperatorNames"
           :inspection-id="inspection?.id ?? null"
           :disabled="busy"
           @update="updateKnown"
@@ -459,6 +465,8 @@ onMounted(() => {
           :points="orderedPoints"
           :values="points"
           :known-defects="knownDefects"
+          :known-operator-names="knownOperatorNames"
+          :operator-first-name="operatorFirstName"
           :busy="busy"
           @signature="signatureFile = $event"
           @edit="step = orderedPoints.findIndex((point) => point.id === $event) + 2"

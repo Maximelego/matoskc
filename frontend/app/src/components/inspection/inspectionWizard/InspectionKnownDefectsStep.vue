@@ -5,6 +5,7 @@ import InspectionAnswerPhoto from "../InspectionAnswerPhoto.vue";
 export type KnownDefectValue = KnownDefectDto & { files: File[] };
 const props = defineProps<{
   defects: KnownDefectValue[];
+  operatorNames: Record<string, string>;
   inspectionId: string | null;
   disabled: boolean;
 }>();
@@ -30,7 +31,10 @@ function addFiles(defect: KnownDefectValue, event: Event): void {
     <article v-for="defect in defects" :key="defect.defectId" class="known-step__card">
       <h3>{{ defect.description }}</h3>
       <p>{{ defect.historicalObservation }}</p>
-      <small>Constaté le {{ new Date(defect.observedAt).toLocaleDateString('fr-FR') }}</small>
+      <small>
+        Constaté par {{ operatorNames[defect.defectId] ?? "opérateur non renseigné" }}
+        le {{ new Date(defect.observedAt).toLocaleDateString('fr-FR') }}
+      </small>
       <div class="known-step__photos">
         <template v-if="inspectionId">
           <InspectionAnswerPhoto v-for="photoId in defect.historicalPhotoIds" :key="photoId"
