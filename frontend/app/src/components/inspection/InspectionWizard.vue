@@ -291,6 +291,8 @@ async function next(): Promise<void> {
     if (
       !value?.result ||
       (value.result === "NonCompliant" &&
+        // Checking if there is already another defect signaled
+        !hasOpenDefect(currentPoint.value.description) &&
         (!value.observation.trim() || !(value.files.length || value.photoIds.length)))
     ) {
       error.value =
@@ -356,6 +358,7 @@ async function validate(): Promise<void> {
       return (
         !value?.result ||
         (value.result === "NonCompliant" &&
+          !hasOpenDefect(point.description) &&
           (!value.observation.trim() || (!value.files.length && !value.photoIds.length))) ||
         (value.result === "Compliant" && hasOpenDefect(point.description))
       );

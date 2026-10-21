@@ -2,6 +2,7 @@
 import type { ClientInputDto, InspectionTemplateDto } from "../../../api/inspections";
 import CopyButton from "../../common/copy/CopyButton.vue";
 import BaseIcon from "../../common/icon/BaseIcon.vue";
+import BaseSpinner from "../../common/spinner/BaseSpinner.vue";
 import type { PointValue } from "../InspectionPoint.vue";
 import InspectionSignaturePad from "../InspectionSignaturePad.vue";
 
@@ -82,13 +83,17 @@ const emit = defineEmits<{
       Je reconnais avoir pris connaissance du présent état des lieux et en accepte le contenu.
     </label>
     <InspectionSignaturePad @change="emit('signature', $event)" />
-    <button
-      type="button"
-      :disabled="busy"
-      @click="emit('validate')"
-    >
-      Signer et valider l’état des lieux
-    </button>
+    <div class="review-step__submit">
+      <button
+        type="button"
+        :disabled="busy"
+        @click="emit('validate')"
+      >
+        Signer et valider l’état des lieux
+      </button>
+      <BaseSpinner v-if="busy" />
+      <span v-else></span>
+    </div>
   </section>
 </template>
 
@@ -163,6 +168,19 @@ const emit = defineEmits<{
   opacity: 0.55;
   cursor: wait;
 }
+.review-step button:hover:not(:disabled) {
+  background: var(--color-secondary-soft-hover);
+  transition: background 150ms ease-in-out;
+}
+
+.review-step__submit {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 @media (max-width: 42rem) {
   .review-step input:not([type="checkbox"]),
   .review-step button {
