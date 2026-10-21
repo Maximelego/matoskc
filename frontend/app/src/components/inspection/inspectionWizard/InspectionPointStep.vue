@@ -19,9 +19,13 @@ const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: s
 
 <template>
   <section class="point-step">
-    <h2>Point {{ position }} sur {{ total }}</h2>
-    <p class="point-step__detail">{{ point.descriptionDetail }}</p>
-    <TemplateIllustration :photo-id="point.photoId" />
+    <div class="point-step__description">
+      <div>
+        <h2>Point {{ position }} sur {{ total }}</h2>
+        <p class="point-step__detail">{{ point.descriptionDetail }}</p>
+      </div>
+      <TemplateIllustration :photo-id="point.photoId" />
+    </div>
     <InspectionPoint
       :id="point.id"
       :label="point.description"
@@ -45,5 +49,12 @@ const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: s
   white-space: pre-wrap;
   tab-size: 4;
   overflow-wrap: anywhere;
+}
+.point-step__description {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  gap: 1rem;
 }
 </style>
