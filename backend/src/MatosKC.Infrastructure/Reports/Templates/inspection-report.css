@@ -1,0 +1,35 @@
+@page { size: A4 portrait; margin: 14mm 15mm 18mm; }
+* { box-sizing: border-box; }
+html { font-family: Arial, "DejaVu Sans", sans-serif; font-size: 10pt; color: var(--color-text); background: white; }
+body { margin: 0; line-height: 1.45; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+header { text-align: center; border-bottom: 2pt solid var(--color-brand-primary); padding-bottom: 6mm; margin-bottom: 6mm; }
+.brand { font-size: 13pt; font-weight: bold; color: var(--color-primary); letter-spacing: .03em; }
+.brand span { color: var(--color-secondary); }
+h1 { font-size: 25pt; margin: 2mm 0; }
+.type { display: inline-block; border-radius: 4mm; padding: 1mm 5mm; color: var(--color-secondary); background: var(--color-secondary-soft); font-weight: bold; }
+h2 { color: var(--color-primary); font-size: 12pt; border-bottom: .5pt solid var(--color-border); padding-bottom: 2mm; margin: 6mm 0 3mm; break-after: avoid; }
+h3 { font-size: 10pt; margin: 0; }
+p { margin: 1mm 0; overflow-wrap: anywhere; }
+.parties { display: grid; grid-template-columns: 1fr 1fr; gap: 7mm; break-inside: avoid; }
+.party { border: .5pt solid var(--color-border); border-radius: 2mm; padding: 4mm; }
+.party h2 { margin-top: 0; }
+.reference { font-size: 12pt; color: var(--color-secondary); font-weight: bold; }
+.execution { padding: 3mm 4mm; margin-top: 4mm; background: var(--color-primary-soft); border-radius: 2mm; break-inside: avoid; }
+small, .empty { color: var(--color-text-secondary); }
+.equipment { border-left: 3pt solid var(--color-secondary); padding: 3mm 4mm; background: var(--color-secondary-soft); break-inside: avoid; }
+.equipment strong { font-size: 12pt; }
+.point { margin-bottom: 4mm; border-bottom: .5pt solid var(--color-border); padding-bottom: 4mm; }
+.point-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 4mm; break-inside: avoid; break-after: avoid; margin-bottom: 2mm; }
+.point-heading h3 { overflow-wrap: anywhere; }
+.status { font-size: 8pt; padding: 1mm 2mm; border-radius: 1mm; white-space: nowrap; font-weight: bold; }
+.success { color: var(--color-success); background: var(--color-success-soft); }
+.danger { color: var(--color-danger); background: var(--color-danger-soft); }
+.warning { color: var(--color-warning); background: var(--color-warning-soft); }
+.observation { white-space: pre-wrap; overflow-wrap: anywhere; orphans: 3; widows: 3; }
+.observation:empty, .photos:empty { display: none; }
+.point-content { display: grid; grid-template-columns: minmax(0, 1fr) 82mm; gap: 4mm; }
+.point-content:has(.photos:empty) { display: block; }
+.photos { margin-top: 0; }
+.defect-photo { display: inline-block; width: 78mm; height: 52mm; object-fit: contain; margin: 0 3mm 3mm 0; border: .5pt solid var(--color-border); background: var(--color-surface); break-inside: avoid; vertical-align: top; }
+.signature { break-inside: avoid; }
+.signature-image { display: block; width: 65mm; height: 25mm; object-fit: contain; object-position: left center; }

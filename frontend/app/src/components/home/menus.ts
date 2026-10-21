@@ -18,7 +18,7 @@ export const AdminMenus: HomeTileProps[] = [
     accent: "secondary",
   },
   {
-    title: "Entretiens",
+    title: "Maintenance",
     description: "Consigner les travaux et résoudre les défauts.",
     icon: "maintenance",
     to: "/admin/maintenances",

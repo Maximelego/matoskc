@@ -166,7 +166,7 @@ function saveEquipment(): void {
         v-if="isAdministrator"
         :to="{ name: 'ManageMaintenances', query: { equipmentId: equipment.id } }"
       >
-        Voir les défauts et les entretiens
+        Voir les défauts et les maintenances
       </RouterLink>
       <div v-if="isAdministrator">
         <button

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ApiError } from "../../api/client";
 import { defectsApi } from "../../api/defects";
 import type { DefectDto, DefectStatus } from "../../api/defects/dto";
@@ -8,11 +8,14 @@ import { equipmentsApi } from "../../api/equipments";
 import type { EquipmentDto } from "../../api/equipments/dto";
 import { maintenanceApi } from "../../api/maintenance";
 import type { MaintenanceDto, RecordMaintenanceDto } from "../../api/maintenance/dto";
-import InspectionEquipmentPicker from "../inspection/equipmentPicker/InspectionEquipmentPicker.vue";
+import EquipmentPicker from "../common/equipmentPicker/EquipmentPicker.vue";
+import SlideAndFadeLateral from "../common/transition/SlideAndFadeLateral.vue";
 import DefectPhoto from "./DefectPhoto.vue";
 
 const route = useRoute();
+const router = useRouter();
 const equipments = ref<EquipmentDto[]>([]);
+const equipmentLoading = ref(true);
 const equipmentId = ref(typeof route.query.equipmentId === "string" ? route.query.equipmentId : "");
 const defects = ref<DefectDto[]>([]);
 const maintenances = ref<MaintenanceDto[]>([]);
@@ -36,6 +39,23 @@ const maxDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
 let requestVersion = 0;
 let pending: { fingerprint: string; payload: RecordMaintenanceDto } | null = null;
 const openDefects = computed(() => defects.value.filter((item) => item.status === "Open"));
+const currentEquipment = computed(() =>
+  equipments.value.find((item) => item.id === equipmentId.value),
+);
+function selectEquipment(equipment: EquipmentDto): void {
+  equipmentId.value = equipment.id;
+  void router.replace({ query: { ...route.query, equipmentId: equipment.id } });
+}
+function chooseAnotherEquipment(): void {
+  if (saving.value) return;
+  performedAt.value = "";
+  performedBy.value = "";
+  workDescription.value = "";
+  defectStatus.value = "Open";
+  pending = null;
+  equipmentId.value = "";
+  void router.replace({ query: { ...route.query, equipmentId: undefined } });
+}
 function message(cause: unknown) {
   if (cause instanceof ApiError) {
     if (cause.status === 409)
@@ -110,7 +130,7 @@ watch([equipmentId, defectStatus], () => {
 watch(
   () => route.query.equipmentId,
   (id) => {
-    if (typeof id === "string") equipmentId.value = id;
+    equipmentId.value = typeof id === "string" ? id : "";
   },
 );
 onMounted(async () => {
@@ -118,6 +138,8 @@ onMounted(async () => {
     equipments.value = (await equipmentsApi.list()).equipments;
   } catch (cause) {
     error.value = message(cause);
+  } finally {
+    equipmentLoading.value = false;
   }
   if (equipmentId.value) void load();
 });
@@ -168,7 +190,7 @@ async function submit() {
     selected.value = [];
     workDescription.value = "";
     await load();
-    notice.value = "L’entretien a été enregistré et les défauts sélectionnés ont été résolus.";
+    notice.value = "La maintenance a été enregistrée et les défauts sélectionnés ont été résolus.";
   } catch (cause) {
     error.value = message(cause);
   } finally {
@@ -179,211 +201,255 @@ async function submit() {
 
 <template>
   <main class="care">
-    <header>
-      <h1>Entretiens du matériel</h1>
-      <p>Consultez les défauts et consignez les interventions réalisées.</p>
-    </header>
-    <InspectionEquipmentPicker :equipment="equipments" />
-    <p
-      role="alert"
-      class="care__error"
-    >
-      {{ error }}
-      <button
-        v-if="equipmentId"
-        type="button"
-        @click="load"
+    <SlideAndFadeLateral>
+      <section
+        v-if="!equipmentId"
+        key="choose"
+        class="care__stage"
+        aria-labelledby="care-title"
       >
-        Actualiser
-      </button>
-    </p>
-    <p
-      v-if="notice"
-      role="status"
-      class="care__success"
-    >
-      {{ notice }}
-    </p>
-    <p
-      v-if="loading"
-      role="status"
-    >
-      Chargement…
-    </p>
-    <template v-if="equipmentId">
-      <section class="care__panel">
-        <h2>Défauts constatés</h2>
-        <label for="defect-status">Statut</label>
-        <select
-          id="defect-status"
-          v-model="defectStatus"
-          :disabled="saving"
+        <header>
+          <h1 id="care-title">Sélectionner un équipement</h1>
+          <p>Choisissez le matériel dont vous souhaitez consulter la maintenance.</p>
+        </header>
+        <p
+          v-if="equipmentLoading"
+          role="status"
         >
-          <option value="Open">Ouverts</option>
-          <option value="Resolved">Résolus</option>
-        </select>
-        <p v-if="!loading && !defects.length">
-          Aucun défaut {{ defectStatus === "Open" ? "ouvert" : "résolu" }}.
+          Chargement des équipements…
         </p>
-        <ul class="care__defects">
-          <li
-            v-for="defect in defects"
-            :key="defect.id"
-          >
-            <label
-              v-if="defect.status === 'Open'"
-              class="care__checkbox"
-            >
-              <input
-                v-model="selected"
-                type="checkbox"
-                :value="defect.id"
-                :disabled="saving"
-              />
-              Résoudre pendant cet entretien
-            </label>
-            <strong>{{ defect.description }}</strong>
-            <p>{{ defect.observation }}</p>
-            <small
-              >Signalé le {{ new Date(defect.reportedAt).toLocaleString("fr-FR") }} ·
-              {{ defect.occurrences.length }} constat(s)</small
-            >
-            <details v-if="defect.occurrences.length">
-              <summary>Voir les constats</summary>
-              <ul>
-                <li
-                  v-for="occurrence in defect.occurrences"
-                  :key="occurrence.id"
-                >
-                  {{ occurrence.observation }} ·
-                  {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }}
-                  <div class="care__photos">
-                    <DefectPhoto
-                      v-for="id in occurrence.photoIds"
-                      :key="id"
-                      :equipment-id="equipmentId"
-                      :defect-id="defect.id"
-                      :photo-id="id"
-                    />
-                  </div>
-                </li>
-              </ul>
-            </details>
-            <small v-if="defect.resolvedAt"
-              >Résolu le {{ new Date(defect.resolvedAt).toLocaleString("fr-FR") }}</small
-            >
-          </li>
-        </ul>
-        <nav
-          v-if="defectTotal > limit || defectOffset"
-          aria-label="Pages des défauts"
+        <p
+          v-if="error"
+          role="alert"
+          class="care__error"
         >
-          <button
-            type="button"
-            :disabled="loading || !defectOffset"
-            @click="pageDefects(defectOffset - limit)"
-          >
-            Précédent
-          </button>
-          <span
-            >{{ defectOffset + 1 }}–{{ Math.min(defectOffset + limit, defectTotal) }} /
-            {{ defectTotal }}</span
-          >
-          <button
-            type="button"
-            :disabled="loading || defectOffset + limit >= defectTotal"
-            @click="pageDefects(defectOffset + limit)"
-          >
-            Suivant
-          </button>
-        </nav>
+          {{ error }}
+        </p>
+        <EquipmentPicker
+          v-if="!equipmentLoading && equipments.length"
+          :equipment="equipments"
+          @select="selectEquipment"
+        />
+        <p v-else-if="!equipmentLoading && !error">Aucun équipement disponible.</p>
       </section>
-      <form
-        class="care__panel"
-        @submit.prevent="submit"
+      <div
+        v-else
+        :key="equipmentId"
+        class="care__stage"
       >
-        <h2>Enregistrer un entretien</h2>
-        <p>
-          Un entretien peut être enregistré sans résoudre de défaut. Résoudre un défaut ne modifie
-          pas automatiquement la disponibilité du matériel.
+        <header class="care__detail-header">
+          <div>
+            <h1>Maintenance de cet équipement</h1>
+            <p>{{ currentEquipment?.name ?? "Équipement sélectionné" }}</p>
+          </div>
+          <button
+            type="button"
+            :disabled="saving"
+            @click="chooseAnotherEquipment"
+          >
+            Choisir un autre équipement
+          </button>
+        </header>
+        <p
+          v-if="error"
+          role="alert"
+          class="care__error"
+        >
+          {{ error }}
+          <button
+            type="button"
+            @click="load"
+          >
+            Actualiser
+          </button>
         </p>
-        <label for="care-date">Date et heure de l’intervention</label>
-        <input
-          id="care-date"
-          v-model="performedAt"
-          type="datetime-local"
-          :max="maxDate"
-          required
-          :disabled="saving"
-        />
-        <label for="care-person">Intervenant</label>
-        <input
-          id="care-person"
-          v-model="performedBy"
-          maxlength="200"
-          required
-          :disabled="saving"
-        />
-        <label for="care-work">Travaux effectués</label>
-        <textarea
-          id="care-work"
-          v-model="workDescription"
-          rows="5"
-          maxlength="10000"
-          required
-          :disabled="saving"
-        />
-        <p>{{ selected.length }} défaut(s) sélectionné(s) pour résolution</p>
-        <button
-          type="submit"
-          :disabled="saving || loading"
+        <p
+          v-if="notice"
+          role="status"
+          class="care__success"
         >
-          {{ saving ? "Enregistrement…" : "Enregistrer l’entretien" }}
-        </button>
-      </form>
-      <section class="care__panel">
-        <h2>Entretiens enregistrés</h2>
-        <p v-if="!loading && !maintenances.length">Aucun entretien enregistré.</p>
-        <ol>
-          <li
-            v-for="entry in maintenances"
-            :key="entry.id"
+          {{ notice }}
+        </p>
+        <p
+          v-if="loading"
+          role="status"
+        >
+          Chargement…
+        </p>
+        <section class="care__panel">
+          <h2>Défauts constatés</h2>
+          <label for="defect-status">Statut</label>
+          <select
+            id="defect-status"
+            v-model="defectStatus"
+            :disabled="saving"
           >
-            <strong
-              >{{ new Date(entry.performedAt).toLocaleString("fr-FR") }} ·
-              {{ entry.performedBy }}</strong
+            <option value="Open">Ouverts</option>
+            <option value="Resolved">Résolus</option>
+          </select>
+          <p v-if="!loading && !defects.length">
+            Aucun défaut {{ defectStatus === "Open" ? "ouvert" : "résolu" }}.
+          </p>
+          <ul class="care__defects">
+            <li
+              v-for="defect in defects"
+              :key="defect.id"
             >
-            <p class="care__work">{{ entry.workDescription }}</p>
-            <small>{{ entry.resolvedDefectIds.length }} défaut(s) résolu(s)</small>
-          </li>
-        </ol>
-        <nav
-          v-if="maintenanceTotal > limit || maintenanceOffset"
-          aria-label="Pages des entretiens"
+              <label
+                v-if="defect.status === 'Open'"
+                class="care__checkbox"
+              >
+                <input
+                  v-model="selected"
+                  type="checkbox"
+                  :value="defect.id"
+                  :disabled="saving"
+                />
+                Résoudre pendant cette maintenance
+              </label>
+              <strong>{{ defect.description }}</strong>
+              <p>{{ defect.observation }}</p>
+              <small
+                >Signalé le {{ new Date(defect.reportedAt).toLocaleString("fr-FR") }} ·
+                {{ defect.occurrences.length }} constat(s)</small
+              >
+              <details v-if="defect.occurrences.length">
+                <summary>Voir les constats</summary>
+                <ul>
+                  <li
+                    v-for="occurrence in defect.occurrences"
+                    :key="occurrence.id"
+                  >
+                    {{ occurrence.observation }} ·
+                    {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }}
+                    <div class="care__photos">
+                      <DefectPhoto
+                        v-for="id in occurrence.photoIds"
+                        :key="id"
+                        :equipment-id="equipmentId"
+                        :defect-id="defect.id"
+                        :photo-id="id"
+                      />
+                    </div>
+                  </li>
+                </ul>
+              </details>
+              <small v-if="defect.resolvedAt"
+                >Résolu le {{ new Date(defect.resolvedAt).toLocaleString("fr-FR") }}</small
+              >
+            </li>
+          </ul>
+          <nav
+            v-if="defectTotal > limit || defectOffset"
+            aria-label="Pages des défauts"
+          >
+            <button
+              type="button"
+              :disabled="loading || !defectOffset"
+              @click="pageDefects(defectOffset - limit)"
+            >
+              Précédent
+            </button>
+            <span
+              >{{ defectOffset + 1 }}–{{ Math.min(defectOffset + limit, defectTotal) }} /
+              {{ defectTotal }}</span
+            >
+            <button
+              type="button"
+              :disabled="loading || defectOffset + limit >= defectTotal"
+              @click="pageDefects(defectOffset + limit)"
+            >
+              Suivant
+            </button>
+          </nav>
+        </section>
+        <form
+          class="care__panel"
+          @submit.prevent="submit"
         >
+          <h2>Enregistrer une maintenance</h2>
+          <p>
+            Une maintenance peut être enregistrée sans résoudre de défaut. Résoudre un défaut ne
+            modifie pas automatiquement la disponibilité du matériel.
+          </p>
+          <label for="care-date">Date et heure de l’intervention</label>
+          <input
+            id="care-date"
+            v-model="performedAt"
+            type="datetime-local"
+            :max="maxDate"
+            required
+            :disabled="saving"
+          />
+          <label for="care-person">Intervenant</label>
+          <input
+            id="care-person"
+            v-model="performedBy"
+            maxlength="200"
+            required
+            :disabled="saving"
+          />
+          <label for="care-work">Travaux effectués</label>
+          <textarea
+            id="care-work"
+            v-model="workDescription"
+            rows="5"
+            maxlength="10000"
+            required
+            :disabled="saving"
+          />
+          <p>{{ selected.length }} défaut(s) sélectionné(s) pour résolution</p>
           <button
-            type="button"
-            :disabled="loading || !maintenanceOffset"
-            @click="pageMaintenances(maintenanceOffset - limit)"
+            type="submit"
+            :disabled="saving || loading"
           >
-            Précédent
+            {{ saving ? "Enregistrement…" : "Enregistrer la maintenance" }}
           </button>
-          <span
-            >{{ maintenanceOffset + 1 }}–{{
-              Math.min(maintenanceOffset + limit, maintenanceTotal)
-            }}
-            / {{ maintenanceTotal }}</span
+        </form>
+        <section class="care__panel">
+          <h2>Maintenances enregistrées</h2>
+          <p v-if="!loading && !maintenances.length">Aucune maintenance enregistrée.</p>
+          <ol>
+            <li
+              v-for="entry in maintenances"
+              :key="entry.id"
+            >
+              <strong
+                >{{ new Date(entry.performedAt).toLocaleString("fr-FR") }} ·
+                {{ entry.performedBy }}</strong
+              >
+              <p class="care__work">{{ entry.workDescription }}</p>
+              <small>{{ entry.resolvedDefectIds.length }} défaut(s) résolu(s)</small>
+            </li>
+          </ol>
+          <nav
+            v-if="maintenanceTotal > limit || maintenanceOffset"
+            aria-label="Pages des maintenances"
           >
-          <button
-            type="button"
-            :disabled="loading || maintenanceOffset + limit >= maintenanceTotal"
-            @click="pageMaintenances(maintenanceOffset + limit)"
-          >
-            Suivant
-          </button>
-        </nav>
-      </section>
-    </template>
+            <button
+              type="button"
+              :disabled="loading || !maintenanceOffset"
+              @click="pageMaintenances(maintenanceOffset - limit)"
+            >
+              Précédent
+            </button>
+            <span
+              >{{ maintenanceOffset + 1 }}–{{
+                Math.min(maintenanceOffset + limit, maintenanceTotal)
+              }}
+              / {{ maintenanceTotal }}</span
+            >
+            <button
+              type="button"
+              :disabled="loading || maintenanceOffset + limit >= maintenanceTotal"
+              @click="pageMaintenances(maintenanceOffset + limit)"
+            >
+              Suivant
+            </button>
+          </nav>
+        </section>
+      </div>
+    </SlideAndFadeLateral>
   </main>
 </template>
 
@@ -394,6 +460,24 @@ async function submit() {
   max-width: 65rem;
   min-width: 0;
   margin: auto;
+}
+.care__stage {
+  display: grid;
+  gap: 1.4rem;
+  min-width: 0;
+}
+.care__detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.care__detail-header h1 {
+  margin-bottom: 0.35rem;
+}
+.care__detail-header p {
+  margin: 0;
 }
 .care header p,
 .care small {

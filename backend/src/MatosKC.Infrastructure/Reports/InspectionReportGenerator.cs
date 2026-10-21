@@ -1,16 +1,19 @@
 namespace MatosKC.Infrastructure.Reports;
 
+using System.Globalization;
+using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
 using MatosKC.Application.Agencies.Ports;
 using MatosKC.Application.Clients.Ports;
 using MatosKC.Application.Equipments.Ports;
 using MatosKC.Application.Files.Ports;
 using MatosKC.Application.Inspections;
 using MatosKC.Application.Inspections.Ports;
+using MatosKC.Application.Maintenance;
 using MatosKC.Domain.Entities.Inspection;
 using MatosKC.Domain.Entities.Rental;
-using PdfSharp.Drawing;
-using PdfSharp.Fonts;
-using PdfSharp.Pdf;
+using Microsoft.Playwright;
 using SkiaSharp;
 using InspectionEntity = MatosKC.Domain.Entities.Inspection.Inspection;
 
@@ -19,224 +22,153 @@ public sealed class InspectionReportGenerator(
     IEquipmentRepository equipment,
     IAgencyRepository agencies,
     IInspectionMediaRepository media,
-    IObjectStorage storage
+    IObjectStorage storage,
+    IEquipmentCareRepository? care = null
 ) : IInspectionReportGenerator
 {
-    public async Task<byte[]> GenerateAsync(
-        InspectionEntity inspection,
-        Rental rental,
-        InspectionTemplate template,
-        CancellationToken ct = default
-    )
+    // Keep browser memory bounded when several agencies validate at once.
+    private static readonly SemaphoreSlim RenderGate = new(1, 1);
+    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private static readonly TimeZoneInfo Paris = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+    private static readonly string TemplateDirectory = Path.Combine(
+        AppContext.BaseDirectory, "Reports", "Templates");
+
+    public async Task<byte[]> GenerateAsync(InspectionEntity inspection, Rental rental,
+        InspectionTemplate template, CancellationToken ct = default)
     {
         if (inspection.Status != InspectionStatus.Validated || inspection.SignaturePng is null)
-        {
             throw new InvalidOperationException("Only a signed, validated inspection can be rendered.");
-        }
 
         var client = await clients.GetByIdAsync(rental.ClientId, ct)
             ?? throw new InspectionOperationException(404, "Client not found.");
         var item = await equipment.RetrieveByIdAsync(rental.EquipmentId, ct)
             ?? throw new InspectionOperationException(404, "Equipment not found.");
         var agency = rental.AgencyId.HasValue
-            ? await agencies.GetByIdAsync(rental.AgencyId.Value, ct)
-            : null;
-
-        using var report = new ReportCanvas();
-        report.Text("MatosKC - Etat des lieux", 18);
-        report.Text(inspection.Type == InspectionType.Departure ? "Départ" : "Retour", 14);
-        report.Text($"Agence : {agency?.Name ?? "Historique"} ({client.CommandNumber.AgencyCode})");
-        report.Text($"Matériel : {item.Name} - {item.SerialNumber}");
-        report.Text($"Location : {rental.Id}");
-        report.Text($"Commande : {client.CommandNumber.Value}");
-        report.Text($"Client : {client.DisplayName}");
-        report.Text($"Contact : {client.Email} - {client.Phone}");
-        report.Text($"Opérateur : {inspection.OperatorFirstName}");
-        report.Text($"EDL : {inspection.Id} - Template : {template.Id}");
-        report.Text($"Début : {inspection.StartedAt:O}");
-        report.Text($"Validation : {inspection.ValidatedAt:O}");
-
+            ? await agencies.GetByIdAsync(rental.AgencyId.Value, ct) : null;
+        var points = new StringBuilder();
         foreach (var point in template.Points.OrderBy(value => value.Position))
         {
             ct.ThrowIfCancellationRequested();
             var answer = inspection.Answers.Single(value => value.TemplatePointId == point.Id);
-            report.Text(point.Description, 12);
-            report.Text(answer.Result == InspectionResult.Compliant ? "Conforme" : "Non conforme");
-
-            if (answer.Comment is not null)
-            {
-                report.Text(answer.Comment);
-            }
-
-            foreach (Guid photoId in answer.PhotosIds)
-            {
-                var photo = await media.GetByIdAsync(photoId, ct)
-                    ?? throw new InspectionOperationException(409, "An inspection photo is missing.");
-                var content = await storage.RetrieveAsync(photo.ObjectKey, ct)
-                    ?? throw new InspectionOperationException(409, "An inspection photo is unavailable.");
-                await using var source = content.Content;
-                await using var bytes = new MemoryStream();
-                await source.CopyToAsync(bytes, ct);
-                report.Image(bytes.ToArray(), 210);
-            }
+            points.Append(await CardAsync(point.Description, answer.Comment,
+                answer.Result == InspectionResult.Compliant ? "Conforme" : "Non conforme",
+                answer.Result == InspectionResult.Compliant ? "success" : "danger", answer.PhotosIds, ct));
         }
 
-        report.Reserve(180);
-        report.Text(inspection.AcceptanceText!);
-        report.Text($"Signataire : {inspection.SignerName} - {inspection.SignedAt:O}");
-        report.Image(inspection.SignaturePng, 100);
-
-        return report.Save();
-    }
-
-    // Embedded font makes the report independent of the host's installed fonts.
-    private sealed class ReportFontResolver : IFontResolver
-    {
-        public byte[] GetFont(string faceName)
+        var known = new StringBuilder();
+        if (care is not null)
         {
-            using var source = typeof(InspectionReportGenerator).Assembly.GetManifestResourceStream(
-                "MatosKC.Infrastructure.Reports.Fonts.DejaVuSans.ttf")!;
-            using var target = new MemoryStream();
-            source.CopyTo(target);
-
-            return target.ToArray();
-        }
-
-        public FontResolverInfo ResolveTypeface(string familyName, bool bold, bool italic) => new("DejaVuSans");
-    }
-
-    private sealed class ReportCanvas : IDisposable
-    {
-        private static readonly object FontLock = new();
-        private readonly PdfDocument _document = new();
-        private XGraphics? _graphics;
-        private double _y;
-        private const double Width = 515;
-
-        public ReportCanvas()
-        {
-            lock (FontLock)
+            // Reconstruct defects open at the start, not those currently open.
+            // Use the historical occurrence, never an observation from this inspection.
+            for (int offset = 0; ; offset += 100)
             {
-                GlobalFontSettings.FontResolver ??= new ReportFontResolver();
-            }
-
-            _document.Info.Title = "MatosKC - Etat des lieux";
-            NewPage();
-        }
-
-        private void NewPage()
-        {
-            _graphics?.Dispose();
-            var page = _document.AddPage();
-            page.Size = PdfSharp.PageSize.A4;
-            _graphics = XGraphics.FromPdfPage(page);
-            _y = 40;
-            _graphics.DrawString($"MatosKC - {_document.PageCount}", new XFont("DejaVuSans", 8),
-                XBrushes.Gray, new XPoint(40, 820));
-        }
-
-        private void EnsureSpace(double height)
-        {
-            if (_y + height > 790)
-            {
-                NewPage();
-            }
-        }
-
-        public void Reserve(double height) => EnsureSpace(height);
-
-        public void Text(string text, double size = 10)
-        {
-            var font = new XFont("DejaVuSans", size);
-
-            foreach (string paragraph in text.Replace("\r", "").Split('\n'))
-            {
-                string line = "";
-
-                foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                var page = await care.ListDefectsAsync(item.Id, null, offset, 100, ct);
+                var previous = page.Items.Where(d => d.InspectionId != inspection.Id
+                    && d.ReportedAt < inspection.StartedAt
+                    && (d.ResolvedAt is null || d.ResolvedAt > inspection.StartedAt)).ToList();
+                if (previous.Count > 0)
                 {
-                    string candidate = line.Length == 0 ? word : line + " " + word;
-
-                    if (_graphics!.MeasureString(candidate, font).Width <= Width)
+                    var occurrences = await care.GetOccurrencesAsync(previous.Select(d => d.Id).ToArray(), ct);
+                    foreach (var defect in previous.OrderBy(d => d.ReportedAt))
                     {
-                        line = candidate;
-                        continue;
-                    }
-
-                    if (line.Length > 0)
-                    {
-                        DrawLine(line, font, size);
-                    }
-
-                    line = "";
-
-                    // Only an unbroken word wider than the page is split into characters.
-                    foreach (char value in word)
-                    {
-                        if (_graphics!.MeasureString(line + value, font).Width > Width)
-                        {
-                            DrawLine(line, font, size);
-                            line = "";
-                        }
-
-                        line += value;
+                        var last = occurrences.Where(o => o.DefectId == defect.Id
+                            && o.InspectionId != inspection.Id && o.ObservedAt < inspection.StartedAt)
+                            .OrderByDescending(o => o.ObservedAt).FirstOrDefault();
+                        known.Append(await CardAsync(last?.Description ?? defect.Description,
+                            last?.Observation ?? defect.Observation, "Défaut préexistant", "warning",
+                            last?.PhotoIds ?? Array.Empty<Guid>(), ct));
                     }
                 }
-
-                DrawLine(line, font, size);
+                if (offset + page.Items.Count >= page.Total || page.Items.Count == 0) break;
             }
-
-            _y += 5;
         }
 
-        private void DrawLine(string line, XFont font, double size)
+        var values = new Dictionary<string, string>
         {
-            EnsureSpace(size + 5);
-            _graphics!.DrawString(line, font, XBrushes.Black, new XPoint(40, _y + size));
-            _y += size + 5;
-        }
-
-        public void Image(byte[] bytes, double maxHeight)
+            ["ThemeCss"] = await ReadAsync("theme.css", ct),
+            ["ReportCss"] = await ReadAsync("inspection-report.css", ct),
+            ["Type"] = inspection.Type == InspectionType.Departure ? "Départ" : "Retour",
+            ["CommandNumber"] = H(client.CommandNumber.Value),
+            ["ClientName"] = H(client.DisplayName),
+            ["ClientEmail"] = H(client.Email), ["ClientPhone"] = H(client.Phone),
+            ["AgencyName"] = H(agency?.Name ?? "Historique"),
+            ["AgencyCode"] = H(client.CommandNumber.AgencyCode.ToString(French)),
+            ["Operator"] = H(inspection.OperatorFirstName),
+            ["StartedAt"] = Date(inspection.StartedAt), ["ValidatedAt"] = Date(inspection.ValidatedAt),
+            ["EquipmentName"] = H(item.Name), ["SerialNumber"] = H(item.SerialNumber),
+            ["KnownDefects"] = known.Length > 0 ? known.ToString() : "<p class=empty>Aucun défaut préexistant enregistré au début de cet état des lieux.</p>",
+            ["Points"] = points.ToString(), ["AcceptanceText"] = H(inspection.AcceptanceText),
+            ["SignerName"] = H(inspection.SignerName), ["SignedAt"] = Date(inspection.SignedAt),
+            ["Signature"] = Image(inspection.SignaturePng, "Signature", "signature-image")
+        };
+        string html = Fill(await ReadAsync("inspection-report.html", ct), values);
+        await RenderGate.WaitAsync(ct);
+        try
         {
-            using var data = SKData.CreateCopy(bytes);
-            using var codec = SKCodec.Create(data);
-
-            if (codec is null || (long)codec.Info.Width * codec.Info.Height > 25_000_000)
+            ct.ThrowIfCancellationRequested();
+            using var playwright = await Playwright.CreateAsync();
+            await using var browser = await playwright.Chromium.LaunchAsync(new() { Headless = true, Timeout = 30000 });
+            await using var context = await browser.NewContextAsync(new()
             {
-                throw new InspectionOperationException(422, "A report image is invalid or too large.");
-            }
-
-            using var bitmap = SKBitmap.Decode(bytes);
-
-            if (bitmap is null)
+                JavaScriptEnabled = false, Locale = "fr-FR", TimezoneId = "Europe/Paris"
+            });
+            // All resources are embedded. No HTTP requests or local file access from the template.
+            await context.RouteAsync("**/*", route => route.AbortAsync());
+            var page = await context.NewPageAsync().WaitAsync(ct);
+            page.SetDefaultTimeout(30000);
+            await page.SetContentAsync(html, new() { WaitUntil = WaitUntilState.Load, Timeout = 30000 }).WaitAsync(ct);
+            return await page.PdfAsync(new()
             {
-                throw new InspectionOperationException(422, "A report image cannot be decoded.");
-            }
-
-            using var png = bitmap.Encode(SKEncodedImageFormat.Png, 100);
-            using var stream = new MemoryStream(png.ToArray());
-            using var image = XImage.FromStream(stream);
-            double scale = Math.Min(Width / image.PixelWidth, maxHeight / image.PixelHeight);
-            double height = image.PixelHeight * scale;
-            EnsureSpace(height + 12);
-            _graphics!.DrawImage(image, 40, _y, image.PixelWidth * scale, height);
-            _y += height + 12;
+                Format = "A4", PrintBackground = true, PreferCSSPageSize = true,
+                DisplayHeaderFooter = true, HeaderTemplate = "<span></span>",
+                FooterTemplate = "<div style='width:100%;font-size:8px;text-align:center;color:#66717e'>MatosKC · <span class='pageNumber'></span> / <span class='totalPages'></span></div>",
+                Margin = new() { Top = "14mm", Bottom = "18mm", Left = "15mm", Right = "15mm" }
+            }).WaitAsync(TimeSpan.FromSeconds(30), ct);
         }
-
-        public byte[] Save()
-        {
-            _graphics?.Dispose();
-            _graphics = null;
-            using var stream = new MemoryStream();
-            _document.Save(stream, false);
-
-            return stream.ToArray();
-        }
-
-        public void Dispose()
-        {
-            _graphics?.Dispose();
-            _document.Dispose();
-        }
+        finally { RenderGate.Release(); }
     }
+
+    private async Task<string> CardAsync(string title, string? observation, string status,
+        string statusClass, IReadOnlyList<Guid> ids, CancellationToken ct)
+    {
+        var photos = new StringBuilder();
+        foreach (Guid id in ids)
+        {
+            var photo = await media.GetByIdAsync(id, ct)
+                ?? throw new InspectionOperationException(409, "An inspection photo is missing.");
+            var content = await storage.RetrieveAsync(photo.ObjectKey, ct)
+                ?? throw new InspectionOperationException(409, "An inspection photo is unavailable.");
+            await using var source = content.Content;
+            using var bytes = new MemoryStream();
+            await source.CopyToAsync(bytes, ct);
+            photos.Append(Image(bytes.ToArray(), title, "defect-photo"));
+        }
+        return Fill(await ReadAsync("point.html", ct), new Dictionary<string, string>
+        {
+            ["Title"] = H(title), ["Observation"] = H(observation),
+            ["Status"] = H(status), ["StatusClass"] = statusClass, ["Photos"] = photos.ToString()
+        });
+    }
+
+    private static string Image(byte[] bytes, string alt, string cssClass)
+    {
+        using var data = SKData.CreateCopy(bytes);
+        using var codec = SKCodec.Create(data);
+        if (codec is null || (long)codec.Info.Width * codec.Info.Height > 25_000_000)
+            throw new InspectionOperationException(422, "A report image is invalid or too large.");
+        using var bitmap = SKBitmap.Decode(bytes);
+        if (bitmap is null) throw new InspectionOperationException(422, "A report image cannot be decoded.");
+        using var png = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+        return $"<img class=\"{cssClass}\" alt=\"{H(alt)}\" src=\"data:image/png;base64,{Convert.ToBase64String(png.ToArray())}\">";
+    }
+
+    private static string H(string? value) => WebUtility.HtmlEncode(value ?? "");
+    private static string Date(DateTimeOffset? value) => value.HasValue
+        ? TimeZoneInfo.ConvertTime(value.Value, Paris).ToString("dd/MM/yyyy 'à' HH:mm", French) : "";
+    private static Task<string> ReadAsync(string name, CancellationToken ct) =>
+        File.ReadAllTextAsync(Path.Combine(TemplateDirectory, name), ct);
+    // Single pass: user content containing {{...}} is never evaluated as a token.
+    private static string Fill(string html, IReadOnlyDictionary<string, string> values) =>
+        Regex.Replace(html, @"\{\{(\w+)\}\}", match => values.TryGetValue(match.Groups[1].Value, out var value)
+            ? value : throw new InvalidOperationException($"Unknown report token: {match.Groups[1].Value}"));
 }

@@ -260,7 +260,7 @@ async function save(): Promise<boolean> {
     )
   ) {
     error.value =
-      "Un défaut encore ouvert ne peut pas être déclaré conforme. Indiquez « Non conforme » ou faites résoudre le défaut lors d’un entretien.";
+      "Un défaut encore ouvert ne peut pas être déclaré conforme. Indiquez « Non conforme » ou faites résoudre le défaut lors d’une maintenance.";
     return false;
   }
 
@@ -284,7 +284,7 @@ async function next(): Promise<void> {
 
     if (value?.result === "Compliant" && hasOpenDefect(currentPoint.value.description)) {
       error.value =
-        "Ce point présente encore un défaut ouvert. Indiquez « Non conforme » jusqu’à sa résolution lors d’un entretien.";
+        "Ce point présente encore un défaut ouvert. Indiquez « Non conforme » jusqu’à sa résolution lors d’une maintenance.";
       return;
     }
 

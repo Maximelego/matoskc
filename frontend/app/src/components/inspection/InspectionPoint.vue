@@ -56,7 +56,7 @@ function addFiles(event: Event): void {
       role="status"
     >
       {{ matchingDefects.length }} défaut(s) encore ouvert(s) pour ce point. Indiquez « Non conforme
-      » jusqu’à leur résolution lors d’un entretien.
+      » jusqu’à leur résolution lors d’une maintenance.
     </p>
     <label
       ><input

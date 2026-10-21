@@ -28,7 +28,10 @@ services:
             __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: matoskc.hexenis.fr
 
     backend:
-        image: mcr.microsoft.com/dotnet/sdk:10.0-alpine
+        build:
+            context: ./backend
+            dockerfile: Dockerfile.dev
+        init: true
         working_dir: /app
         user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
         volumes:
@@ -46,6 +49,8 @@ services:
         environment:
             ASPNETCORE_ENVIRONMENT: Development
             ASPNETCORE_URLS: http://0.0.0.0:8000
+
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
 
             HOME: /tmp/dotnet-home
             DOTNET_CLI_HOME: /tmp/dotnet-home

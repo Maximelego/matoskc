@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from "vue";
 import { equipmentPhotosApi } from "../../../api/equipments/photos/index.ts";
-import BaseIcon from "../../common/icon/BaseIcon.vue";
+import BaseIcon from "../icon/BaseIcon.vue";
 const props = defineProps<{ equipmentId: string }>();
 const url = ref("");
 let active = 0;

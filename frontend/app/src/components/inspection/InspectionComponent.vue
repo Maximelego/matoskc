@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ApiError } from "../../api/client";
 import { equipmentsApi } from "../../api/equipments";
 import type { EquipmentDto } from "../../api/equipments/dto";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseSpinner from "../common/spinner/BaseSpinner.vue";
-import InspectionEquipmentPicker from "./equipmentPicker/InspectionEquipmentPicker.vue";
+import EquipmentPicker from "../common/equipmentPicker/EquipmentPicker.vue";
+
+const router = useRouter();
 
 const equipment = ref<EquipmentDto[]>([]);
 const loading = ref(true);
@@ -127,9 +130,10 @@ onMounted(() => {
       Aucun équipement disponible pour un état des lieux.
     </p>
 
-    <InspectionEquipmentPicker
+    <EquipmentPicker
       v-else
       :equipment="equipment"
+      @select="router.push(`/inspections/${$event.id}`)"
     />
   </main>
 </template>

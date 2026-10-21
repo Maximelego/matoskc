@@ -1,0 +1,19 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Installer la même version de Chromium que celle attendue par le backend.
+WORKDIR /tmp/playwright-installer
+
+RUN dotnet new console --framework net10.0 \
+    && dotnet add package Microsoft.Playwright --version 1.63.0
+
+RUN printf '%s\n' \
+    'return Microsoft.Playwright.Program.Main(args);' \
+    > Program.cs
+
+RUN dotnet run -- install --with-deps chromium \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /tmp/playwright-installer /var/lib/apt/lists/*
+
+WORKDIR /app

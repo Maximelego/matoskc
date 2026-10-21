@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:;">
+  <title>MatosKC - Etat des lieux</title>
+  <style>{{ThemeCss}}</style>
+  <style>{{ReportCss}}</style>
+</head>
+<body>
+  <header><div class="brand">Matos<span>KC</span></div><h1>État des lieux</h1><div class="type">{{Type}}</div></header>
+  <section class="parties">
+    <div class="party"><h2>Commande &amp; client</h2><p class="reference">Commande {{CommandNumber}}</p><p><strong>{{ClientName}}</strong></p><p>{{ClientEmail}}</p><p>{{ClientPhone}}</p></div>
+    <div class="party"><h2>Agence prêteuse</h2><p class="reference">{{AgencyName}}</p><p>Agence {{AgencyCode}}</p></div>
+  </section>
+  <section class="execution"><p><strong>Réalisé par</strong> {{Operator}}</p><p>Début : {{StartedAt}}<br>Validation : {{ValidatedAt}}</p><small>Heure locale : Europe/Paris</small></section>
+  <section><h2>Matériel loué</h2><div class="equipment"><strong>{{EquipmentName}}</strong><p>N° de série / immatriculation : {{SerialNumber}}</p></div></section>
+  <section><h2>Défauts connus avant l’état des lieux</h2>{{KnownDefects}}</section>
+  <section><h2>État des lieux réalisé</h2>{{Points}}</section>
+  <section class="signature"><h2>Acceptation et signature</h2><p>{{AcceptanceText}}</p><p><strong>{{SignerName}}</strong><br>Le {{SignedAt}}</p>{{Signature}}</section>
+</body></html>
