@@ -36,9 +36,9 @@ public sealed class EquipmentCarePersistenceTests(PostgreSqlFixture fixture)
         inspection.Sign("Client", [1], now);
         inspection.Validate(template, now);
         inspection.AttachReport([37, 80, 68, 70]);
-        var defect = new EquipmentDefect(Guid.NewGuid(), equipment.Id, inspection.Id, answerId, "Tuyau", "Déchiré", now);
+        var defect = new EquipmentDefect(Guid.NewGuid(), equipment.Id, inspection.Id, answerId, "Tuyau", "Déchiré", now, account.Id, inspection.OperatorFirstName);
         var occurrence = new DefectOccurrence(Guid.NewGuid(), defect.Id, inspection.Id, answerId,
-            "Tuyau", "Déchiré", now, [photoId]);
+            "Tuyau", "Déchiré", now, [photoId], account.Id, inspection.OperatorFirstName);
         db.AddRange(category, equipment, account, client, rental, template, inspection, defect, occurrence);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -110,6 +110,8 @@ public sealed class EquipmentCarePersistenceTests(PostgreSqlFixture fixture)
         var resolved = await care.GetDefectAsync(seed.DefectId, TestContext.Current.CancellationToken);
         Assert.Equal(EquipmentDefectStatus.Resolved, resolved!.Status);
         Assert.Equal(maintenanceId, resolved.ResolvedByMaintenanceId);
+        Assert.Equal(seed.AccountId, resolved.ReportedByAccountId);
+        Assert.Equal("Maxime", resolved.OperatorFirstName);
         Assert.Equal(seed.AccountId, resolved.ResolvedByAccountId);
         var maintenanceSaved = await care.GetMaintenanceAsync(maintenanceId, TestContext.Current.CancellationToken);
         Assert.Equal(seed.DefectId, Assert.Single(maintenanceSaved!.ResolvedDefectIds));
@@ -157,7 +159,7 @@ public sealed class EquipmentCarePersistenceTests(PostgreSqlFixture fixture)
         var original = await db.DefectOccurrences.SingleAsync(occurrence => occurrence.DefectId == seed.DefectId,
             TestContext.Current.CancellationToken);
         db.DefectOccurrences.Add(new DefectOccurrence(Guid.NewGuid(), original.DefectId, original.InspectionId,
-            original.InspectionAnswerId!.Value, original.Description, original.Observation, original.ObservedAt, original.PhotoIds));
+            original.InspectionAnswerId!.Value, original.Description, original.Observation, original.ObservedAt, original.PhotoIds, original.ReportedByAccountId, original.OperatorFirstName));
 
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(TestContext.Current.CancellationToken));
     }

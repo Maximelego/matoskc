@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DefectDto } from "../../../api/defects/dto";
 import type { InspectionTemplateDto } from "../../../api/inspections";
 import type { PointValue } from "../InspectionPoint.vue";
 import InspectionPoint from "../InspectionPoint.vue";
@@ -10,11 +9,10 @@ defineProps<{
   position: number;
   total: number;
   value: PointValue;
-  openDefects: DefectDto[];
   inspectionId: string | null;
   disabled: boolean;
 }>();
-const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: string] }>();
+const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [findingId: string, photoId: string] }>();
 </script>
 
 <template>
@@ -30,11 +28,10 @@ const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: s
       :id="point.id"
       :label="point.description"
       :value="value"
-      :open-defects="openDefects"
       :inspection-id="inspectionId"
       :disabled="disabled"
       @update="emit('update', $event)"
-      @remove-photo="emit('removePhoto', $event)"
+      @remove-photo="(findingId, photoId) => emit('removePhoto', findingId, photoId)"
     />
   </section>
 </template>

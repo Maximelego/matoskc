@@ -631,6 +631,15 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("observed_at");
 
+                    b.Property<string>("OperatorFirstName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("operator_first_name");
+
+                    b.Property<Guid>("ReportedByAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reported_by_account_id");
+
                     b.PrimitiveCollection<List<Guid>>("_photoIds")
                         .IsRequired()
                         .HasColumnType("uuid[]")
@@ -650,6 +659,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("InspectionId");
+
+                    b.HasIndex("ReportedByAccountId");
 
                     b.ToTable("equipment_defect_occurrences", null, t =>
                         {
@@ -689,9 +700,18 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("observation");
 
+                    b.Property<string>("OperatorFirstName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("operator_first_name");
+
                     b.Property<DateTimeOffset>("ReportedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("reported_at");
+
+                    b.Property<Guid>("ReportedByAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reported_by_account_id");
 
                     b.Property<DateTimeOffset?>("ResolvedAt")
                         .HasColumnType("timestamp with time zone")
@@ -726,6 +746,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("InspectionId");
+
+                    b.HasIndex("ReportedByAccountId");
 
                     b.HasIndex("ResolvedByAccountId");
 
@@ -1184,6 +1206,12 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasForeignKey("InspectionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("ReportedByAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Maintenance.EquipmentDefect", b =>
@@ -1207,6 +1235,12 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasOne("MatosKC.Domain.Entities.Inspection.Inspection", null)
                         .WithMany()
                         .HasForeignKey("InspectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("ReportedByAccountId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

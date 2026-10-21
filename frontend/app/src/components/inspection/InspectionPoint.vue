@@ -1,45 +1,44 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { DefectDto } from "../../api/defects/dto";
 import type { InspectionResultDto } from "../../api/inspections";
-import BaseIcon from "../common/icon/BaseIcon.vue";
 import InspectionAnswerPhoto from "./InspectionAnswerPhoto.vue";
 
-export type PointValue = {
-  result: InspectionResultDto | null;
-  observation: string;
-  files: File[];
-  photoIds: string[];
-  existingDefectId: string | null;
-};
+export type FindingValue = { id: string; observation: string; files: File[]; photoIds: string[] };
+export type PointValue = { result: InspectionResultDto | null; findings: FindingValue[] };
 
 const props = defineProps<{
   id: string;
   label: string;
   value: PointValue;
-  openDefects?: DefectDto[];
   inspectionId?: string | null;
   disabled?: boolean;
 }>();
+const emit = defineEmits<{
+  update: [value: PointValue];
+  removePhoto: [findingId: string, photoId: string];
+}>();
 
-const matchingDefects = computed(
-  () =>
-    props.openDefects?.filter(
-      (defect) =>
-        defect.description.trim().toLocaleLowerCase("fr") ===
-        props.label.trim().toLocaleLowerCase("fr"),
-    ) ?? [],
-);
-
-const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [photoId: string] }>();
-
-function update(patch: Partial<PointValue>): void {
-  emit("update", { ...props.value, ...patch });
+function addFinding(): void {
+  emit("update", {
+    ...props.value,
+    result: "NonCompliant",
+    findings: [
+      ...props.value.findings,
+      { id: crypto.randomUUID(), observation: "", files: [], photoIds: [] },
+    ],
+  });
 }
-
-function addFiles(event: Event): void {
+function updateFinding(id: string, patch: Partial<FindingValue>): void {
+  emit("update", {
+    ...props.value,
+    findings: props.value.findings.map((finding) =>
+      finding.id === id ? { ...finding, ...patch } : finding,
+    ),
+  });
+}
+function addFiles(id: string, event: Event): void {
   const input = event.target as HTMLInputElement;
-  update({ files: [...props.value.files, ...Array.from(input.files ?? [])] });
+  const finding = props.value.findings.find((item) => item.id === id);
+  if (finding) updateFinding(id, { files: [...finding.files, ...Array.from(input.files ?? [])] });
   input.value = "";
 }
 </script>
@@ -50,164 +49,163 @@ function addFiles(event: Event): void {
     :disabled="disabled"
   >
     <legend>{{ label }}</legend>
-    <p
-      v-if="matchingDefects.length"
-      class="point__warning"
-      role="status"
-    >
-      {{ matchingDefects.length }} défaut(s) encore ouvert(s) pour ce point. Indiquez « Non conforme
-      » jusqu’à leur résolution lors d’une maintenance.
-    </p>
-    <label
-      ><input
+
+    <label>
+      <input
         type="radio"
         :name="id"
         :checked="value.result === 'Compliant'"
-        :disabled="disabled || Boolean(matchingDefects.length)"
-        @change="update({ result: 'Compliant', observation: '', existingDefectId: null })"
+        @change="emit('update', { result: 'Compliant', findings: [] })"
       />
-      Conforme</label
-    >
-    <label
-      ><input
+      Aucun nouveau défaut
+    </label>
+    <label>
+      <input
         type="radio"
         :name="id"
         :checked="value.result === 'NonCompliant'"
-        @change="
-          update({
-            result: 'NonCompliant',
-            existingDefectId: value.existingDefectId ?? matchingDefects[0]?.id ?? null,
-          })
-        "
+        @change="emit('update', { ...value, result: 'NonCompliant' })"
       />
-      Non conforme</label
-    >
+      Nouveau défaut constaté
+    </label>
     <div
       v-if="value.result === 'NonCompliant'"
-      class="point__defect"
+      class="point__findings"
     >
-      <label v-if="openDefects?.length"
-        >Défaut déjà constaté (facultatif)
-        <select
-          :value="value.existingDefectId ?? ''"
-          @change="update({ existingDefectId: ($event.target as HTMLSelectElement).value || null })"
-        >
-          <option value="">Nouveau défaut</option>
-          <option
-            v-for="defect in openDefects"
-            :key="defect.id"
-            :value="defect.id"
-          >
-            {{ defect.description }} - {{ defect.observation }}
-          </option>
-        </select>
-      </label>
-      <label
-        >Observation(s) *<textarea
-          :value="value.observation"
-          rows="3"
-          @input="update({ observation: ($event.target as HTMLTextAreaElement).value })"
-        />
-      </label>
-      <label
-        >Photographies *<input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-          @change="addFiles"
-      /></label>
-      <ul v-if="value.files.length || value.photoIds.length">
-        <li
-          v-for="(file, index) in value.files"
-          :key="`${file.name}-${index}`"
-        >
-          {{ file.name }}
+      <article
+        v-for="(finding, index) in value.findings"
+        :key="finding.id"
+        class="point__finding"
+      >
+        <div class="point__heading">
+          <h3>Défaut {{ index + 1 }}</h3>
           <button
             type="button"
-            @click="update({ files: value.files.filter((_, i) => i !== index) })"
+            @click="
+              emit('update', {
+                ...value,
+                findings: value.findings.filter((item) => item.id !== finding.id),
+              })
+            "
           >
-            <BaseIcon
-              name="delete"
-              :size="24"
-            />
+            Supprimer ce défaut
           </button>
-        </li>
-        <li
-          v-for="photoId in value.photoIds"
-          :key="photoId"
-        >
-          <InspectionAnswerPhoto
-            v-if="inspectionId"
-            :inspection-id="inspectionId"
-            :photo-id="photoId"
+        </div>
+        <label
+          >Observation *
+          <textarea
+            :value="finding.observation"
+            rows="3"
+            required
+            @input="
+              updateFinding(finding.id, {
+                observation: ($event.target as HTMLTextAreaElement).value,
+              })
+            "
           />
-          Photo enregistrée
-          <button
-            type="button"
-            @click="emit('removePhoto', photoId)"
+        </label>
+        <label
+          >Photographie *
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            @change="addFiles(finding.id, $event)"
+          />
+        </label>
+        <ul v-if="finding.files.length || finding.photoIds.length">
+          <li
+            v-for="(file, fileIndex) in finding.files"
+            :key="`${file.name}-${fileIndex}`"
           >
-            <BaseIcon
-              name="delete"
-              :size="24"
+            {{ file.name }}
+            <button
+              type="button"
+              @click="
+                updateFinding(finding.id, {
+                  files: finding.files.filter((_, i) => i !== fileIndex),
+                })
+              "
+            >
+              Retirer
+            </button>
+          </li>
+          <li
+            v-for="photoId in finding.photoIds"
+            :key="photoId"
+          >
+            <InspectionAnswerPhoto
+              v-if="inspectionId"
+              :inspection-id="inspectionId"
+              :photo-id="photoId"
             />
-          </button>
-        </li>
-      </ul>
+            <button
+              type="button"
+              @click="emit('removePhoto', finding.id, photoId)"
+            >
+              Supprimer la photo
+            </button>
+          </li>
+        </ul>
+      </article>
+      <button
+        type="button"
+        @click="addFinding"
+      >
+        Ajouter un défaut
+      </button>
     </div>
   </fieldset>
 </template>
 
 <style scoped lang="scss">
-.point {
+.point,
+.point__findings,
+.point__finding {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.point,
+.point__finding {
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: 0.65rem;
 }
 .point legend {
-  padding: 0 0.35rem;
   font-weight: 600;
 }
-.point label {
-  display: block;
+.point p {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
-.point__defect {
-  display: grid;
-  gap: 0.7rem;
+.point__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
-.point__defect label {
+.point__heading h3 {
+  margin: 0;
+}
+.point__finding label {
   display: grid;
   gap: 0.35rem;
 }
-.point__defect ul {
+.point__finding ul {
   list-style: none;
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  width: 50%;
+  gap: 0.5rem;
   flex-wrap: wrap;
-
-  li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-  }
 }
-.point__warning {
-  margin: 0;
-  padding: 0.7rem;
-  border-radius: 0.5rem;
-  background: var(--color-warning-soft);
+.point__finding li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 textarea,
-select,
 input[type="file"] {
   box-sizing: border-box;
   width: 100%;
@@ -219,17 +217,18 @@ input[type="file"] {
   font: inherit;
 }
 button {
-  color: var(--color-danger);
-
-  background: none;
-  border: 0;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  font: inherit;
   cursor: pointer;
-
-  &:hover {
-    svg {
-      scale: 1.1;
-      transition: scale 150ms ease-in-out;
-    }
-  }
+}
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--color-focus);
 }
 </style>

@@ -11,10 +11,10 @@ public sealed class KnownDefectWorkflowTests
     private static EquipmentDefect Seed(WorkflowFake fake)
     {
         var defect = new EquipmentDefect(Guid.NewGuid(), fake.Equipment.Id, Guid.NewGuid(), Guid.NewGuid(),
-            "Ancienne question supprimée", "Rayure", fake.Clock.Now.AddDays(-1));
+            "Ancienne question supprimée", "Rayure", fake.Clock.Now.AddDays(-1), Guid.NewGuid(), "Maxime");
         fake.Care.Defects.Add(defect);
         fake.Care.Occurrences.Add(new DefectOccurrence(Guid.NewGuid(), defect.Id, defect.InspectionId,
-            defect.InspectionAnswerId!.Value, defect.Description, defect.Observation, defect.ReportedAt, [Guid.NewGuid()]));
+            defect.InspectionAnswerId!.Value, defect.Description, defect.Observation, defect.ReportedAt, [Guid.NewGuid()], Guid.NewGuid(), "Maxime"));
         return defect;
     }
 
@@ -103,7 +103,7 @@ public sealed class KnownDefectWorkflowTests
         inspection.ReviewDefect(defect.Id, DefectReviewResult.Unchanged, null);
         inspection.Sign("Client", [1], fake.Clock.Now);
         fake.Care.Occurrences.Add(new DefectOccurrence(Guid.NewGuid(), defect.Id, Guid.NewGuid(), Guid.NewGuid(),
-            defect.Description, "Aggravation concurrente", fake.Clock.Now, [Guid.NewGuid()]));
+            defect.Description, "Aggravation concurrente", fake.Clock.Now, [Guid.NewGuid()], Guid.NewGuid(), "Maxime"));
         var error = await Assert.ThrowsAsync<InspectionOperationException>(() =>
             new ValidateDepartureInspectionUseCase(fake.Context).ExecuteAsync(inspection.Id, fake.Actor));
         Assert.Equal(409, error.StatusCode);

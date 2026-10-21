@@ -4,12 +4,14 @@ import CopyButton from "../../common/copy/CopyButton.vue";
 import BaseIcon from "../../common/icon/BaseIcon.vue";
 import BaseSpinner from "../../common/spinner/BaseSpinner.vue";
 import type { PointValue } from "../InspectionPoint.vue";
+import type { KnownDefectValue } from "./InspectionKnownDefectsStep.vue";
 import InspectionSignaturePad from "../InspectionSignaturePad.vue";
 
 defineProps<{
   client: ClientInputDto;
   points: InspectionTemplateDto["points"];
   values: Record<string, PointValue>;
+  knownDefects: KnownDefectValue[];
   signerName: string;
   accepted: boolean;
   busy: boolean;
@@ -19,6 +21,7 @@ const emit = defineEmits<{
   "update:accepted": [value: boolean];
   signature: [file: File | null];
   edit: [pointId: string];
+  editKnown: [];
   validate: [];
 }>();
 </script>
@@ -38,31 +41,40 @@ const emit = defineEmits<{
       />
     </div>
 
-    <ul class="review-step__list">
-      <li
-        v-for="point in points"
-        :key="point.id"
-        :class="[
-          values[point.id]?.result === 'Compliant'
-            ? 'review-step__list-item--compliant'
-            : 'review-step__list-item--non-compliant',
-        ]"
-      >
-        {{ point.description }} :
-        {{ values[point.id]?.result === "Compliant" ? "Conforme" : "Non conforme" }}
-        <span v-if="values[point.id]?.observation"> - {{ values[point.id].observation }}</span>
-        <button
-          type="button"
-          :disabled="busy"
-          @click="emit('edit', point.id)"
-        >
-          <BaseIcon
-            name="edit"
-            :size="24"
-          />
-        </button>
-      </li>
-    </ul>
+    <section>
+      <h3>Défauts préexistants</h3>
+      <p v-if="!knownDefects.length">Aucun défaut connu.</p>
+      <ul v-else class="review-step__list">
+        <li v-for="defect in knownDefects" :key="defect.defectId">
+          <strong>{{ defect.description }}</strong> :
+          {{ defect.result === "Unchanged" ? "Toujours présent, inchangé" :
+            defect.result === "Worsened" ? "Aggravé" :
+            defect.result === "MaintenanceCheckRequired" ? "À vérifier par la maintenance" : "À confirmer" }}
+          <span v-if="defect.result === 'Worsened'">{{ defect.observation }}</span>
+        </li>
+      </ul>
+      <button type="button" :disabled="busy" @click="emit('editKnown')">Modifier les confirmations</button>
+    </section>
+    <section>
+      <h3>Nouveaux défauts et points contrôlés</h3>
+      <ul class="review-step__list">
+        <li v-for="point in points" :key="point.id"
+          :class="values[point.id]?.result === 'Compliant'
+            ? 'review-step__list-item--compliant' : 'review-step__list-item--non-compliant'">
+          <div>
+            <strong>{{ point.description }}</strong> :
+            {{ values[point.id]?.result === "Compliant" ? "Aucun nouveau défaut" :
+              `${values[point.id]?.findings.length ?? 0} nouveau(x) défaut(s)` }}
+            <ul v-if="values[point.id]?.findings.length">
+              <li v-for="finding in values[point.id].findings" :key="finding.id">{{ finding.observation }}</li>
+            </ul>
+          </div>
+          <button type="button" :disabled="busy" @click="emit('edit', point.id)">
+            <BaseIcon name="edit" :size="24" />
+          </button>
+        </li>
+      </ul>
+    </section>
 
     <label
       >Nom du client signataire *

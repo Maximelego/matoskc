@@ -45,15 +45,11 @@ watch(
       rental.value = r;
       template.value = t;
       const entries = await Promise.all(
-        props.inspection.answers.flatMap((answer) =>
-          answer.photoIds.map(
-            async (photoId) =>
-              [
-                photoId,
-                URL.createObjectURL(await inspectionHttpApi.getPhoto(id, photoId)),
-              ] as const,
-          ),
-        ),
+        [...props.inspection.knownDefects.flatMap((defect) =>
+          [...defect.historicalPhotoIds, ...defect.photoIds]),
+          ...props.inspection.findings.flatMap((finding) => finding.photoIds)]
+          .map(async (photoId) => [photoId,
+            URL.createObjectURL(await inspectionHttpApi.getPhoto(id, photoId))] as const),
       );
       if (cancelled) {
         entries.forEach(([, url]) => URL.revokeObjectURL(url));
@@ -168,7 +164,25 @@ async function downloadReport(): Promise<void> {
       </div>
     </dl>
     <section>
-      <h3>Points contrôlés</h3>
+      <h3>Défauts préexistants</h3>
+      <p v-if="!inspection.knownDefects.length">Aucun défaut connu.</p>
+      <ul v-else>
+        <li v-for="defect in inspection.knownDefects" :key="defect.id">
+          <strong>{{ defect.description }}</strong> : {{ defect.historicalObservation }}
+          <p>Constaté le {{ date.format(new Date(defect.observedAt)) }}</p>
+          <p>{{ defect.result === 'Unchanged' ? 'Toujours présent, inchangé' :
+            defect.result === 'Worsened' ? 'Aggravé' :
+            defect.result === 'MaintenanceCheckRequired' ? 'À vérifier par la maintenance' : 'À confirmer' }}</p>
+          <p v-if="defect.observation">Nouvelle observation : {{ defect.observation }}</p>
+          <a v-for="photoId in defect.historicalPhotoIds" :key="photoId"
+            :href="photos[photoId]" target="_blank" rel="noopener noreferrer">Photo historique</a>
+          <a v-for="photoId in defect.photoIds" :key="photoId"
+            :href="photos[photoId]" target="_blank" rel="noopener noreferrer">Photo de l’aggravation</a>
+        </li>
+      </ul>
+    </section>
+    <section>
+      <h3>Points contrôlés et nouveaux défauts</h3>
       <ul>
         <li
           v-for="point in [...(template?.points ?? [])].sort((a, b) => a.position - b.position)"
@@ -178,16 +192,15 @@ async function downloadReport(): Promise<void> {
           <p class="detail__point-detail">{{ point.descriptionDetail }}</p>
           <TemplateIllustration :photo-id="point.photoId" />
           <template v-if="answerFor(point.id)">
-            : {{ answerFor(point.id)?.result === "Compliant" ? "Conforme" : "Non conforme" }}
-            <p v-if="answerFor(point.id)?.observation">{{ answerFor(point.id)?.observation }}</p>
-            <a
-              v-for="photoId in answerFor(point.id)?.photoIds ?? []"
-              :key="photoId"
-              :href="photos[photoId]"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Voir la photographie</a
-            >
+            : {{ answerFor(point.id)?.result === "Compliant" ? "Aucun nouveau défaut" : "Nouveau défaut constaté" }}
+            <ul v-if="inspection.findings.some((finding) => finding.templatePointId === point.id)">
+              <li v-for="finding in inspection.findings.filter((item) => item.templatePointId === point.id)"
+                :key="finding.id">
+                {{ finding.observation }}
+                <a v-for="photoId in finding.photoIds" :key="photoId"
+                  :href="photos[photoId]" target="_blank" rel="noopener noreferrer">Voir la photographie</a>
+              </li>
+            </ul>
           </template>
           <span v-else> : sans réponse</span>
         </li>

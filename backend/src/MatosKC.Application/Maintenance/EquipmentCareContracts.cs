@@ -7,12 +7,12 @@ public sealed record RecordMaintenanceRequest(Guid Id, DateTimeOffset PerformedA
     string PerformedBy, string WorkDescription, IReadOnlyList<Guid> ResolvedDefectIds);
 
 public sealed record DefectOccurrenceResponse(Guid Id, Guid InspectionId, Guid? InspectionAnswerId,
-    string Description, string Observation, DateTimeOffset ObservedAt, IReadOnlyList<Guid> PhotoIds, Guid? InspectionFindingId = null, Guid? InspectionDefectReviewId = null);
+    string Description, string Observation, DateTimeOffset ObservedAt, IReadOnlyList<Guid> PhotoIds, Guid ReportedByAccountId, string OperatorFirstName, Guid? InspectionFindingId = null, Guid? InspectionDefectReviewId = null);
 
 public sealed record EquipmentDefectResponse(Guid Id, Guid EquipmentId,
     Guid InspectionId, Guid? InspectionAnswerId, string Description, string Observation,
     DateTimeOffset ReportedAt, EquipmentDefectStatus Status, Guid? ResolvedByMaintenanceId,
-    Guid? ResolvedByAccountId, DateTimeOffset? ResolvedAt, IReadOnlyList<DefectOccurrenceResponse> Occurrences, Guid? InspectionFindingId = null);
+    Guid? ResolvedByAccountId, DateTimeOffset? ResolvedAt, IReadOnlyList<DefectOccurrenceResponse> Occurrences, Guid ReportedByAccountId, string OperatorFirstName, Guid? InspectionFindingId = null);
 
 public sealed record MaintenanceResponse(Guid Id, Guid EquipmentId, DateTimeOffset PerformedAt,
     string PerformedBy, string WorkDescription, Guid RecordedByAccountId, DateTimeOffset RecordedAt,

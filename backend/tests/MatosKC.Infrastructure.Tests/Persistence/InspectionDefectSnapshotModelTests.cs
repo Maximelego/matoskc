@@ -13,6 +13,13 @@ public sealed class InspectionDefectSnapshotModelTests
         using var db = new MatosKCDbContext(new DbContextOptionsBuilder<MatosKCDbContext>()
             .UseNpgsql("Host=localhost;Database=unused;Username=unused;Password=unused").Options);
         Assert.False(db.Database.HasPendingModelChanges());
+        foreach (var entity in new[] { typeof(EquipmentDefect), typeof(DefectOccurrence) })
+        {
+            var metadata = db.Model.FindEntityType(entity)!;
+            Assert.False(metadata.FindProperty("ReportedByAccountId")!.IsNullable);
+            Assert.False(metadata.FindProperty("OperatorFirstName")!.IsNullable);
+            Assert.Contains(metadata.GetForeignKeys(), key => key.Properties.Single().Name == "ReportedByAccountId");
+        }
         var review = db.Model.FindEntityType(typeof(InspectionDefectReview))!;
         Assert.Equal("uuid[]", review.FindProperty("_historicalPhotoIds")!.GetColumnType());
         Assert.Equal("uuid[]", review.FindProperty("_photoIds")!.GetColumnType());

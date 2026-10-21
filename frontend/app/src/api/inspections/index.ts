@@ -20,8 +20,8 @@ export const inspectionHttpApi = {
   validate: (id: string) => api.post<InspectionDto>(`${path(id)}/validation`, {}),
   cancel: (id: string, reason: string) =>
     api.post<InspectionDto>(`${path(id)}/cancellation`, { reason }),
-  uploadPhoto: (id: string, answerId: string, file: File) =>
-    api.postFile<InspectionMediaDto>(`${path(id)}/answers/${encodeURIComponent(answerId)}/photos`, file),
+  uploadEvidencePhoto: (id: string, targetId: string, file: File) =>
+    api.postFile<InspectionMediaDto>(`${path(id)}/evidence/${encodeURIComponent(targetId)}/photos`, file),
   removePhoto: (id: string, photoId: string) =>
     api.delete(`${path(id)}/photos/${encodeURIComponent(photoId)}`),
   getPhoto: (id: string, photoId: string) => api.getBlob(`${path(id)}/photos/${encodeURIComponent(photoId)}`),

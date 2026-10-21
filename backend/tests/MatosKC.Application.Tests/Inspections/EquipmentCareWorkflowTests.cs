@@ -129,7 +129,7 @@ public sealed class EquipmentCareWorkflowTests
     {
         var fake = new WorkflowFake();
         var foreign = new EquipmentDefect(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            "Tuyau", "Déchiré", fake.Clock.Now);
+            "Tuyau", "Déchiré", fake.Clock.Now, Guid.NewGuid(), "Maxime");
         fake.Care.Defects.Add(foreign);
         var useCase = new RecordMaintenanceUseCase(fake.Context);
         var request = new RecordMaintenanceRequest(Guid.NewGuid(), fake.Clock.Now, "Atelier", "Réparation", [foreign.Id]);
@@ -187,7 +187,7 @@ public sealed class EquipmentCareWorkflowTests
         await DefectiveDepartureAsync(fake);
         var defect = Assert.Single(fake.Care.Defects);
         fake.Care.Occurrences.Add(new DefectOccurrence(Guid.NewGuid(), defect.Id, Guid.NewGuid(),
-            Guid.NewGuid(), "Tuyau", "Encore déchiré", fake.Clock.Now.AddHours(1), [Guid.NewGuid()]));
+            Guid.NewGuid(), "Tuyau", "Encore déchiré", fake.Clock.Now.AddHours(1), [Guid.NewGuid()], Guid.NewGuid(), "Maxime"));
         fake.Clock.Now = fake.Clock.Now.AddHours(2);
 
         var error = await Assert.ThrowsAsync<InspectionOperationException>(() =>

@@ -4,13 +4,12 @@ import { useRouter } from "vue-router";
 import { agenciesApi } from "../../api/agencies";
 import { authSession } from "../../api/auth/session";
 import { ApiError } from "../../api/client";
-import { defectsApi } from "../../api/defects";
-import type { DefectDto } from "../../api/defects/dto";
 import { equipmentsApi } from "../../api/equipments";
 import type { EquipmentDto } from "../../api/equipments/dto";
 import type {
   ClientInputDto,
   InspectionDto,
+  KnownDefectDto,
   InspectionTemplateDto,
   RentalDto,
 } from "../../api/inspections";
@@ -24,6 +23,8 @@ import {
 import { normalizeCommandNumber } from "../common/input/commandNumber";
 import SlideAndFadeLateral from "../common/transition/SlideAndFadeLateral.vue";
 import type { PointValue } from "./InspectionPoint.vue";
+import type { KnownDefectValue } from "./inspectionWizard/InspectionKnownDefectsStep.vue";
+import InspectionKnownDefectsStep from "./inspectionWizard/InspectionKnownDefectsStep.vue";
 import InspectionDraftCancellation from "./inspectionWizard/InspectionDraftCancellation.vue";
 import InspectionIdentityStep from "./inspectionWizard/InspectionIdentityStep.vue";
 import InspectionPointStep from "./inspectionWizard/InspectionPointStep.vue";
@@ -45,7 +46,7 @@ const client = ref<ClientInputDto>({
 });
 const operatorFirstName = ref("");
 const points = ref<Record<string, PointValue>>({});
-const openDefects = ref<DefectDto[]>([]);
+const knownDefects = ref<KnownDefectValue[]>([]);
 const cancellationReason = ref("");
 const signerName = ref("");
 const accepted = ref(false);
@@ -58,25 +59,40 @@ const isDeparture = computed(() => equipment.value?.status === "Available");
 const orderedPoints = computed(() =>
   [...(template.value?.points ?? [])].sort((a, b) => a.position - b.position),
 );
-const currentPoint = computed(() => orderedPoints.value[step.value - 1]);
+const currentPoint = computed(() => orderedPoints.value[step.value - 2]);
+const finalStep = computed(() => orderedPoints.value.length + 2);
 
-function hasOpenDefect(description: string): boolean {
-  return openDefects.value.some(
-    (defect) =>
-      defect.description.trim().toLocaleLowerCase("fr") ===
-      description.trim().toLocaleLowerCase("fr"),
+const defaultPoint = (): PointValue => ({ result: null, findings: [] });
+
+function hydrateKnown(items: KnownDefectDto[]): void {
+  knownDefects.value = items.map((item) => ({ ...item, files: [] }));
+}
+function hydratePoints(current: InspectionDto | null): void {
+  points.value = Object.fromEntries(
+    (template.value?.points ?? []).map((point) => {
+      const answer = current?.answers.find((item) => item.templatePointId === point.id);
+      return [point.id, answer ? {
+        result: answer.result,
+        findings: current?.findings.filter((item) => item.templatePointId === point.id)
+          .map((item) => ({ ...item, files: [] })) ?? [],
+      } : defaultPoint()];
+    }),
   );
 }
-
-const finalStep = computed(() => orderedPoints.value.length + 1);
-
-const defaultPoint = (): PointValue => ({
-  result: null,
-  observation: "",
-  files: [],
-  photoIds: [],
-  existingDefectId: null,
-});
+function completePoint(value: PointValue | undefined): boolean {
+  return Boolean(value?.result && (value.result === "Compliant" ||
+    (value.findings.length > 0 && value.findings.every((finding) =>
+      finding.observation.trim() && (finding.files.length || finding.photoIds.length)))));
+}
+function completeKnown(): boolean {
+  return knownDefects.value.every((defect) => defect.result &&
+    (defect.result !== "Worsened" ||
+      (defect.observation?.trim() && (defect.files.length || defect.photoIds.length))));
+}
+function updateKnown(defectId: string, patch: Partial<KnownDefectValue>): void {
+  knownDefects.value = knownDefects.value.map((defect) =>
+    defect.defectId === defectId ? { ...defect, ...patch } : defect);
+}
 
 function message(cause: unknown): string {
   if (cause instanceof ApiError) {
@@ -100,14 +116,6 @@ async function load(): Promise<void> {
       throw new Error("Cet équipement ne peut pas faire l’objet d’un état des lieux.");
 
     equipment.value = item;
-    openDefects.value = [];
-
-    for (let offset = 0; ; offset += 100) {
-      const page = await defectsApi.list(item.id, "Open", offset, 100);
-      openDefects.value.push(...page.items);
-      if (offset + page.items.length >= page.total || !page.items.length) break;
-    }
-
     const current = await inspectionHttpApi.getCurrentRental(item.id);
 
     rental.value = current;
@@ -143,23 +151,8 @@ async function load(): Promise<void> {
     template.value = draft
       ? await inspectionHttpApi.getTemplate(draft.templateId)
       : await inspectionHttpApi.getLatestTemplate(item.equipmentCategoryId);
-    points.value = Object.fromEntries(
-      template.value.points.map((point) => {
-        const answer = draft?.answers.find((a) => a.templatePointId === point.id);
-        return [
-          point.id,
-          answer
-            ? {
-                result: answer.result,
-                observation: answer.observation ?? "",
-                photoIds: answer.photoIds,
-                existingDefectId: answer.existingDefectId ?? null,
-                files: [],
-              }
-            : defaultPoint(),
-        ];
-      }),
-    );
+    hydrateKnown(draft?.knownDefects ?? []);
+    hydratePoints(draft);
   } catch (cause) {
     error.value = message(cause);
   } finally {
@@ -216,61 +209,85 @@ async function ensureInspection(): Promise<InspectionDto> {
     created = await inspectionHttpApi.createReturn(rental.value.id, operatorFirstName.value.trim());
   }
   inspection.value = created;
+  hydrateKnown(created.knownDefects);
   template.value = await inspectionHttpApi.getTemplate(created.templateId);
+  hydratePoints(created);
 
   return created;
 }
 
 async function persist(): Promise<void> {
   const current = await ensureInspection();
-  const answers = Object.entries(points.value)
-    .filter(([, value]) => value.result)
-    .map(([id, value]) => ({
-      templatePointId: id,
-      result: value.result!,
-      observation: value.result === "NonCompliant" ? value.observation.trim() || null : null,
-      existingDefectId: value.result === "NonCompliant" ? value.existingDefectId : null,
-    }));
-
+  const activeFindings = Object.entries(points.value).flatMap(([pointId, value]) =>
+    value.result === "NonCompliant"
+      ? value.findings.map((finding) => ({ ...finding, templatePointId: pointId }))
+      : [],
+  );
+  const activeIds = new Set(activeFindings.map((finding) => finding.id));
   inspection.value = await inspectionHttpApi.saveDraft(current.id, {
     operatorFirstName: operatorFirstName.value.trim(),
-    answers,
+    answers: Object.entries(points.value)
+      .filter(([, value]) => value.result)
+      .map(([templatePointId, value]) => ({ templatePointId, result: value.result!, observation: null })),
+    knownDefects: knownDefects.value.filter((defect) => defect.result).map((defect) => ({
+      defectId: defect.defectId,
+      result: defect.result!,
+      observation: defect.result === "Worsened" ? defect.observation?.trim() || null : null,
+    })),
+    findings: activeFindings.map(({ id, templatePointId, observation }) => ({
+      id, templatePointId, observation: observation.trim(),
+    })),
+    removedFindingIds: current.findings.filter((finding) => !activeIds.has(finding.id))
+      .map((finding) => finding.id),
   });
 
-  for (const [pointId, value] of Object.entries(points.value)) {
-    if (!value.files.length) continue;
-
-    const answer = inspection.value.answers.find((a) => a.templatePointId === pointId);
-    if (!answer) throw new Error("Enregistrez la réponse avant ses photographies.");
-
-    for (const file of value.files) {
-      const photo = await inspectionHttpApi.uploadPhoto(current.id, answer.id, file);
-      value.photoIds.push(photo.id);
-      value.files = value.files.filter((item) => item !== file);
+  for (const defect of knownDefects.value) {
+    if (defect.result !== "Worsened") continue;
+    const target = inspection.value.knownDefects.find((item) => item.defectId === defect.defectId);
+    if (!target) throw new Error("La confirmation du défaut n’a pas été enregistrée.");
+    for (const file of [...defect.files]) {
+      const photo = await inspectionHttpApi.uploadEvidencePhoto(current.id, target.id, file);
+      defect.photoIds.push(photo.id);
+      defect.files = defect.files.filter((item) => item !== file);
+    }
+  }
+  for (const finding of activeFindings) {
+    const local = points.value[finding.templatePointId]?.findings.find((item) => item.id === finding.id);
+    if (!local) continue;
+    for (const file of [...local.files]) {
+      const photo = await inspectionHttpApi.uploadEvidencePhoto(current.id, finding.id, file);
+      local.photoIds.push(photo.id);
+      local.files = local.files.filter((item) => item !== file);
     }
   }
   inspection.value = await inspectionHttpApi.getById(current.id);
 }
 
-async function save(): Promise<boolean> {
+async function save(keepSignature = false): Promise<boolean> {
   if (busy.value || !checkIdentity()) return false;
-  if (
-    orderedPoints.value.some(
-      (point) => points.value[point.id]?.result === "Compliant" && hasOpenDefect(point.description),
-    )
-  ) {
-    error.value =
-      "Un défaut encore ouvert ne peut pas être déclaré conforme. Indiquez « Non conforme » ou faites résoudre le défaut lors d’une maintenance.";
-    return false;
-  }
-
   busy.value = true;
   error.value = "";
-
   try {
     await persist();
+    if (!keepSignature) {
+      accepted.value = false;
+      signatureFile.value = null;
+    }
     return true;
   } catch (cause) {
+    if (cause instanceof ApiError && cause.status === 409 && inspection.value) {
+      try {
+        const fresh = await inspectionHttpApi.getById(inspection.value.id);
+        inspection.value = fresh;
+        hydrateKnown(fresh.knownDefects);
+        hydratePoints(fresh);
+        accepted.value = false;
+        signatureFile.value = null;
+        step.value = 1;
+        error.value = "Les défauts du matériel ont changé. Vérifiez à nouveau leurs confirmations et les points avant de signer.";
+        return false;
+      } catch { /* Le message initial reste disponible. */ }
+    }
     error.value = message(cause);
     return false;
   } finally {
@@ -279,43 +296,35 @@ async function save(): Promise<boolean> {
 }
 
 async function next(): Promise<void> {
-  if (currentPoint.value) {
-    const value = points.value[currentPoint.value.id];
-
-    if (value?.result === "Compliant" && hasOpenDefect(currentPoint.value.description)) {
-      error.value =
-        "Ce point présente encore un défaut ouvert. Indiquez « Non conforme » jusqu’à sa résolution lors d’une maintenance.";
-      return;
-    }
-
-    if (
-      !value?.result ||
-      (value.result === "NonCompliant" &&
-        // Checking if there is already another defect signaled
-        !hasOpenDefect(currentPoint.value.description) &&
-        (!value.observation.trim() || !(value.files.length || value.photoIds.length)))
-    ) {
-      error.value =
-        "Renseignez le résultat et, en cas de non-conformité, une observation et une photographie.";
-      return;
-    }
+  if (step.value === 1 && !completeKnown()) {
+    error.value = "Confirmez chaque défaut connu. Une aggravation nécessite une observation et une nouvelle photo.";
+    return;
   }
-
+  if (currentPoint.value && !completePoint(points.value[currentPoint.value.id])) {
+    error.value = "Indiquez le résultat et, pour chaque nouveau défaut, une observation et une photographie.";
+    return;
+  }
   if (await save()) {
     step.value = Math.min(step.value + 1, finalStep.value);
     window.scrollTo(0, 0);
   }
 }
 
-async function removePhoto(pointId: string, photoId: string): Promise<void> {
+async function removePhoto(targetId: string, photoId: string): Promise<void> {
   if (!inspection.value || busy.value) return;
   busy.value = true;
   error.value = "";
-
   try {
     await inspectionHttpApi.removePhoto(inspection.value.id, photoId);
-    points.value[pointId].photoIds = points.value[pointId].photoIds.filter((id) => id !== photoId);
+    const defect = knownDefects.value.find((item) => item.defectId === targetId);
+    if (defect) defect.photoIds = defect.photoIds.filter((id) => id !== photoId);
+    for (const point of Object.values(points.value)) {
+      const finding = point.findings.find((item) => item.id === targetId);
+      if (finding) finding.photoIds = finding.photoIds.filter((id) => id !== photoId);
+    }
     inspection.value = await inspectionHttpApi.getById(inspection.value.id);
+    accepted.value = false;
+    signatureFile.value = null;
   } catch (cause) {
     error.value = message(cause);
   } finally {
@@ -352,22 +361,11 @@ async function validate(): Promise<void> {
     error.value = "Le nom du signataire, son accord et sa signature sont obligatoires.";
     return;
   }
-  if (
-    orderedPoints.value.some((point) => {
-      const value = points.value[point.id];
-      return (
-        !value?.result ||
-        (value.result === "NonCompliant" &&
-          !hasOpenDefect(point.description) &&
-          (!value.observation.trim() || (!value.files.length && !value.photoIds.length))) ||
-        (value.result === "Compliant" && hasOpenDefect(point.description))
-      );
-    })
-  ) {
-    error.value = "Complétez tous les points avant la validation.";
+  if (!completeKnown() || orderedPoints.value.some((point) => !completePoint(points.value[point.id]))) {
+    error.value = "Complétez les confirmations et tous les points avant la validation.";
     return;
   }
-  if (!(await save()) || !inspection.value) return;
+  if (!(await save(true)) || !inspection.value) return;
   busy.value = true;
   try {
     await inspectionHttpApi.sign(inspection.value.id, {
@@ -378,7 +376,18 @@ async function validate(): Promise<void> {
     await inspectionHttpApi.validate(inspection.value.id);
     await router.push({ name: "Inspections" });
   } catch (cause) {
-    error.value = message(cause);
+    if (cause instanceof ApiError && cause.status === 409) {
+      const fresh = await inspectionHttpApi.getById(inspection.value.id).catch(() => null);
+      if (fresh) {
+        inspection.value = fresh;
+        hydrateKnown(fresh.knownDefects);
+        hydratePoints(fresh);
+        step.value = 1;
+      }
+      accepted.value = false;
+      signatureFile.value = null;
+      error.value = "Le dossier a changé. Vérifiez à nouveau les défauts connus et les points, puis signez de nouveau.";
+    } else error.value = message(cause);
   } finally {
     busy.value = false;
   }
@@ -422,20 +431,25 @@ onMounted(() => {
           v-model:client="client"
           :departure="isDeparture"
           :locked="Boolean(inspection)"
-          :defects="openDefects"
-          :equipment-id="equipmentId"
+        />
+        <InspectionKnownDefectsStep
+          v-else-if="step === 1"
+          :defects="knownDefects"
+          :inspection-id="inspection?.id ?? null"
+          :disabled="busy"
+          @update="updateKnown"
+          @remove-photo="removePhoto"
         />
         <InspectionPointStep
           v-else-if="currentPoint"
           :point="currentPoint"
-          :position="step"
+          :position="step - 1"
           :total="orderedPoints.length"
           :value="points[currentPoint.id]"
-          :open-defects="openDefects"
           :inspection-id="inspection?.id ?? null"
           :disabled="busy"
           @update="points[currentPoint.id] = $event"
-          @remove-photo="removePhoto(currentPoint.id, $event)"
+          @remove-photo="removePhoto"
         />
         <InspectionReviewStep
           v-else
@@ -444,9 +458,11 @@ onMounted(() => {
           :client="client"
           :points="orderedPoints"
           :values="points"
+          :known-defects="knownDefects"
           :busy="busy"
           @signature="signatureFile = $event"
-          @edit="step = orderedPoints.findIndex((point) => point.id === $event) + 1"
+          @edit="step = orderedPoints.findIndex((point) => point.id === $event) + 2"
+          @edit-known="step = 1"
           @validate="validate"
         />
       </SlideAndFadeLateral>
@@ -475,7 +491,7 @@ onMounted(() => {
         <button
           type="button"
           :disabled="busy"
-          @click="save"
+          @click="save()"
         >
           Enregistrer le brouillon
         </button>

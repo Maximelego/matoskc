@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import type { DefectDto } from "../../../api/defects/dto";
 import type { ClientInputDto } from "../../../api/inspections";
 import InspectionIdentity from "../InspectionIdentity.vue";
-import KnownDefectsList from "./KnownDefectsList.vue";
 
 defineProps<{
   operatorFirstName: string;
   client: ClientInputDto;
   departure: boolean;
   locked: boolean;
-  defects: DefectDto[];
-  equipmentId: string;
 }>();
 const emit = defineEmits<{
   "update:operatorFirstName": [value: string];
@@ -20,10 +16,6 @@ const emit = defineEmits<{
 
 <template>
   <div class="identity-step">
-    <KnownDefectsList
-      :defects="defects"
-      :equipment-id="equipmentId"
-    />
     <InspectionIdentity
       :operator-first-name="operatorFirstName"
       :client="client"

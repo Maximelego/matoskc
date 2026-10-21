@@ -17,6 +17,8 @@ public sealed class EquipmentDefectConfiguration : IEntityTypeConfiguration<Equi
         builder.Property(defect => defect.Status).HasConversion<string>().HasMaxLength(32);
         builder.HasOne<Equipment>().WithMany().HasForeignKey(defect => defect.EquipmentId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<InspectionEntity>().WithMany().HasForeignKey(defect => defect.InspectionId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(value => value.OperatorFirstName).IsRequired();
+        builder.HasOne<Account>().WithMany().HasForeignKey(value => value.ReportedByAccountId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<InspectionAnswer>().WithMany().HasForeignKey(defect => defect.InspectionAnswerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<EquipmentMaintenance>().WithMany().HasForeignKey(defect => defect.ResolvedByMaintenanceId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Account>().WithMany().HasForeignKey(defect => defect.ResolvedByAccountId).OnDelete(DeleteBehavior.Restrict);
@@ -39,6 +41,8 @@ public sealed class DefectOccurrenceConfiguration : IEntityTypeConfiguration<Def
         builder.Property<List<Guid>>("_photoIds").HasColumnName("photo_ids").HasColumnType("uuid[]");
         builder.HasOne<EquipmentDefect>().WithMany().HasForeignKey(occurrence => occurrence.DefectId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<InspectionEntity>().WithMany().HasForeignKey(occurrence => occurrence.InspectionId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(value => value.OperatorFirstName).IsRequired();
+        builder.HasOne<Account>().WithMany().HasForeignKey(value => value.ReportedByAccountId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<InspectionAnswer>().WithMany().HasForeignKey(occurrence => occurrence.InspectionAnswerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(occurrence => occurrence.InspectionAnswerId).IsUnique();
         builder.HasOne<InspectionFinding>().WithMany().HasForeignKey(value => value.InspectionFindingId).OnDelete(DeleteBehavior.Restrict);

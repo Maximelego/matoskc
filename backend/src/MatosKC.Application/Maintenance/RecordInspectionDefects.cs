@@ -15,16 +15,16 @@ public static class RecordInspectionDefects
         {
             await RequireOpenAsync(context.Care, review.DefectId, equipmentId, ct);
             await context.Care.AddOccurrenceAsync(DefectOccurrence.FromEvidence(Guid.NewGuid(), review.DefectId,
-                inspection.Id, review.Id, true, review.Description, review.Observation!, now, review.PhotoIds), ct);
+                inspection.Id, review.Id, true, review.Description, review.Observation!, now, review.PhotoIds, inspection.CreatedByAccountId, inspection.OperatorFirstName), ct);
         }
         foreach (var finding in inspection.Findings)
         {
             var point = template.Points.Single(value => value.Id == finding.TemplatePointId);
             var defect = EquipmentDefect.FromFinding(Guid.NewGuid(), equipmentId, inspection.Id,
-                finding.Id, point.Description, finding.Observation, now);
+                finding.Id, point.Description, finding.Observation, now, inspection.CreatedByAccountId, inspection.OperatorFirstName);
             await context.Care.AddDefectAsync(defect, ct);
             await context.Care.AddOccurrenceAsync(DefectOccurrence.FromEvidence(Guid.NewGuid(), defect.Id,
-                inspection.Id, finding.Id, false, point.Description, finding.Observation, now, finding.PhotoIds), ct);
+                inspection.Id, finding.Id, false, point.Description, finding.Observation, now, finding.PhotoIds, inspection.CreatedByAccountId, inspection.OperatorFirstName), ct);
         }
         foreach (var answer in inspection.Answers.Where(answer => answer.Result == InspectionResult.NonCompliant
             && !inspection.Findings.Any(value => value.TemplatePointId == answer.TemplatePointId)))
@@ -39,12 +39,12 @@ public static class RecordInspectionDefects
             else
             {
                 defect = new EquipmentDefect(Guid.NewGuid(), equipmentId, inspection.Id,
-                    answer.Id, point.Description, answer.Comment!, now);
+                    answer.Id, point.Description, answer.Comment!, now, inspection.CreatedByAccountId, inspection.OperatorFirstName);
                 await context.Care.AddDefectAsync(defect, ct);
             }
 
             await context.Care.AddOccurrenceAsync(new DefectOccurrence(Guid.NewGuid(), defect.Id,
-                inspection.Id, answer.Id, point.Description, answer.Comment!, now, answer.PhotosIds), ct);
+                inspection.Id, answer.Id, point.Description, answer.Comment!, now, answer.PhotosIds, inspection.CreatedByAccountId, inspection.OperatorFirstName), ct);
         }
     }
 

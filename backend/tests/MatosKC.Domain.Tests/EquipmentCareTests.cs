@@ -7,7 +7,7 @@ public sealed class EquipmentCareTests
     private static readonly DateTimeOffset Now = new(2026, 10, 15, 12, 0, 0, TimeSpan.Zero);
 
     private static EquipmentDefect Defect(Guid equipmentId) => new(Guid.NewGuid(), equipmentId,
-        Guid.NewGuid(), Guid.NewGuid(), "Tuyau", "Déchiré", Now.AddHours(-1));
+        Guid.NewGuid(), Guid.NewGuid(), "Tuyau", "Déchiré", Now.AddHours(-1), Guid.NewGuid(), "Maxime");
 
     [Fact]
     public void Intervention_ResolvesSeveralDefects_WithoutChangingTheirSource()
@@ -93,7 +93,7 @@ public sealed class EquipmentCareTests
     {
         var photos = new List<Guid> { Guid.NewGuid() };
         var occurrence = new DefectOccurrence(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            Guid.NewGuid(), "Tuyau", "Déchiré", Now, photos);
+            Guid.NewGuid(), "Tuyau", "Déchiré", Now, photos, Guid.NewGuid(), "Maxime");
         photos.Clear();
         Assert.Single(occurrence.PhotoIds);
         Assert.Throws<NotSupportedException>(() => ((IList<Guid>)occurrence.PhotoIds).Clear());

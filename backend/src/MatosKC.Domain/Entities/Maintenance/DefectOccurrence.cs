@@ -6,6 +6,8 @@ public sealed class DefectOccurrence : BaseEntity
 
     public Guid DefectId { get; private set; }
     public Guid InspectionId { get; private set; }
+    public Guid ReportedByAccountId { get; private set; }
+    public string OperatorFirstName { get; private set; } = null!;
     public Guid? InspectionAnswerId { get; private set; }
     public Guid? InspectionFindingId { get; private set; }
     public Guid? InspectionDefectReviewId { get; private set; }
@@ -17,7 +19,8 @@ public sealed class DefectOccurrence : BaseEntity
     private DefectOccurrence() { }
 
     public DefectOccurrence(Guid id, Guid defectId, Guid inspectionId, Guid inspectionAnswerId,
-        string description, string observation, DateTimeOffset observedAt, IEnumerable<Guid> photoIds) : base(id)
+        string description, string observation, DateTimeOffset observedAt, IEnumerable<Guid> photoIds,
+        Guid reportedByAccountId, string operatorFirstName) : base(id)
     {
         if (defectId == Guid.Empty || inspectionId == Guid.Empty || inspectionAnswerId == Guid.Empty)
         {
@@ -36,6 +39,11 @@ public sealed class DefectOccurrence : BaseEntity
         }
 
         DefectId = defectId;
+        if (reportedByAccountId == Guid.Empty)
+            throw new ArgumentException("Reporting account is required.", nameof(reportedByAccountId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(operatorFirstName);
+        ReportedByAccountId = reportedByAccountId;
+        OperatorFirstName = operatorFirstName.Trim();
         InspectionId = inspectionId;
         InspectionAnswerId = inspectionAnswerId;
         Description = description;
@@ -45,9 +53,10 @@ public sealed class DefectOccurrence : BaseEntity
     }
 
     public static DefectOccurrence FromEvidence(Guid id, Guid defectId, Guid inspectionId,
-        Guid evidenceId, bool isReview, string description, string observation, DateTimeOffset at, IEnumerable<Guid> photos)
+        Guid evidenceId, bool isReview, string description, string observation, DateTimeOffset at, IEnumerable<Guid> photos,
+        Guid reportedByAccountId, string operatorFirstName)
     {
-        var value = new DefectOccurrence(id, defectId, inspectionId, evidenceId, description, observation, at, photos);
+        var value = new DefectOccurrence(id, defectId, inspectionId, evidenceId, description, observation, at, photos, reportedByAccountId, operatorFirstName);
         value.InspectionAnswerId = null;
         if (isReview) value.InspectionDefectReviewId = evidenceId;
         else value.InspectionFindingId = evidenceId;

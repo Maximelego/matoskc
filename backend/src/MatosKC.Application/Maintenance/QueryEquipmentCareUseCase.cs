@@ -38,7 +38,7 @@ public sealed class QueryEquipmentCareUseCase(InspectionWorkflowContext context)
             defect.ResolvedAt, occurrences.Where(occurrence => occurrence.DefectId == defect.Id)
                 .Select(occurrence => new DefectOccurrenceResponse(occurrence.Id, occurrence.InspectionId,
                     occurrence.InspectionAnswerId, occurrence.Description, occurrence.Observation,
-                    occurrence.ObservedAt, occurrence.PhotoIds.ToArray(), occurrence.InspectionFindingId, occurrence.InspectionDefectReviewId)).ToArray(), defect.InspectionFindingId)).ToArray();
+                    occurrence.ObservedAt, occurrence.PhotoIds.ToArray(), occurrence.ReportedByAccountId, occurrence.OperatorFirstName, occurrence.InspectionFindingId, occurrence.InspectionDefectReviewId)).ToArray(), defect.ReportedByAccountId, defect.OperatorFirstName, defect.InspectionFindingId)).ToArray();
 
         return new(items, page.Total, offset, limit);
     }

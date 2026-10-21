@@ -10,6 +10,8 @@ public sealed class EquipmentDefect : BaseEntity
 {
     public Guid EquipmentId { get; private set; }
     public Guid InspectionId { get; private set; }
+    public Guid ReportedByAccountId { get; private set; }
+    public string OperatorFirstName { get; private set; } = null!;
     public Guid? InspectionAnswerId { get; private set; }
     public Guid? InspectionFindingId { get; private set; }
     public string Description { get; private set; } = null!;
@@ -23,7 +25,8 @@ public sealed class EquipmentDefect : BaseEntity
     private EquipmentDefect() { }
 
     public EquipmentDefect(Guid id, Guid equipmentId, Guid inspectionId,
-        Guid inspectionAnswerId, string description, string observation, DateTimeOffset reportedAt) : base(id)
+        Guid inspectionAnswerId, string description, string observation, DateTimeOffset reportedAt,
+        Guid reportedByAccountId, string operatorFirstName) : base(id)
     {
         if (equipmentId == Guid.Empty || inspectionId == Guid.Empty || inspectionAnswerId == Guid.Empty)
         {
@@ -39,6 +42,11 @@ public sealed class EquipmentDefect : BaseEntity
         }
 
         EquipmentId = equipmentId;
+        if (reportedByAccountId == Guid.Empty)
+            throw new ArgumentException("Reporting account is required.", nameof(reportedByAccountId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(operatorFirstName);
+        ReportedByAccountId = reportedByAccountId;
+        OperatorFirstName = operatorFirstName.Trim();
         InspectionId = inspectionId;
         InspectionAnswerId = inspectionAnswerId;
         Description = description;
@@ -66,9 +74,10 @@ public sealed class EquipmentDefect : BaseEntity
     }
 
     public static EquipmentDefect FromFinding(Guid id, Guid equipmentId, Guid inspectionId,
-        Guid evidenceId, string description, string observation, DateTimeOffset at)
+        Guid evidenceId, string description, string observation, DateTimeOffset at,
+        Guid reportedByAccountId, string operatorFirstName)
     {
-        var value = new EquipmentDefect(id, equipmentId, inspectionId, evidenceId, description, observation, at);
+        var value = new EquipmentDefect(id, equipmentId, inspectionId, evidenceId, description, observation, at, reportedByAccountId, operatorFirstName);
         value.InspectionAnswerId = null;
         value.InspectionFindingId = evidenceId;
         return value;
