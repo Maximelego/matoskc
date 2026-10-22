@@ -13,6 +13,7 @@ public interface IInspectionsRepository
         InspectionStatus? status,
         int offset,
         int limit,
+        Guid? agencyId = null,
         CancellationToken cancellationToken = default
     );
 

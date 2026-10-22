@@ -141,9 +141,10 @@ internal sealed class WorkflowFake : IClientRepository, IRentalRepository, IInsp
     public Task UpdateInspectionAsync(InspectionEntity inspection, CancellationToken ct = default) => Task.CompletedTask;
 
     public Task<IReadOnlyList<InspectionEntity>> ListAsync(Guid? id, InspectionType? type, InspectionStatus? status,
-        int offset, int limit, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<InspectionEntity>>(
+        int offset, int limit, Guid? agencyId = null, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<InspectionEntity>>(
             Inspections.Where(value => (!id.HasValue || value.RentalId == id)
-                && (!type.HasValue || value.Type == type) && (!status.HasValue || value.Status == status))
+                && (!type.HasValue || value.Type == type) && (!status.HasValue || value.Status == status)
+                && (!agencyId.HasValue || Rentals.Any(rental => rental.Id == value.RentalId && rental.AgencyId == agencyId)))
                 .Skip(offset).Take(limit).ToArray());
 
     public Task<InspectionTemplate?> GetTemplateByIdAsync(Guid id, CancellationToken ct = default) =>

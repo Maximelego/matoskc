@@ -59,6 +59,17 @@ public sealed class InspectionWorkflowContext(
         }
     }
 
+    public static void RequireInspectionReader(InspectionActor actor)
+    {
+        RequireReader(actor);
+
+        if (actor.Role is Role.Agency or Role.Admin
+            && (!actor.AgencyId.HasValue || actor.AgencyId == Guid.Empty))
+        {
+            throw new InspectionOperationException(403, "An agency is required to access inspections and rentals.");
+        }
+    }
+
     public static void RequireOperator(InspectionActor actor)
     {
         if (actor.AccountId == Guid.Empty || actor.Role is not (Role.Agency or Role.SuperAdmin)
@@ -78,7 +89,7 @@ public sealed class InspectionWorkflowContext(
 
     public async Task<Rental> GetRentalAsync(Guid id, InspectionActor actor, CancellationToken ct)
     {
-        RequireReader(actor);
+        RequireInspectionReader(actor);
 
         var rental = await Rentals.GetByIdAsync(id, ct)
             ?? throw new InspectionOperationException(404, "Rental not found.");
@@ -86,7 +97,7 @@ public sealed class InspectionWorkflowContext(
         var client = await Clients.GetByIdAsync(rental.ClientId, ct)
             ?? throw new InspectionOperationException(404, "Rental client not found.");
 
-        if (actor.Role == Role.Agency
+        if (actor.Role is Role.Agency or Role.Admin
             && (!rental.AgencyId.HasValue || actor.AgencyId != rental.AgencyId))
         {
             throw new InspectionOperationException(403, "Rental belongs to another agency.");
@@ -101,6 +112,8 @@ public sealed class InspectionWorkflowContext(
         CancellationToken ct
     )
     {
+        RequireInspectionReader(actor);
+
         var inspection = await Inspections.GetInspectionByIdAsync(id, ct)
             ?? throw new InspectionOperationException(404, "Inspection not found.");
         var rental = await GetRentalAsync(inspection.RentalId, actor, ct);

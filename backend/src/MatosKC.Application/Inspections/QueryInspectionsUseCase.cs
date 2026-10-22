@@ -22,7 +22,7 @@ public sealed class QueryInspectionsUseCase(InspectionWorkflowContext context)
         CancellationToken ct = default
     )
     {
-        InspectionWorkflowContext.RequireReader(actor);
+        InspectionWorkflowContext.RequireInspectionReader(actor);
 
         if (offset < 0 || limit is < 1 or > 100
             || (type.HasValue && !Enum.IsDefined(type.Value))
@@ -41,7 +41,8 @@ public sealed class QueryInspectionsUseCase(InspectionWorkflowContext context)
             await context.GetRentalAsync(rentalId.Value, actor, ct);
         }
 
-        var inspections = await context.Inspections.ListAsync(rentalId, type, status, offset, limit, ct);
+        var inspections = await context.Inspections.ListAsync(rentalId, type, status, offset, limit,
+            actor.Role == Role.SuperAdmin ? null : actor.AgencyId, ct);
         var results = new List<InspectionResponse>();
 
         foreach (var inspection in inspections)
@@ -66,7 +67,7 @@ public sealed class QueryInspectionsUseCase(InspectionWorkflowContext context)
         CancellationToken ct = default
     )
     {
-        InspectionWorkflowContext.RequireReader(actor);
+        InspectionWorkflowContext.RequireInspectionReader(actor);
 
         if (await context.Equipment.RetrieveByIdAsync(equipmentId, ct) is null)
         {

@@ -75,9 +75,9 @@ public sealed class MvpInspectionTests
         var error = await Assert.ThrowsAsync<InspectionOperationException>(() => useCase.ExecuteAsync(
             new(AgencyId: Guid.NewGuid()), fake.Actor));
         Assert.Equal(403, error.StatusCode);
-        var admin = new InspectionActor(Guid.NewGuid(), Role.Admin, null);
+        var admin = new InspectionActor(Guid.NewGuid(), Role.Admin, 83, fake.Agency.Id);
         await useCase.ExecuteAsync(new(), admin);
-        Assert.Null(port.Query.AgencyId);
+        Assert.Equal(fake.Agency.Id, port.Query.AgencyId);
     }
 
     [Theory]

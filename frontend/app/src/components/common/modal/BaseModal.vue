@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, useId, watch } from "vue";
 
-const props = defineProps<{ title: string; open: boolean; busy?: boolean }>();
+const props = defineProps<{ title: string; open: boolean; busy?: boolean; wide?: boolean }>();
 const emit = defineEmits<{ close: []; closed: [] }>();
 const dialog = ref<HTMLDialogElement | null>(null);
 const closing = ref(false);
@@ -80,7 +80,7 @@ onUnmounted(() => {
     <dialog
       ref="dialog"
       class="base-modal"
-      :class="{ 'base-modal--closing': closing }"
+      :class="{ 'base-modal--closing': closing, 'base-modal--wide': wide }"
       :aria-labelledby="titleId"
       @cancel="onCancel"
       @click="onBackdropClick"
@@ -116,6 +116,11 @@ onUnmounted(() => {
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   box-shadow: 0 1rem 3rem var(--color-shadow);
+
+  &--wide {
+    width: min(100% - 2rem, 58rem);
+    max-height: min(94dvh, 58rem);
+  }
 
   &[open] {
     animation: modal-popup-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -207,6 +212,10 @@ onUnmounted(() => {
     &__content {
       padding: 1rem;
     }
+  }
+  .base-modal--wide {
+    width: calc(100% - 1rem);
+    max-height: calc(100dvh - 1rem);
   }
 }
 @media (prefers-reduced-motion: reduce) {

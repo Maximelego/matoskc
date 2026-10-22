@@ -199,7 +199,7 @@ public sealed class InspectionWorkflowTests
         await Assert.ThrowsAsync<InspectionOperationException>(() => query.GetAsync(inspection.Id, other));
         await Assert.ThrowsAsync<InspectionOperationException>(() => query.ListAsync(fake.Actor, null, null, null));
         Assert.Single(await query.ListAsync(fake.Actor, inspection.RentalId, null, null));
-        Assert.Single(await query.ListAsync(new(Guid.NewGuid(), Role.Admin, 33), null, null, null));
+        Assert.Single(await query.ListAsync(new(Guid.NewGuid(), Role.Admin, 83, fake.Agency.Id), null, null, null));
     }
 
     [Fact]

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { agenciesApi } from "../../api/agencies";
+import { authSession } from "../../api/auth/session";
 import type { AgencyDto } from "../../api/agencies/dto";
 import type { InspectionDto, InspectionListItemDto } from "../../api/inspections";
 import { inspectionHttpApi } from "../../api/inspections";
@@ -16,6 +17,10 @@ const inspections = ref<InspectionListItemDto[]>([]);
 const loading = ref(false);
 const error = ref("");
 const agencies = ref<AgencyDto[]>([]);
+const isSuperAdmin = computed(() => authSession.account.value?.role === "SuperAdmin");
+const ownAgencyId = computed(() => authSession.account.value?.agencyId ?? "");
+const ownAgency = computed(() => agencies.value.find((item) => item.id === ownAgencyId.value));
+let requestId = 0;
 const commandNumber = ref("");
 const agencyId = ref("");
 const rentalId = ref("");
@@ -36,7 +41,9 @@ const equipmentId = computed(() =>
 const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 
 const filtered = computed(() =>
-  [...inspections.value].sort((a, b) =>
+  [...inspections.value]
+    .filter((item) => isSuperAdmin.value || (ownAgencyId.value && item.agencyId === ownAgencyId.value))
+    .sort((a, b) =>
     order.value === "newest"
       ? (b.validatedAt ?? b.startedAt).localeCompare(a.validatedAt ?? a.startedAt)
       : (a.validatedAt ?? a.startedAt).localeCompare(b.validatedAt ?? b.startedAt),
@@ -57,8 +64,15 @@ function resetFilters(): void {
 }
 
 async function load(): Promise<void> {
+  const currentRequest = ++requestId;
   loading.value = true;
   error.value = "";
+  inspections.value = [];
+  if (!isSuperAdmin.value && !ownAgencyId.value) {
+    error.value = "Aucune agence n’est associée à ce compte.";
+    loading.value = false;
+    return;
+  }
   if (invalidDates.value || (commandNumber.value && !/^\d{6}$/.test(commandNumber.value.trim()))) {
     error.value = invalidDates.value
       ? "La date de début doit précéder la date de fin."
@@ -76,7 +90,7 @@ async function load(): Promise<void> {
             : (status.value as "Draft" | "Validated" | "Cancelled"),
         type: type.value === "all" ? undefined : (type.value as "Departure" | "Return"),
         equipmentId: equipmentId.value || undefined,
-        agencyId: agencyId.value || undefined,
+        agencyId: isSuperAdmin.value ? agencyId.value || undefined : ownAgencyId.value,
         rentalId: rentalId.value.trim() || undefined,
         commandNumber: commandNumber.value.trim() || undefined,
         from: from.value ? new Date(`${from.value}T00:00:00`).toISOString() : undefined,
@@ -87,11 +101,12 @@ async function load(): Promise<void> {
       all.push(...page.inspections);
       if (offset + page.inspections.length >= page.total || !page.inspections.length) break;
     }
-    inspections.value = all;
+    if (currentRequest === requestId) inspections.value = all;
   } catch {
-    error.value = "Impossible de charger les états des lieux. Veuillez réessayer.";
+    if (currentRequest === requestId)
+      error.value = "Impossible de charger les états des lieux. Veuillez réessayer.";
   } finally {
-    loading.value = false;
+    if (currentRequest === requestId) loading.value = false;
   }
 }
 function show(item: InspectionListItemDto): void {
@@ -133,7 +148,7 @@ watch(
   },
   { immediate: true },
 );
-watch(equipmentId, () => {
+watch([equipmentId, ownAgencyId, isSuperAdmin], () => {
   void load();
 });
 onMounted(() => {
@@ -149,195 +164,145 @@ onMounted(() => {
 
 <template>
   <main class="inspection-admin">
-    <header>
+    <header class="inspection-admin__header">
       <div>
         <h1>{{ equipmentId ? "Chronologie des états des lieux" : "États des lieux" }}</h1>
         <p>Consultez les contrôles réalisés et les documents signés.</p>
       </div>
-      <div class="header__tools">
-        <button
-          type="button"
-          :disabled="loading"
-          @click="load"
-        >
-          <BaseIcon name="refresh" />
-        </button>
-      </div>
-      <router-link
-        to="/admin/inspection-templates"
-        class="inspection-admin__create-button"
-      >
-        <BaseButton variant="primary">
-          <BaseIcon name="add" />
-          <span> Créer un modèle d'état des lieux </span>
+      <div class="inspection-admin__header-actions">
+        <BaseButton variant="outline" :disabled="loading" @click="load">
+          <template #leading><BaseIcon name="refresh" /></template>
+          Actualiser
         </BaseButton>
-      </router-link>
+        <router-link to="/admin/inspection-templates" class="inspection-admin__template-link">
+          <BaseIcon name="add" /> Modèles d’états des lieux
+        </router-link>
+      </div>
     </header>
-    <p
-      v-if="equipmentId"
-      class="inspection-admin__context"
-    >
-      Équipement : {{ inspections[0]?.equipmentName ?? equipmentId }}
-      <button
-        type="button"
-        @click="clearEquipment"
-      >
-        Afficher tous les états des lieux
-      </button>
-    </p>
-    <p
-      v-if="error"
-      role="alert"
-    >
-      {{ error }}
-      <button
-        type="button"
-        @click="load"
-      >
-        Réessayer
-      </button>
-    </p>
-    <p
-      v-if="loading"
-      role="status"
-    >
-      Chargement des états des lieux…
-    </p>
-    <template v-else-if="!error">
-      <div class="inspection-admin__filters">
-        <label
-          >Numéro de commande<input
-            v-model="commandNumber"
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="6 chiffres"
-        /></label>
-        <label
-          >Agence<select v-model="agencyId">
+
+    <div v-if="equipmentId" class="inspection-admin__context">
+      <span>Équipement : <strong>{{ inspections[0]?.equipmentName ?? equipmentId }}</strong></span>
+      <BaseButton variant="outline" @click="clearEquipment">Afficher tous les états des lieux</BaseButton>
+    </div>
+
+    <form class="inspection-admin__filters" @submit.prevent="load">
+      <div class="inspection-admin__filters-heading">
+        <h2><BaseIcon name="filter" /> Filtres</h2>
+        <span v-if="!isSuperAdmin">Agence : {{ ownAgency ? `${ownAgency.code} — ${ownAgency.name}` : "mon agence" }}</span>
+      </div>
+      <div class="inspection-admin__fields">
+        <label>Numéro de commande
+          <input v-model="commandNumber" inputmode="numeric" maxlength="6" placeholder="6 chiffres" />
+        </label>
+        <label v-if="isSuperAdmin">Agence
+          <select v-model="agencyId">
             <option value="">Toutes les agences</option>
-            <option
-              v-for="agency in agencies"
-              :key="agency.id"
-              :value="agency.id"
-            >
+            <option v-for="agency in agencies" :key="agency.id" :value="agency.id">
               {{ agency.code }} — {{ agency.name }}
             </option>
-          </select></label
-        >
-        <label
-          >Identifiant de location<input
-            v-model="rentalId"
-            type="text"
-            placeholder="UUID de la location"
-        /></label>
-        <label
-          >Du<input
-            v-model="from"
-            type="date"
-        /></label>
-        <label
-          >Au<input
-            v-model="to"
-            type="date"
-        /></label>
-        <label
-          >Type<select v-model="type">
+          </select>
+        </label>
+        <label>Identifiant de location
+          <input v-model="rentalId" type="text" placeholder="UUID de la location" />
+        </label>
+        <label>Du <input v-model="from" type="date" /></label>
+        <label>Au <input v-model="to" type="date" /></label>
+        <label>Type
+          <select v-model="type">
             <option value="all">Tous</option>
             <option value="Departure">Départs</option>
             <option value="Return">Retours</option>
-          </select></label
-        >
-        <label
-          >Statut<select v-model="status">
+          </select>
+        </label>
+        <label>Statut
+          <select v-model="status">
             <option value="Validated">Validés</option>
             <option value="Draft">Brouillons</option>
             <option value="Cancelled">Annulés</option>
             <option value="all">Tous</option>
-          </select></label
-        >
-        <label
-          >Ordre<select v-model="order">
+          </select>
+        </label>
+      </div>
+      <div class="inspection-admin__filter-actions">
+        <BaseButton type="submit" :disabled="loading">Rechercher</BaseButton>
+        <BaseButton variant="outline" :disabled="loading" @click="resetFilters">Réinitialiser</BaseButton>
+      </div>
+    </form>
+
+    <p v-if="error" class="inspection-admin__message inspection-admin__message--error" role="alert">
+      {{ error }}
+      <BaseButton variant="outline" @click="load">Réessayer</BaseButton>
+    </p>
+    <p v-if="loading" class="inspection-admin__message" role="status">Chargement des états des lieux…</p>
+    <section v-else-if="!error" class="inspection-admin__results" aria-label="Résultats des états des lieux">
+      <div class="inspection-admin__results-header">
+        <h2>Résultats</h2>
+        <p role="status">{{ filtered.length }} état{{ filtered.length > 1 ? "s" : "" }} des lieux</p>
+      </div>
+      <p v-if="!filtered.length" class="inspection-admin__empty">Aucun état des lieux ne correspond à ces critères.</p>
+      <div v-else class="app-table-scroll">
+        <div class="app-table__mobile-sort">
+          <label for="inspection-sort">Trier par date</label>
+          <select id="inspection-sort" v-model="order">
             <option value="newest">Plus récents</option>
             <option value="oldest">Plus anciens</option>
-          </select></label
-        >
-        <div class="inspection-admin__filter-actions">
-          <button
-            type="button"
-            :disabled="loading"
-            @click="load"
-          >
-            Rechercher</button
-          ><button
-            type="button"
-            :disabled="loading"
-            @click="resetFilters"
-          >
-            Réinitialiser
-          </button>
+          </select>
         </div>
+        <table class="app-table inspection-admin__table">
+          <thead>
+            <tr>
+              <th scope="col">Équipement</th>
+              <th scope="col">Type</th>
+              <th scope="col">Client et commande</th>
+              <th v-if="isSuperAdmin" scope="col">Agence</th>
+              <th scope="col">Opérateur</th>
+              <th scope="col" :aria-sort="order === 'newest' ? 'descending' : 'ascending'">
+                <button type="button" class="app-table__sort-button" @click="order = order === 'newest' ? 'oldest' : 'newest'">
+                  Date <span aria-hidden="true">{{ order === "newest" ? "▼" : "▲" }}</span>
+                </button>
+              </th>
+              <th scope="col">Statut</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in filtered" :key="item.id">
+              <td data-label="Équipement">
+                <strong>{{ item.equipmentName }}</strong>
+                <small class="inspection-admin__subtext">{{ item.serialNumber }}</small>
+              </td>
+              <td data-label="Type">{{ item.type === "Departure" ? "Départ" : "Retour" }}</td>
+              <td data-label="Client et commande">
+                {{ item.clientName }}
+                <small class="inspection-admin__subtext">{{ item.agencyCode }}/{{ item.commandNumber }}</small>
+              </td>
+              <td v-if="isSuperAdmin" data-label="Agence">{{ agencies.find((agency) => agency.id === item.agencyId)?.name ?? item.agencyCode }}</td>
+              <td data-label="Opérateur">{{ item.operatorFirstName }}</td>
+              <td data-label="Date">{{ date.format(new Date(item.validatedAt ?? item.startedAt)) }}</td>
+              <td data-label="Statut">
+                <span class="inspection-admin__status" :class="`inspection-admin__status--${item.status.toLowerCase()}`">
+                  {{ item.status === "Validated" ? "Validé" : item.status === "Cancelled" ? "Annulé" : "Brouillon" }}
+                </span>
+              </td>
+              <td class="inspection-admin__action">
+                <BaseButton variant="outline" size="small" @click="show(item)">
+                  <template #leading><BaseIcon name="view" :size="18" /></template>
+                  Consulter <span class="visually-hidden">{{ item.equipmentName }}, {{ item.type === "Departure" ? "départ" : "retour" }}</span>
+                </BaseButton>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <p role="status">{{ filtered.length }} état(s) des lieux</p>
-      <p v-if="!filtered.length">Aucun état des lieux ne correspond à ces critères.</p>
-      <ul
-        v-else
-        class="inspection-admin__list"
-      >
-        <li
-          v-for="item in filtered"
-          :key="item.id"
-        >
-          <div>
-            <strong>{{ item.equipmentName }}</strong>
-            <span
-              >{{ item.type === "Departure" ? "Départ" : "Retour" }} -
-              {{
-                item.status === "Validated"
-                  ? "Validé"
-                  : item.status === "Cancelled"
-                    ? "Annulé"
-                    : "Brouillon"
-              }}
-              - {{ date.format(new Date(item.validatedAt ?? item.startedAt)) }}</span
-            >
-            <span>Opérateur : {{ item.operatorFirstName }} - Client : {{ item.clientName }}</span>
-          </div>
-          <button
-            type="button"
-            @click="show(item)"
-          >
-            Consulter
-          </button>
-        </li>
-      </ul>
-    </template>
-    <BaseModal
-      :open="Boolean(selectedId)"
-      title="Détail de l’état des lieux"
-      @close="close"
-    >
-      <p
-        v-if="detailLoading"
-        role="status"
-      >
-        Chargement du détail…
-      </p>
-      <p
-        v-else-if="detailError"
-        role="alert"
-      >
+    </section>
+
+    <BaseModal :open="Boolean(selectedId)" title="Détail de l’état des lieux" @close="close">
+      <p v-if="detailLoading" role="status">Chargement du détail…</p>
+      <p v-else-if="detailError" role="alert">
         {{ detailError }}
-        <button
-          type="button"
-          @click="close"
-        >
-          Fermer
-        </button>
+        <BaseButton variant="outline" @click="close">Fermer</BaseButton>
       </p>
-      <InspectionDetails
-        v-if="selected"
-        :inspection="selected"
-      />
+      <InspectionDetails v-if="selected" :inspection="selected" />
     </BaseModal>
   </main>
 </template>
@@ -346,111 +311,100 @@ onMounted(() => {
 .inspection-admin {
   display: grid;
   gap: 1.25rem;
-  max-width: 78rem;
+  max-width: 82rem;
   min-width: 0;
   margin-inline: auto;
 }
-header {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-
-  .header__tools {
-    display: flex;
-    gap: 0.5rem;
-    margin-left: auto;
-
-    button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-  }
-}
-h1,
-header p {
-  margin: 0;
-}
-.inspection-admin__context {
-  padding: 0.8rem;
-  background: var(--color-surface-secondary);
-  border-radius: 0.5rem;
-}
-.inspection-admin__filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 0.75rem;
-}
-.inspection-admin__filters label {
-  display: grid;
-  gap: 0.35rem;
-}
+.inspection-admin__header,
+.inspection-admin__header-actions,
+.inspection-admin__context,
+.inspection-admin__results-header,
 .inspection-admin__filter-actions {
   display: flex;
-  align-items: end;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
-.inspection-admin__filters input,
-.inspection-admin__filters select {
-  min-height: 2.75rem;
-  padding: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-input-background);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-}
-.inspection-admin__list {
-  display: grid;
-  gap: 0.6rem;
-  list-style: none;
-  padding: 0;
-}
-.inspection-admin__list li {
-  display: flex;
-  justify-content: space-between;
+.inspection-admin__header h1,
+.inspection-admin__header p,
+.inspection-admin__results-header h2,
+.inspection-admin__results-header p { margin: 0; }
+.inspection-admin__header p,
+.inspection-admin__subtext { color: var(--color-text-secondary); }
+.inspection-admin__template-link {
+  display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.85rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.6rem;
-  background: var(--color-surface);
-}
-.inspection-admin__list li div {
-  display: grid;
-  gap: 0.3rem;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.inspection-admin__list span {
-  color: var(--color-text-secondary);
-}
-button {
+  gap: 0.5rem;
   min-height: 2.75rem;
-  padding: 0.45rem 0.7rem;
-  color: var(--color-text);
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--color-secondary-soft);
+  color: var(--color-secondary);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+.inspection-admin__template-link:hover { background: var(--color-secondary-soft-hover); }
+.inspection-admin__context,
+.inspection-admin__filters,
+.inspection-admin__results {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
   background: var(--color-surface);
+}
+.inspection-admin__context { background: var(--color-secondary-soft); }
+.inspection-admin__filters { display: grid; gap: 1rem; }
+.inspection-admin__filters-heading { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.inspection-admin__filters-heading h2 { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1.1rem; }
+.inspection-admin__filters-heading span { color: var(--color-text-secondary); }
+.inspection-admin__fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 0.75rem; }
+.inspection-admin__fields label { display: grid; gap: 0.35rem; font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.inspection-admin__fields input,
+.inspection-admin__fields select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  cursor: pointer;
+  background: var(--color-input-background);
+  color: var(--color-text);
+  font: inherit;
 }
+.inspection-admin__fields :is(input, select):focus-visible,
+.inspection-admin__template-link:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.inspection-admin__filter-actions { justify-content: flex-end; }
+.inspection-admin__results { padding: 0; overflow: hidden; }
+.inspection-admin__results-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-border); }
+.inspection-admin__results-header h2 { font-size: 1.1rem; }
+.inspection-admin__results-header p { color: var(--color-text-secondary); }
+.inspection-admin__empty,
+.inspection-admin__message { margin: 0; padding: 1.5rem; }
+.inspection-admin__message--error { color: var(--color-danger); }
+.inspection-admin__table { min-width: 64rem; }
+.inspection-admin__table td { overflow-wrap: anywhere; }
+.inspection-admin__subtext { display: block; margin-top: 0.2rem; font-size: var(--font-size-sm); }
+.inspection-admin__status { display: inline-flex; padding: 0.2rem 0.55rem; border-radius: 2rem; background: var(--color-surface-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.inspection-admin__status--validated { background: var(--color-success-soft, var(--color-surface-secondary)); color: var(--color-success); }
+.inspection-admin__status--cancelled { color: var(--color-danger); }
+.inspection-admin__status--draft { background: var(--color-secondary-soft); color: var(--color-secondary); }
+.inspection-admin__action { white-space: nowrap; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (max-width: 48rem) {
-  .inspection-admin__filters input,
-  .inspection-admin__filters select,
-  .inspection-admin__filters button {
-    min-height: 3rem;
-  }
+  .inspection-admin__table { min-width: 0; }
+  .inspection-admin__results { overflow: visible; }
+  .inspection-admin__results-header { border-bottom: 0; }
+  .inspection-admin__table tbody { padding: 0 0.75rem 0.75rem; }
+  .inspection-admin__action { margin-top: 0.75rem; }
 }
-button:focus-visible {
-  outline: 3px solid var(--color-focus);
-}
-@media (max-width: 40rem) {
-  .inspection-admin__filters {
-    grid-template-columns: 1fr;
-  }
-  .inspection-admin__list li {
-    align-items: start;
-    flex-direction: column;
-  }
+@media (max-width: 36rem) {
+  .inspection-admin__header-actions,
+  .inspection-admin__header-actions > *,
+  .inspection-admin__filter-actions > * { width: 100%; }
+  .inspection-admin__filter-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 </style>

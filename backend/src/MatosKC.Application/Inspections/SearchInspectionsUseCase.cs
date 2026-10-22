@@ -55,7 +55,7 @@ public sealed class SearchInspectionsUseCase(
         CancellationToken ct = default
     )
     {
-        InspectionWorkflowContext.RequireReader(actor);
+        InspectionWorkflowContext.RequireInspectionReader(actor);
 
         if (query.Offset < 0 || query.Limit is < 1 or > 100
             || (query.Type.HasValue && !Enum.IsDefined(query.Type.Value))
@@ -68,7 +68,7 @@ public sealed class SearchInspectionsUseCase(
             throw new InspectionOperationException(400, "Invalid inspection search filters or pagination.");
         }
 
-        if (actor.Role == Role.Agency)
+        if (actor.Role is Role.Agency or Role.Admin)
         {
             if (!actor.AgencyId.HasValue || actor.AgencyId == Guid.Empty
                 || (query.AgencyId.HasValue && query.AgencyId != actor.AgencyId))

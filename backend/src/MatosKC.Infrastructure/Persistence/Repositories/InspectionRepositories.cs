@@ -63,10 +63,17 @@ public sealed class InspectionsRepository(MatosKCDbContext db) : IInspectionsRep
         InspectionStatus? status,
         int offset,
         int limit,
+        Guid? agencyId = null,
         CancellationToken ct = default
     )
     {
         var query = Complete;
+
+        if (agencyId.HasValue)
+        {
+            query = query.Where(inspection => db.Rentals.Any(rental =>
+                rental.Id == inspection.RentalId && rental.AgencyId == agencyId));
+        }
 
         if (rentalId.HasValue)
         {
