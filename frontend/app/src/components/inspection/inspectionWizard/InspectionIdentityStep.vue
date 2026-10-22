@@ -7,6 +7,7 @@ defineProps<{
   client: ClientInputDto;
   departure: boolean;
   locked: boolean;
+  validationRequested: boolean;
 }>();
 const emit = defineEmits<{
   "update:operatorFirstName": [value: string];
@@ -21,6 +22,7 @@ const emit = defineEmits<{
       :client="client"
       :departure="departure"
       :locked="locked"
+      :validation-requested="validationRequested"
       @update:operator-first-name="emit('update:operatorFirstName', $event)"
       @update:client="emit('update:client', $event)"
     />

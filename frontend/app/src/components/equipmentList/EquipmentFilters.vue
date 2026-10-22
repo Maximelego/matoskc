@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseInput from "../common/input/BaseInput.vue";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
 import type { EquipmentFilters, EquipmentStatus } from "../../api/equipments/dto";
 
@@ -43,14 +44,14 @@ function update(patch: Partial<EquipmentFilters>): void {
     aria-label="Filtrer les équipements"
   >
     <div class="equipment-filters__field equipment-filters__field--search">
-      <label for="equipment-search">Rechercher</label>
-      <input
+      <BaseInput
+        label="Rechercher"
         id="equipment-search"
         type="search"
-        :value="modelValue.search ?? ''"
+        :model-value="modelValue.search ?? ''"
         placeholder="Nom ou numéro de série"
         autocomplete="off"
-        @input="update({ search: ($event.target as HTMLInputElement).value })"
+        @update:model-value="update({ search: $event })"
       />
     </div>
 

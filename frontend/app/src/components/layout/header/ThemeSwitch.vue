@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { themePreference, setTheme } from "../../../style/themePreference";
+import { setTheme, themePreference } from "../../../style/themePreference";
 
 function toggleTheme(): void {
   setTheme(themePreference.value === "dark" ? "light" : "dark");
@@ -15,10 +15,21 @@ function toggleTheme(): void {
     aria-label="Thème sombre"
     @click="toggleTheme"
   >
-    <span class="theme-switch__icon" aria-hidden="true">☀</span>
-    <span class="theme-switch__track" aria-hidden="true"><span class="theme-switch__thumb" /></span>
-    <span class="theme-switch__icon" aria-hidden="true">☾</span>
-    <span class="theme-switch__label">{{ themePreference === "dark" ? "Sombre" : "Clair" }}</span>
+    <span
+      class="theme-switch__icon"
+      aria-hidden="true"
+      >☀</span
+    >
+    <span
+      class="theme-switch__track"
+      aria-hidden="true"
+      ><span class="theme-switch__thumb"
+    /></span>
+    <span
+      class="theme-switch__icon"
+      aria-hidden="true"
+      >☾</span
+    >
   </button>
 </template>
 
@@ -38,9 +49,17 @@ function toggleTheme(): void {
   font: inherit;
   font-size: var(--font-size-sm);
 }
-.theme-switch:hover { background: var(--color-surface-hover); }
-.theme-switch:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-.theme-switch__icon { font-size: 1.1rem; line-height: 1; }
+.theme-switch:hover {
+  background: var(--color-surface-hover);
+}
+.theme-switch:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.theme-switch__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
 .theme-switch__track {
   display: flex;
   align-items: center;
@@ -59,12 +78,21 @@ function toggleTheme(): void {
   box-shadow: 0 1px 3px var(--color-shadow);
   transition: transform 180ms ease;
 }
-.theme-switch[aria-checked="true"] .theme-switch__track { background: var(--color-secondary); }
-.theme-switch[aria-checked="true"] .theme-switch__thumb { transform: translateX(0.95rem); }
+.theme-switch[aria-checked="true"] .theme-switch__track {
+  background: var(--color-secondary);
+}
+.theme-switch[aria-checked="true"] .theme-switch__thumb {
+  transform: translateX(0.95rem);
+}
 @media (max-width: 36rem) {
-  .theme-switch__label { display: none; }
+  .theme-switch__label {
+    display: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .theme-switch__track, .theme-switch__thumb { transition: none; }
+  .theme-switch__track,
+  .theme-switch__thumb {
+    transition: none;
+  }
 }
 </style>

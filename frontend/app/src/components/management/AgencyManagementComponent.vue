@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseInput from "../common/input/BaseInput.vue";
 import { computed, onMounted, ref } from "vue";
 import { agenciesApi } from "../../api/agencies";
 import type { AgencyDto, SaveAgencyDto } from "../../api/agencies/dto";
@@ -17,6 +18,15 @@ const loading = ref(false);
 const busy = ref(false);
 const error = ref("");
 const formError = ref("");
+const formAttempted = ref(false);
+const nameError = computed(() =>
+  formAttempted.value && !name.value.trim() ? "Le nom de l’agence est obligatoire." : undefined,
+);
+const codeError = computed(() =>
+  formAttempted.value && (code.value === null || !Number.isInteger(code.value) || code.value <= 0)
+    ? "Saisissez un code agence valide."
+    : undefined,
+);
 const notice = ref("");
 const modalOpen = ref(false);
 const modalContentVisible = ref(false);
@@ -71,6 +81,7 @@ async function load(): Promise<void> {
   }
 }
 function openForm(agency?: AgencyDto): void {
+  formAttempted.value = false;
   editingId.value = agency?.id ?? null;
   name.value = agency?.name ?? "";
   code.value = agency?.code ?? null;
@@ -85,6 +96,7 @@ function clearForm(): void {
   if (!modalOpen.value) modalContentVisible.value = false;
 }
 async function save(): Promise<void> {
+  formAttempted.value = true;
   if (
     busy.value ||
     code.value === null ||
@@ -168,19 +180,17 @@ onMounted(() => {
         >
       </div>
       <div class="management__toolbar">
-        <label for="agency-name-filter">Nom</label>
-        <input
+        <BaseInput
+          label="Nom"
           id="agency-name-filter"
           v-model="nameFilter"
-          class="management__input management__search"
           type="search"
           placeholder="Nom de l’agence"
         />
-        <label for="agency-code-filter">Code</label>
-        <input
+        <BaseInput
+          label="Code"
           id="agency-code-filter"
           v-model="codeFilter"
-          class="management__input"
           type="search"
           inputmode="numeric"
           placeholder="Code"
@@ -285,25 +295,27 @@ onMounted(() => {
         v-if="modalContentVisible"
         ref="form"
         class="management__form"
+        novalidate
         @submit.prevent="save"
       >
         <div class="management__field">
-          <label for="agency-name">Nom</label>
-          <input
+          <BaseInput
+            label="Nom"
             id="agency-name"
             v-model="name"
-            class="management__input"
+            :error="nameError"
             required
             maxlength="120"
             :disabled="busy"
           />
         </div>
         <div class="management__field">
-          <label for="agency-code">Code</label>
-          <input
+          <BaseInput
+            label="Code"
             id="agency-code"
-            v-model.number="code"
-            class="management__input"
+            :model-value="code === null ? '' : String(code)"
+            :error="codeError"
+            @update:model-value="code = $event === '' ? null : Number($event)"
             type="number"
             min="1"
             step="1"

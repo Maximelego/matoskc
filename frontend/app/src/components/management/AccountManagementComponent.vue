@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseInput from "../common/input/BaseInput.vue";
+import { validateEmail } from "../../utils/validators";
 import { computed, onMounted, ref } from "vue";
 import { accountsApi } from "../../api/accounts";
 import type { AccountDto, AccountRole, CreateAccountDto } from "../../api/accounts/dto";
@@ -19,6 +21,18 @@ const loading = ref(false);
 const busy = ref(false);
 const error = ref("");
 const formError = ref("");
+const formAttempted = ref(false);
+const nameError = computed(() =>
+  formAttempted.value && !displayName.value.trim() ? "Le nom affiché est obligatoire." : undefined,
+);
+const emailError = computed(() =>
+  formAttempted.value && role.value !== "Agency" ? validateEmail(email.value) : undefined,
+);
+const passwordError = computed(() =>
+  formAttempted.value && !editingId.value && !password.value
+    ? "Le mot de passe initial est obligatoire."
+    : undefined,
+);
 const notice = ref("");
 const nameFilter = ref("");
 const emailFilter = ref("");
@@ -104,6 +118,7 @@ async function load(): Promise<void> {
   }
 }
 function openForm(account?: AccountDto): void {
+  formAttempted.value = false;
   editingId.value = account?.id ?? null;
   displayName.value = account?.displayName ?? "";
   email.value = account?.email ?? "";
@@ -121,7 +136,9 @@ function clearForm(): void {
   if (!modalOpen.value) modalContentVisible.value = false;
 }
 async function save(): Promise<void> {
-  if (busy.value || !displayName.value.trim()) return;
+  if (busy.value) return;
+  formAttempted.value = true;
+  if (nameError.value || emailError.value || passwordError.value) return;
   busy.value = true;
   formError.value = "";
   try {
@@ -224,19 +241,17 @@ onMounted(() => {
         >
       </div>
       <div class="management__toolbar">
-        <label for="account-name-filter">Nom</label>
-        <input
+        <BaseInput
+          label="Nom"
           id="account-name-filter"
           v-model="nameFilter"
-          class="management__input management__search"
           type="search"
           placeholder="Nom affiché"
         />
-        <label for="account-email-filter">Courriel</label>
-        <input
+        <BaseInput
+          label="Courriel"
           id="account-email-filter"
           v-model="emailFilter"
-          class="management__input management__search"
           type="search"
           placeholder="Adresse électronique"
         />
@@ -402,14 +417,15 @@ onMounted(() => {
         v-if="modalContentVisible"
         ref="form"
         class="management__form"
+        novalidate
         @submit.prevent="save"
       >
         <div class="management__field">
-          <label for="account-name">Nom affiché</label>
-          <input
+          <BaseInput
+            label="Nom affiché"
             id="account-name"
             v-model="displayName"
-            class="management__input"
+            :error="nameError"
             required
             maxlength="120"
             :disabled="busy"
@@ -459,11 +475,11 @@ onMounted(() => {
           v-if="role !== 'Agency'"
           class="management__field"
         >
-          <label for="account-email">Adresse électronique</label>
-          <input
+          <BaseInput
+            label="Adresse électronique"
             id="account-email"
             v-model="email"
-            class="management__input"
+            :error="emailError"
             type="email"
             required
             autocomplete="off"
@@ -474,11 +490,11 @@ onMounted(() => {
           v-if="!editingId"
           class="management__field"
         >
-          <label for="account-password">Mot de passe initial</label>
-          <input
+          <BaseInput
+            label="Mot de passe initial"
             id="account-password"
             v-model="password"
-            class="management__input"
+            :error="passwordError"
             type="password"
             required
             autocomplete="new-password"

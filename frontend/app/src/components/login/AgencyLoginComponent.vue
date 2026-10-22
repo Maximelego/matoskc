@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseInput from "../common/input/BaseInput.vue";
 import { onMounted, ref } from "vue";
 import { agenciesApi } from "../../api/agencies";
 import type { AgencyDto } from "../../api/agencies/dto";
@@ -17,6 +18,7 @@ const agencyId = ref("");
 const agenciesLoading = ref(false);
 const agenciesError = ref("");
 const password = ref("");
+const passwordAttempted = ref(false);
 
 async function loadAgencies(): Promise<void> {
   if (agenciesLoading.value) return;
@@ -43,6 +45,7 @@ async function loadAgencies(): Promise<void> {
 }
 
 function submit(): void {
+  passwordAttempted.value = true;
   if (
     props.busy ||
     agenciesLoading.value ||
@@ -61,6 +64,7 @@ onMounted(() => {
 <template>
   <form
     class="agency-login"
+    novalidate
     :aria-busy="busy"
     @submit.prevent="submit"
   >
@@ -117,10 +121,11 @@ onMounted(() => {
     </div>
 
     <div class="agency-login__field">
-      <label for="agency-login-password">Mot de passe</label>
-      <input
+      <BaseInput
+        label="Mot de passe"
         id="agency-login-password"
         v-model="password"
+        :error="passwordAttempted && !password ? 'Le mot de passe est obligatoire.' : undefined"
         name="password"
         type="password"
         autocomplete="current-password"

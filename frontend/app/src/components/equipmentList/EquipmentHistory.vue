@@ -5,6 +5,9 @@ import type {
   EquipmentAuditChangeDto,
   EquipmentAuditEntryDto,
 } from "../../api/equipment-history/dto";
+import type { EquipmentStatus } from "../../api/equipments/dto.ts";
+import EquipmentStatusBadge from "../../components/equipmentStatusBadge/EquipmentStatusBadge.vue";
+
 const props = defineProps<{ equipmentId: string }>();
 const entries = ref<EquipmentAuditEntryDto[]>([]);
 const loading = ref(false);
@@ -102,8 +105,24 @@ watch(
             v-for="change in changes(entry)"
             :key="change.field"
           >
-            {{ labels[change.field] ?? change.field }} : {{ change.before ?? "—" }} →
-            {{ change.after ?? "—" }}
+            <span v-if="change.field === 'Status'">
+              {{ labels[change.field] ?? change.field }} :
+              <EquipmentStatusBadge
+                v-if="change.before"
+                :status="change.before as EquipmentStatus"
+              ></EquipmentStatusBadge>
+              <span v-else>—</span>
+              →
+              <EquipmentStatusBadge
+                v-if="change.after"
+                :status="change.after as EquipmentStatus"
+              ></EquipmentStatusBadge>
+              <span v-else>—</span>
+            </span>
+            <span v-else>
+              {{ labels[change.field] ?? change.field }} : {{ change.before ?? "—" }} →
+              {{ change.after ?? "—" }}
+            </span>
           </li>
         </ul>
       </li>

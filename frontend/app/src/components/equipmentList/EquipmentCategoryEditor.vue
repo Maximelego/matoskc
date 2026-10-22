@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseInput from "../common/input/BaseInput.vue";
 import { ref, watch } from "vue";
 import { equipmentCategoriesApi } from "../../api/equipment-categories";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
@@ -6,12 +7,14 @@ const props = defineProps<{ categories: EquipmentCategoryDto[] }>();
 const emit = defineEmits<{ updated: [] }>();
 const selected = ref("");
 const name = ref("");
+const nameTouched = ref(false);
 const description = ref("");
 const busy = ref(false);
 const error = ref("");
 watch(selected, (id) => {
   const category = props.categories.find((item) => item.id === id);
   name.value = category?.name ?? "";
+  nameTouched.value = false;
   description.value = category?.description ?? "";
   error.value = "";
 });
@@ -54,10 +57,12 @@ async function save() {
       </option>
     </select>
     <template v-if="selected">
-      <label for="category-edit-name">Nom</label>
-      <input
+      <BaseInput
+        label="Nom"
         id="category-edit-name"
         v-model="name"
+        :error="nameTouched && !name.trim() ? 'Le nom de la catégorie est obligatoire.' : undefined"
+        @blur="nameTouched = true"
         required
         :disabled="busy"
       />

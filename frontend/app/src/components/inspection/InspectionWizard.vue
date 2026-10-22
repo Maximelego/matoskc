@@ -46,6 +46,8 @@ const client = ref<ClientInputDto>({
   commandValue: "",
 });
 const operatorFirstName = ref("");
+const identityValidationRequested = ref(false);
+const signatureValidationRequested = ref(false);
 const points = ref<Record<string, PointValue>>({});
 const knownDefects = ref<KnownDefectValue[]>([]);
 const knownOperatorNames = ref<Record<string, string>>({});
@@ -186,6 +188,7 @@ async function load(): Promise<void> {
 }
 
 function checkIdentity(): boolean {
+  identityValidationRequested.value = true;
   if (!operatorFirstName.value.trim()) {
     error.value = "Veuillez saisir le prénom de l’opérateur.";
     return false;
@@ -398,6 +401,7 @@ async function fileBase64(file: File): Promise<string> {
 }
 
 async function validate(): Promise<void> {
+  signatureValidationRequested.value = true;
   if (!accepted.value || !signerName.value.trim() || !signatureFile.value) {
     error.value = "Le nom du signataire, son accord et sa signature sont obligatoires.";
     return;
@@ -476,6 +480,7 @@ onMounted(() => {
           v-model:client="client"
           :departure="isDeparture"
           :locked="Boolean(inspection)"
+          :validation-requested="identityValidationRequested"
         />
         <InspectionKnownDefectsStep
           v-else-if="step === 1"
@@ -508,6 +513,7 @@ onMounted(() => {
           :known-operator-names="knownOperatorNames"
           :operator-first-name="operatorFirstName"
           :busy="busy"
+          :validation-requested="signatureValidationRequested"
           @signature="signatureFile = $event"
           @edit="step = orderedPoints.findIndex((point) => point.id === $event) + 2"
           @edit-known="step = 1"

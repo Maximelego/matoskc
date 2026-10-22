@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseInput from "../input/BaseInput.vue";
 import { computed, ref } from "vue";
 import type { EquipmentDto } from "../../../api/equipments/dto";
 import EquipmentCard from "./EquipmentCard.vue";
@@ -20,8 +21,8 @@ const matches = computed(() =>
 
 <template>
   <div class="equipment-picker">
-    <label for="equipment-picker-search">Rechercher un équipement</label>
-    <input
+    <BaseInput
+      label="Rechercher un équipement"
       id="equipment-picker-search"
       v-model="search"
       type="search"

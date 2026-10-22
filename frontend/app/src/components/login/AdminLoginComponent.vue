@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import BaseInput from "../common/input/BaseInput.vue";
+import { computed, ref } from "vue";
+import { validateEmail } from "../../utils/validators";
 import type { LoginRequestDto } from "../../api/auth";
 import BaseButton from "../common/button/BaseButton.vue";
 
@@ -10,9 +12,18 @@ withDefaults(defineProps<{ busy?: boolean; error?: string | null }>(), {
 const emit = defineEmits<{ submit: [credentials: Extract<LoginRequestDto, { mode: "admin" }>] }>();
 const email = ref("");
 const password = ref("");
+const attempted = ref(false);
+const emailTouched = ref(false);
+const emailError = computed(() =>
+  attempted.value || emailTouched.value ? validateEmail(email.value) : undefined,
+);
+const passwordError = computed(() =>
+  attempted.value && !password.value ? "Le mot de passe est obligatoire." : undefined,
+);
 
 function submit(): void {
-  if (!email.value.trim() || !password.value) return;
+  attempted.value = true;
+  if (emailError.value || passwordError.value) return;
   emit("submit", { mode: "admin", email: email.value.trim(), password: password.value });
 }
 </script>
@@ -20,6 +31,7 @@ function submit(): void {
 <template>
   <form
     class="admin-login"
+    novalidate
     :aria-busy="busy"
     @submit.prevent="submit"
   >
@@ -29,10 +41,12 @@ function submit(): void {
     </div>
 
     <div class="admin-login__field">
-      <label for="login-email">Adresse électronique</label>
-      <input
+      <BaseInput
+        label="Adresse électronique"
         id="login-email"
         v-model="email"
+        :error="emailError"
+        @blur="emailTouched = true"
         name="username"
         type="email"
         inputmode="email"
@@ -44,10 +58,11 @@ function submit(): void {
     </div>
 
     <div class="admin-login__field">
-      <label for="admin-login-password">Mot de passe</label>
-      <input
+      <BaseInput
+        label="Mot de passe"
         id="admin-login-password"
         v-model="password"
+        :error="passwordError"
         name="password"
         type="password"
         autocomplete="current-password"

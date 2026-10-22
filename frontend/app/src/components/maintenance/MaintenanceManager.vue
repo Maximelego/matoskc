@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseInput from "../common/input/BaseInput.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ApiError } from "../../api/client";
@@ -30,6 +31,25 @@ const performedAt = ref("");
 const workDescription = ref("");
 const loading = ref(false);
 const saving = ref(false);
+const formAttempted = ref(false);
+const dateError = computed(() => {
+  if (!formAttempted.value) return undefined;
+  const value = new Date(performedAt.value).getTime();
+  if (!performedAt.value || !Number.isFinite(value))
+    return "La date d’intervention est obligatoire.";
+  if (value > Date.now()) return "La date d’intervention ne peut pas être future.";
+  if (
+    selected.value.some((id) => {
+      const defect = openDefects.value.find((item) => item.id === id);
+      return defect && value < new Date(defect.reportedAt).getTime();
+    })
+  )
+    return "La date doit suivre le constat des défauts sélectionnés.";
+  return undefined;
+});
+const personError = computed(() =>
+  formAttempted.value && !performedBy.value.trim() ? "L’intervenant est obligatoire." : undefined,
+);
 const error = ref("");
 const notice = ref("");
 const limit = 50;
@@ -47,6 +67,7 @@ function selectEquipment(equipment: EquipmentDto): void {
   void router.replace({ query: { ...route.query, equipmentId: equipment.id } });
 }
 function chooseAnotherEquipment(): void {
+  formAttempted.value = false;
   if (saving.value) return;
   performedAt.value = "";
   performedBy.value = "";
@@ -145,6 +166,7 @@ onMounted(async () => {
 });
 async function submit() {
   if (!equipmentId.value || saving.value) return;
+  formAttempted.value = true;
   error.value = "";
   notice.value = "";
   const timestamp = new Date(performedAt.value);
@@ -367,6 +389,7 @@ async function submit() {
         </section>
         <form
           class="care__panel"
+          novalidate
           @submit.prevent="submit"
         >
           <h2>Enregistrer une maintenance</h2>
@@ -374,19 +397,21 @@ async function submit() {
             Une maintenance peut être enregistrée sans résoudre de défaut. Résoudre un défaut ne
             modifie pas automatiquement la disponibilité du matériel.
           </p>
-          <label for="care-date">Date et heure de l’intervention</label>
-          <input
+          <BaseInput
+            label="Date et heure de l’intervention"
             id="care-date"
             v-model="performedAt"
+            :error="dateError"
             type="datetime-local"
             :max="maxDate"
             required
             :disabled="saving"
           />
-          <label for="care-person">Intervenant</label>
-          <input
+          <BaseInput
+            label="Intervenant"
             id="care-person"
             v-model="performedBy"
+            :error="personError"
             maxlength="200"
             required
             :disabled="saving"

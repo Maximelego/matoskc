@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseIcon from "../common/icon/BaseIcon.vue";
+import BaseInput from "../common/input/BaseInput.vue";
 import TemplatePointPhoto from "./TemplatePointPhoto.vue";
 
 export interface EditablePoint {
@@ -9,7 +10,11 @@ export interface EditablePoint {
   photoId: string | null;
 }
 
-const props = defineProps<{ points: EditablePoint[]; disabled: boolean }>();
+const props = defineProps<{
+  points: EditablePoint[];
+  disabled: boolean;
+  validationRequested: boolean;
+}>();
 const emit = defineEmits<{ change: [points: EditablePoint[]]; busy: [value: boolean] }>();
 let nextKey = 1;
 
@@ -64,12 +69,17 @@ function insertTab(event: KeyboardEvent, point: EditablePoint) {
       :key="point.key"
       class="point"
     >
-      <label :for="`template-point-${point.key}`">Point {{ index + 1 }}</label>
       <div class="point__row">
         <div class="point__inputs">
-          <input
+          <BaseInput
             :id="`template-point-${point.key}`"
             v-model="point.description"
+            :label="`Point ${index + 1}`"
+            :error="
+              validationRequested && !point.description.trim()
+                ? 'La description du point est obligatoire.'
+                : undefined
+            "
             required
             maxlength="500"
             placeholder="Ex. Vérifier l’état du câble"

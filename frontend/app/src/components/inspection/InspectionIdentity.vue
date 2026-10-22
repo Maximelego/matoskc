@@ -8,6 +8,7 @@ import {
   validatePhoneNumber,
 } from "../../utils/validators.ts";
 import CommandNumberInput from "../common/input/CommandNumberInput.vue";
+import BaseInput from "../common/input/BaseInput.vue";
 import { normalizeCommandNumber } from "../common/input/commandNumber";
 
 const props = defineProps<{
@@ -16,6 +17,7 @@ const props = defineProps<{
   departure: boolean;
   locked: boolean;
   error?: string;
+  validationRequested?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -27,89 +29,93 @@ function update<K extends keyof ClientInputDto>(key: K, value: ClientInputDto[K]
   emit("update:client", { ...props.client, [key]: value });
 }
 
-type ValidatedField = "email" | "phone" | "command";
+type ValidatedField = "operator" | "name" | "email" | "phone" | "command";
 const touched = reactive<Record<ValidatedField, boolean>>({
+  operator: false,
+  name: false,
   email: false,
   phone: false,
   command: false,
 });
-const emailError = computed(() => (touched.email ? validateEmail(props.client.email) : null));
-const phoneError = computed(() => (touched.phone ? validatePhoneNumber(props.client.phone) : null));
+const operatorError = computed(() =>
+  touched.operator || props.validationRequested
+    ? props.operatorFirstName.trim()
+      ? undefined
+      : "Veuillez saisir le prénom de l’opérateur."
+    : undefined,
+);
+const nameError = computed(() =>
+  touched.name || props.validationRequested
+    ? props.client.displayName.trim()
+      ? undefined
+      : "Veuillez saisir le nom du client."
+    : undefined,
+);
+const emailError = computed(() =>
+  touched.email || props.validationRequested ? validateEmail(props.client.email) : undefined,
+);
+const phoneError = computed(() =>
+  touched.phone || props.validationRequested ? validatePhoneNumber(props.client.phone) : undefined,
+);
 const commandError = computed(() =>
-  touched.command
+  touched.command || props.validationRequested
     ? (validateAgencyCode(props.client.agencyCode) ??
       validateCommandNumber(
         normalizeCommandNumber(props.client.commandValue) ?? props.client.commandValue,
       ))
-    : null,
+    : undefined,
 );
 </script>
 
 <template>
   <section class="identity">
     <h2>Identification</h2>
-    <label
-      >Prénom de l’opérateur *
-      <input
-        :value="operatorFirstName"
-        autocomplete="given-name"
-        required
-        @input="emit('update:operatorFirstName', ($event.target as HTMLInputElement).value)"
-      />
-    </label>
+    <BaseInput
+      id="inspection-operator"
+      :model-value="operatorFirstName"
+      label="Prénom de l’opérateur"
+      autocomplete="given-name"
+      required
+      :error="operatorError"
+      @update:model-value="emit('update:operatorFirstName', $event)"
+      @blur="touched.operator = true"
+    />
     <template v-if="departure">
-      <label
-        >Nom du client *
-        <input
-          :value="client.displayName"
-          :disabled="locked"
-          required
-          autocomplete="name"
-          @input="update('displayName', ($event.target as HTMLInputElement).value)"
-        />
-      </label>
-      <label
-        >Adresse électronique *
-        <input
-          type="email"
-          :value="client.email"
-          :disabled="locked"
-          required
-          autocomplete="email"
-          :aria-invalid="Boolean(emailError)"
-          :aria-describedby="emailError ? 'client-email-error' : undefined"
-          @input="update('email', ($event.target as HTMLInputElement).value)"
-          @blur="touched.email = true"
-        />
-      </label>
-      <small
-        v-if="emailError"
-        id="client-email-error"
-        class="identity__field-error"
-        role="alert"
-        >{{ emailError }}</small
-      >
-      <label
-        >Téléphone *
-        <input
-          type="tel"
-          :value="client.phone"
-          :disabled="locked"
-          required
-          autocomplete="tel"
-          :aria-invalid="Boolean(phoneError)"
-          :aria-describedby="phoneError ? 'client-phone-error' : undefined"
-          @input="update('phone', ($event.target as HTMLInputElement).value)"
-          @blur="touched.phone = true"
-        />
-      </label>
-      <small
-        v-if="phoneError"
-        id="client-phone-error"
-        class="identity__field-error"
-        role="alert"
-        >{{ phoneError }}</small
-      >
+      <BaseInput
+        id="client-name"
+        :model-value="client.displayName"
+        label="Nom du client"
+        :disabled="locked"
+        required
+        autocomplete="name"
+        :error="nameError"
+        @update:model-value="update('displayName', $event)"
+        @blur="touched.name = true"
+      />
+      <BaseInput
+        id="client-email"
+        :model-value="client.email"
+        label="Adresse électronique"
+        type="email"
+        :disabled="locked"
+        required
+        autocomplete="email"
+        :error="emailError"
+        @update:model-value="update('email', $event)"
+        @blur="touched.email = true"
+      />
+      <BaseInput
+        id="client-phone"
+        :model-value="client.phone"
+        label="Téléphone"
+        type="tel"
+        :disabled="locked"
+        required
+        autocomplete="tel"
+        :error="phoneError"
+        @update:model-value="update('phone', $event)"
+        @blur="touched.phone = true"
+      />
       <CommandNumberInput
         :model-value="client.commandValue"
         :agency-code="client.agencyCode"
@@ -141,32 +147,7 @@ const commandError = computed(() =>
 .identity h2 {
   margin: 0;
 }
-.identity label {
-  display: grid;
-  gap: 0.35rem;
-}
-.identity input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.6rem 0.75rem;
-  color: var(--color-text);
-  background: var(--color-input-background);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  font: inherit;
-}
-.identity input:focus-visible {
-  outline: 3px solid var(--color-focus);
-}
 .identity__error {
   color: var(--color-danger);
-}
-.identity__field-error {
-  margin-top: -0.6rem;
-  color: var(--color-danger);
-}
-.identity input[aria-invalid="true"] {
-  border-color: var(--color-danger);
 }
 </style>

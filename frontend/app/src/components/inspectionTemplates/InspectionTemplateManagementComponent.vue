@@ -19,6 +19,7 @@ const saving = ref(false);
 const uploading = ref(false);
 const error = ref("");
 const success = ref("");
+const validationRequested = ref(false);
 let requestId = 0;
 
 function describeError(cause: unknown) {
@@ -29,6 +30,7 @@ function describeError(cause: unknown) {
 }
 
 function resetPoints() {
+  validationRequested.value = false;
   points.value = [{ key: Date.now(), description: "", descriptionDetail: "", photoId: null }];
 }
 
@@ -79,6 +81,7 @@ onMounted(async () => {
 
 async function submit() {
   if (!categoryId.value || saving.value || uploading.value || loadingTemplate.value) return;
+  validationRequested.value = true;
   error.value = "";
   success.value = "";
   const descriptions = points.value.map((point) => point.description.trim());
@@ -181,6 +184,7 @@ async function submit() {
     <form
       v-if="categoryId"
       class="panel"
+      novalidate
       @submit.prevent="submit"
     >
       <h2>Nouveau modèle</h2>
@@ -190,6 +194,7 @@ async function submit() {
       </p>
       <TemplatePointsEditor
         :points="points"
+        :validation-requested="validationRequested"
         :disabled="saving || uploading || !categoryId || loadingTemplate"
         @change="points = $event"
         @busy="uploading = $event"

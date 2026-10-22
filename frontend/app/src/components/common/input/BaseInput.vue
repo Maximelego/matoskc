@@ -5,7 +5,8 @@ defineOptions({
   inheritAttrs: false,
 });
 
-type InputType = "text" | "email" | "tel" | "password" | "search" | "url";
+type InputType =
+  "text" | "email" | "tel" | "password" | "search" | "url" | "number" | "date" | "datetime-local";
 
 type InputMode = "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
 
@@ -24,8 +25,11 @@ const props = withDefaults(
     required?: boolean;
     disabled?: boolean;
     readonly?: boolean;
-    minlength?: number;
-    maxlength?: number;
+    minlength?: number | string;
+    maxlength?: number | string;
+    min?: string | number;
+    max?: string | number;
+    step?: string | number;
   }>(),
   {
     type: "text",
@@ -40,6 +44,9 @@ const props = withDefaults(
     readonly: false,
     minlength: undefined,
     maxlength: undefined,
+    min: undefined,
+    max: undefined,
+    step: undefined,
   },
 );
 
@@ -139,6 +146,9 @@ function handleBlur(event: FocusEvent): void {
         :readonly="readonly"
         :minlength="minlength"
         :maxlength="maxlength"
+        :min="min"
+        :max="max"
+        :step="step"
         :aria-invalid="Boolean(error)"
         :aria-describedby="describedBy"
         @input="handleInput"
@@ -287,9 +297,18 @@ function handleBlur(event: FocusEvent): void {
 }
 
 @keyframes base-input-shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-0.35rem); }
-  40%, 80% { transform: translateX(0.35rem); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-0.35rem);
+  }
+  40%,
+  80% {
+    transform: translateX(0.35rem);
+  }
 }
 
 @media (max-width: 48rem) {

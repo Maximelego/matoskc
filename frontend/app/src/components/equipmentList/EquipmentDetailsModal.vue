@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseInput from "../common/input/BaseInput.vue";
 import { computed, nextTick, ref, watch } from "vue";
 import { authSession } from "../../api/auth/session";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts";
@@ -35,6 +36,7 @@ const transitions: Record<EquipmentStatus, EquipmentStatus[]> = {
 const selectedStatus = ref<EquipmentStatus | "">("");
 const reason = ref("");
 const editName = ref("");
+const editNameTouched = ref(false);
 const editCategoryId = ref("");
 const editing = ref(false);
 const showHistory = ref(false);
@@ -46,6 +48,7 @@ watch(
     selectedStatus.value = "";
     reason.value = "";
     editName.value = props.equipment?.name ?? "";
+    editNameTouched.value = false;
     editCategoryId.value = props.equipment?.equipmentCategoryId ?? "";
     editing.value = false;
     showHistory.value = false;
@@ -79,6 +82,7 @@ function cancelEdit(): void {
   editing.value = false;
 }
 function saveEquipment(): void {
+  editNameTouched.value = true;
   if (!props.equipment || !editName.value.trim() || !editCategoryId.value || props.busy) return;
   if (
     editName.value.trim() === props.equipment.name &&
@@ -145,15 +149,23 @@ async function toggleHistory(): Promise<void> {
             Modifier
           </button>
         </div>
-        <form @submit.prevent="saveEquipment">
+        <form
+          novalidate
+          @submit.prevent="saveEquipment"
+        >
           <dl class="equipment-details__fields">
             <div>
               <dt>Nom</dt>
               <dd v-if="editing">
-                <input
+                <BaseInput
+                  label="Nom du matériel"
                   id="equipment-edit-name"
                   v-model="editName"
-                  aria-label="Nom du matériel"
+                  :error="
+                    editNameTouched && !editName.trim()
+                      ? 'Le nom du matériel est obligatoire.'
+                      : undefined
+                  "
                   required
                   :disabled="busy"
                   maxlength="200"

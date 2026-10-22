@@ -13,7 +13,8 @@ export function initializeTheme(): void {
     // La navigation privée peut interdire l'accès au stockage.
   }
   const systemDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
-  themePreference.value = saved === "light" || saved === "dark" ? saved : systemDark ? "dark" : "light";
+  themePreference.value =
+    saved === "light" || saved === "dark" ? saved : systemDark ? "dark" : "light";
   document.documentElement.dataset.theme = themePreference.value;
 }
 

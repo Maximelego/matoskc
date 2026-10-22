@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ClientInputDto, InspectionTemplateDto } from "../../../api/inspections";
 import CopyButton from "../../common/copy/CopyButton.vue";
+import BaseInput from "../../common/input/BaseInput.vue";
 import BaseIcon from "../../common/icon/BaseIcon.vue";
 import BaseSpinner from "../../common/spinner/BaseSpinner.vue";
 import type { PointValue } from "../InspectionPoint.vue";
@@ -17,6 +18,7 @@ defineProps<{
   signerName: string;
   accepted: boolean;
   busy: boolean;
+  validationRequested: boolean;
 }>();
 const emit = defineEmits<{
   "update:signerName": [value: string];
@@ -123,15 +125,19 @@ const emit = defineEmits<{
       </ul>
     </section>
 
-    <label
-      >Nom du client signataire *
-      <input
-        :value="signerName"
-        :disabled="busy"
-        required
-        @input="emit('update:signerName', ($event.target as HTMLInputElement).value)"
-      />
-    </label>
+    <BaseInput
+      id="inspection-signer-name"
+      :model-value="signerName"
+      label="Nom du client signataire"
+      :disabled="busy"
+      required
+      :error="
+        validationRequested && !signerName.trim()
+          ? 'Le nom du signataire est obligatoire.'
+          : undefined
+      "
+      @update:model-value="emit('update:signerName', $event)"
+    />
     <label class="review-step__acceptance">
       <input
         type="checkbox"
