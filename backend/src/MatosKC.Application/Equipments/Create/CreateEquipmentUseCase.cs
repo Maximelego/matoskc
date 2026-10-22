@@ -28,10 +28,12 @@ public class CreateEquipmentUseCase
             dto.SerialNumber
         );
 
-        if (!await EquipmentCategoryRepository.ExistsByIdAsync(equipmentToCreate.CategoryId, cancellationToken))
+        var category = await EquipmentCategoryRepository.GetByIdAsync(equipmentToCreate.CategoryId, cancellationToken);
+        if (category is null)
         {
             throw new EquipmentCategoryNotFoundException(equipmentToCreate.CategoryId);
         }
+        if (category.AgencyId != Guid.Empty) equipmentToCreate.AssignAgency(category.AgencyId);
         if (await EquipmentRepository.ExistsBySerialNumberAsync(equipmentToCreate.SerialNumber, cancellationToken))
         {
             throw new EquipmentSerialNumberAlreadyExistsException(equipmentToCreate.SerialNumber);

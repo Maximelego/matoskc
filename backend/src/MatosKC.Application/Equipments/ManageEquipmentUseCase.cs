@@ -18,10 +18,14 @@ public sealed class ManageEquipmentUseCase(InspectionWorkflowContext context)
             var equipment = await context.Equipment.RetrieveByIdAsync(id, token)
                 ?? throw new InspectionOperationException(404, "Equipment not found.");
 
-            if (!await context.Categories.ExistsByIdAsync(request.EquipmentCategoryId, token))
+            var targetCategory = await context.Categories.GetByIdAsync(request.EquipmentCategoryId, token);
+            if (targetCategory is null)
             {
                 throw new InspectionOperationException(404, "Category not found.");
             }
+
+            if (equipment.AgencyId != targetCategory.AgencyId)
+                throw new InspectionOperationException(409, "Equipment and category must belong to the same agency.");
 
             if (equipment.CategoryId != request.EquipmentCategoryId
                 && await context.Rentals.GetOpenForEquipmentAsync(id, token) is not null)
@@ -48,7 +52,7 @@ public sealed class ManageEquipmentUseCase(InspectionWorkflowContext context)
                 ?? throw new InspectionOperationException(404, "Category not found.");
 
             if (category.Name != request.Name.Trim()
-                && await context.Categories.ExistsByNameAsync(request.Name.Trim(), token))
+                && await context.Categories.ExistsByNameAsync(request.Name.Trim(), token, category.AgencyId == Guid.Empty ? null : category.AgencyId))
             {
                 throw new InspectionOperationException(409, "Category name already exists.");
             }

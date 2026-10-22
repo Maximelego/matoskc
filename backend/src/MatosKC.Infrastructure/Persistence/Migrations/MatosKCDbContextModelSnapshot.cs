@@ -498,6 +498,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -507,6 +511,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnName("equipment_category_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AgencyId", "EquipmentCategoryId");
 
                     b.HasIndex("EquipmentCategoryId", "CreatedAt");
 
@@ -518,6 +524,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
 
                     b.Property<long>("ContentLength")
                         .HasColumnType("bigint")
@@ -547,6 +557,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnName("object_key");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AgencyId");
 
                     b.HasIndex("CreatedByAccountId");
 
@@ -815,7 +827,7 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("AgencyId")
+                    b.Property<Guid>("AgencyId")
                         .HasColumnType("uuid")
                         .HasColumnName("agency_id");
 
@@ -865,14 +877,14 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AgencyId");
-
                     b.HasIndex("ClientId");
 
                     b.HasIndex("EquipmentId")
                         .IsUnique()
                         .HasDatabaseName("ux_rentals_open_equipment")
                         .HasFilter("status IN ('Draft', 'Active')");
+
+                    b.HasIndex("AgencyId", "EquipmentId");
 
                     b.ToTable("rentals", (string)null);
                 });
@@ -882,6 +894,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid")
@@ -918,6 +934,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_equipments_serial_number");
 
+                    b.HasIndex("AgencyId", "CategoryId");
+
                     b.ToTable("equipments", (string)null);
                 });
 
@@ -926,6 +944,10 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
 
                     b.Property<string>("Description")
                         .HasColumnType("text")
@@ -938,7 +960,7 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("AgencyId", "Name")
                         .IsUnique()
                         .HasDatabaseName("ux_equipment_categories_name");
 
@@ -1153,15 +1175,28 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionTemplate", b =>
                 {
+                    b.HasOne("MatosKC.Domain.Entities.Agencies.Agency", null)
+                        .WithMany()
+                        .HasForeignKey("AgencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("MatosKC.Domain.Equipments.EquipmentCategory", null)
                         .WithMany()
-                        .HasForeignKey("EquipmentCategoryId")
+                        .HasForeignKey("AgencyId", "EquipmentCategoryId")
+                        .HasPrincipalKey("AgencyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Entities.Inspection.InspectionTemplatePhoto", b =>
                 {
+                    b.HasOne("MatosKC.Domain.Entities.Agencies.Agency", null)
+                        .WithMany()
+                        .HasForeignKey("AgencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("MatosKC.Domain.Entities.Accounts.Account", null)
                         .WithMany()
                         .HasForeignKey("CreatedByAccountId")
@@ -1275,7 +1310,8 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
                     b.HasOne("MatosKC.Domain.Entities.Agencies.Agency", null)
                         .WithMany()
                         .HasForeignKey("AgencyId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("MatosKC.Domain.Entities.Clients.Client", null)
                         .WithMany()
@@ -1285,16 +1321,33 @@ namespace MatosKC.Infrastructure.Persistence.Migrations
 
                     b.HasOne("MatosKC.Domain.Equipments.Equipment", null)
                         .WithMany()
-                        .HasForeignKey("EquipmentId")
+                        .HasForeignKey("AgencyId", "EquipmentId")
+                        .HasPrincipalKey("AgencyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("MatosKC.Domain.Equipments.Equipment", b =>
                 {
+                    b.HasOne("MatosKC.Domain.Entities.Agencies.Agency", null)
+                        .WithMany()
+                        .HasForeignKey("AgencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("MatosKC.Domain.Equipments.EquipmentCategory", null)
                         .WithMany()
-                        .HasForeignKey("CategoryId")
+                        .HasForeignKey("AgencyId", "CategoryId")
+                        .HasPrincipalKey("AgencyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MatosKC.Domain.Equipments.EquipmentCategory", b =>
+                {
+                    b.HasOne("MatosKC.Domain.Entities.Agencies.Agency", null)
+                        .WithMany()
+                        .HasForeignKey("AgencyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -30,7 +30,8 @@ public sealed class ManageInspectionTemplatesUseCase(InspectionWorkflowContext c
 
         return context.UnitOfWork.ExecuteAsync(async token =>
         {
-            if (!await context.Categories.ExistsByIdAsync(request.EquipmentCategoryId, token))
+            var category = await context.Categories.GetByIdAsync(request.EquipmentCategoryId, token);
+            if (category is null)
             {
                 throw new InspectionOperationException(404, "Equipment category not found.");
             }
@@ -40,6 +41,8 @@ public sealed class ManageInspectionTemplatesUseCase(InspectionWorkflowContext c
             {
                 var photo = await context.TemplatePhotos.GetByIdAsync(photoId, token)
                     ?? throw new InspectionOperationException(400, "A template point references an unknown illustration.");
+                if (photo.AgencyId != category.AgencyId)
+                    throw new InspectionOperationException(400, "Template illustrations must belong to the category agency.");
                 await using var stored = await context.Storage.RetrieveAsync(photo.ObjectKey, token)
                     ?? throw new InspectionOperationException(409, "A template illustration is unavailable.");
             }
@@ -53,6 +56,7 @@ public sealed class ManageInspectionTemplatesUseCase(InspectionWorkflowContext c
             }).ToArray();
             var template = new InspectionTemplate(id, points, request.EquipmentCategoryId);
 
+            if (category.AgencyId != Guid.Empty) template.AssignAgency(category.AgencyId);
             await context.Templates.AddAsync(template, token);
 
             return template;

@@ -2,8 +2,18 @@ namespace MatosKC.Domain.Equipments;
 
 using MatosKC.Domain.Entities;
 
-public class Equipment: BaseEntity
+public class Equipment: BaseEntity, MatosKC.Domain.Entities.Agencies.IAgencyOwned
 {
+    public Guid AgencyId { get; private set; }
+
+    public void AssignAgency(Guid agencyId)
+    {
+        if (agencyId == Guid.Empty) throw new ArgumentException("Agency is required.", nameof(agencyId));
+        if (AgencyId != Guid.Empty && AgencyId != agencyId)
+            throw new InvalidOperationException("Agency ownership cannot be transferred.");
+        AgencyId = agencyId;
+    }
+
     public string Name { get; private set; }
     public Guid CategoryId { get; private set; }
     public string SerialNumber { get; }

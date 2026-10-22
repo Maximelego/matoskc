@@ -220,13 +220,13 @@ public static class InspectionEndpoints
     }
 
     private static async Task<IResult> UploadTemplatePhotoAsync(
-        IFormFile file, ManageInspectionTemplatePhotosUseCase useCase,
+        Guid? agencyId, IFormFile file, ManageInspectionTemplatePhotosUseCase useCase,
         HttpContext context, IAgencyRepository agencies, CancellationToken ct
     )
     {
         await using var content = file.OpenReadStream();
         var photo = await useCase.UploadAsync(content, file.FileName, file.ContentType, file.Length,
-            await ActorAsync(context, agencies, ct), ct);
+            await ActorAsync(context, agencies, ct), ct, agencyId);
 
         return Results.Created($"/inspection-templates/photos/{photo.Id}", photo);
     }

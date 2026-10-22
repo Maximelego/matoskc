@@ -52,7 +52,9 @@ public sealed class RentalConfiguration : IEntityTypeConfiguration<Rental>
         builder.Property(rental => rental.Status).HasConversion<string>().HasMaxLength(32);
         builder.HasOne<Agency>().WithMany().HasForeignKey(rental => rental.AgencyId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Client>().WithMany().HasForeignKey(rental => rental.ClientId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<Equipment>().WithMany().HasForeignKey(rental => rental.EquipmentId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(rental => rental.AgencyId).IsRequired();
+        builder.HasOne<Equipment>().WithMany().HasForeignKey(rental => new { rental.AgencyId, rental.EquipmentId })
+            .HasPrincipalKey(equipment => new { equipment.AgencyId, equipment.Id }).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(rental => rental.EquipmentId).IsUnique()
             .HasFilter("status IN ('Draft', 'Active')")
             .HasDatabaseName("ux_rentals_open_equipment");
@@ -122,7 +124,10 @@ public sealed class InspectionTemplateConfiguration : IEntityTypeConfiguration<I
     public void Configure(EntityTypeBuilder<InspectionTemplate> builder)
     {
         builder.ToTable("inspection_templates");
-        builder.HasOne<EquipmentCategory>().WithMany().HasForeignKey(template => template.EquipmentCategoryId)
+        builder.Property(value => value.AgencyId).HasColumnName("agency_id");
+        builder.HasOne<Agency>().WithMany().HasForeignKey(value => value.AgencyId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<EquipmentCategory>().WithMany().HasForeignKey(template => new { template.AgencyId, template.EquipmentCategoryId })
+            .HasPrincipalKey(category => new { category.AgencyId, category.Id })
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(template => template.Points).WithOne().HasForeignKey(point => point.TemplateId)
             .OnDelete(DeleteBehavior.Cascade);

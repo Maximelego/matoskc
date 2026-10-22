@@ -39,11 +39,13 @@ public sealed class MatosKCApiFactory : WebApplicationFactory<Program>, IAsyncLi
 
     public async Task<HttpClient> CreateAuthenticatedClientAsync(
         MatosKC.Domain.Entities.Accounts.Role role =
-            MatosKC.Domain.Entities.Accounts.Role.SuperAdmin)
+            MatosKC.Domain.Entities.Accounts.Role.SuperAdmin, int? agencyCode = null)
     {
-        var client = CreateClient(
-            new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"),
-                AllowAutoRedirect = false });
+        Guid defaultAgencyId;
+        using (var scope = Services.CreateScope())
+            defaultAgencyId = await scope.ServiceProvider.GetRequiredService<MatosKCDbContext>()
+                .Agencies.Where(value => value.Code == 83).Select(value => value.Id).SingleAsync();
+        var client = CreateDefaultClient(new Uri("https://localhost"), new DefaultAgencyHandler(defaultAgencyId));
         string email = $"test-{Guid.NewGuid():N}@example.com";
         const string password = "integration-test-password";
         int? code = null;
@@ -53,9 +55,15 @@ public sealed class MatosKCApiFactory : WebApplicationFactory<Program>, IAsyncLi
             Guid? agencyId = null;
             if (role != MatosKC.Domain.Entities.Accounts.Role.SuperAdmin)
             {
-                var agency = new MatosKC.Domain.Entities.Agencies.Agency(
-                    "Test", Random.Shared.Next(100000, int.MaxValue));
-                db.Agencies.Add(agency);
+                int? selectedCode = agencyCode ?? (role == MatosKC.Domain.Entities.Accounts.Role.Admin ? 83 : null);
+                var agency = selectedCode.HasValue
+                    ? await db.Agencies.SingleOrDefaultAsync(value => value.Code == selectedCode)
+                    : null;
+                if (agency is null)
+                {
+                    agency = new MatosKC.Domain.Entities.Agencies.Agency("Test", selectedCode ?? Random.Shared.Next(100000, int.MaxValue));
+                    db.Agencies.Add(agency);
+                }
                 agencyId = agency.Id;
                 code = agency.Code;
             }
@@ -76,6 +84,18 @@ public sealed class MatosKCApiFactory : WebApplicationFactory<Program>, IAsyncLi
         response.EnsureSuccessStatusCode();
         await RefreshCsrfAsync(client);
         return client;
+    }
+
+    // Legacy scenarios explicitly select agency 83 when creating agency-owned roots as SuperAdmin.
+    private sealed class DefaultAgencyHandler(Guid agencyId) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.Method == HttpMethod.Post && request.RequestUri is { } uri &&
+                uri.Query.Length == 0 && uri.AbsolutePath is "/equipment-categories" or "/inspection-templates/photos")
+                request.RequestUri = new Uri(uri + $"?agencyId={agencyId}");
+            return base.SendAsync(request, cancellationToken);
+        }
     }
 
     public static async Task RefreshCsrfAsync(HttpClient client)

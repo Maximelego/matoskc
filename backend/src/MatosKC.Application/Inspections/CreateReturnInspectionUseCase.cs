@@ -36,6 +36,8 @@ public sealed class CreateReturnInspectionUseCase(InspectionWorkflowContext cont
 
             var template = await context.Templates.GetLatestForCategoryAsync(equipment.CategoryId, ct)
                 ?? throw new InspectionOperationException(409, "No inspection template exists for this category.");
+            if (template.AgencyId != equipment.AgencyId)
+                throw new InspectionOperationException(409, "Template and equipment must belong to the same agency.");
             var inspection = new InspectionEntity(Guid.NewGuid(), rental.Id, template.Id,
                 InspectionType.Return, actor.AccountId, request.OperatorFirstName, context.Time.GetUtcNow());
 

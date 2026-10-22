@@ -24,8 +24,8 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         var db = scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
         var category = new MatosKC.Domain.Equipments.EquipmentCategory("Test " + Guid.NewGuid(), null);
         var equipment = new MatosKC.Domain.Equipments.Equipment("Camion", category.Id, Guid.NewGuid().ToString());
-        var agency = new Agency("Test location", Random.Shared.Next(100000, int.MaxValue));
-        db.AddRange(category, equipment, agency);
+        var agency = await db.Agencies.SingleAsync(value => value.Code == 83);
+        db.AddRange(category, equipment);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         return (equipment.Id, category.Id, agency.Code);
@@ -103,13 +103,14 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         byte[] report = await client.GetByteArrayAsync($"/inspections/{id}/report", TestContext.Current.CancellationToken);
 
         using var otherAgency = await factory.CreateAuthenticatedClientAsync(Role.Agency);
-        var defects = await JsonAsync(await otherAgency.GetAsync($"/equipments/{seed.EquipmentId}/defects?status=Open", TestContext.Current.CancellationToken));
+        Assert.Equal(HttpStatusCode.NotFound, (await otherAgency.GetAsync($"/equipments/{seed.EquipmentId}/defects", TestContext.Current.CancellationToken)).StatusCode);
+        var defects = await JsonAsync(await client.GetAsync($"/equipments/{seed.EquipmentId}/defects?status=Open", TestContext.Current.CancellationToken));
         Assert.Equal(1, defects.GetProperty("total").GetInt32());
         Guid defectId = defects.GetProperty("items")[0].GetProperty("id").GetGuid();
-        Assert.Equal(Png, await otherAgency.GetByteArrayAsync(
+        Assert.Equal(Png, await client.GetByteArrayAsync(
             $"/equipments/{seed.EquipmentId}/defects/{defectId}/photos/{photoId}", TestContext.Current.CancellationToken));
         using var privateInspection = await otherAgency.GetAsync($"/inspections/{id}", TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.Forbidden, privateInspection.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, privateInspection.StatusCode);
         using var foreignPhoto = await otherAgency.GetAsync(
             $"/equipments/{seed.EquipmentId}/defects/{defectId}/photos/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.NotFound, foreignPhoto.StatusCode);
@@ -331,7 +332,7 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
     public async Task TemplateIllustration_UploadReferenceDownloadAndPermissions()
     {
         using var admin = await factory.CreateAuthenticatedClientAsync(Role.Admin);
-        using var agency = await factory.CreateAuthenticatedClientAsync(Role.Agency);
+        using var agency = await factory.CreateAuthenticatedClientAsync(Role.Agency, 83);
         using var anonymous = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
         var seed = await SeedAsync();
         using var form = new MultipartFormDataContent();
@@ -407,7 +408,7 @@ public sealed class InspectionEndpointsTests(MatosKCApiFactory factory)
         var ownPage = await JsonAsync(await agency.GetAsync("/inspections", cancellationToken: TestContext.Current.CancellationToken));
         Assert.Equal(0, ownPage.GetProperty("total").GetInt32());
         Assert.Equal(0, ownPage.GetProperty("inspections").GetArrayLength());
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(HttpStatusCode.NotFound,
             (await agency.GetAsync($"/inspections/{departure.GetProperty("id").GetGuid()}", cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden,
             (await agency.PatchAsJsonAsync($"/equipments/{seed.EquipmentId}/status", new { status = "Decommissioned" }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);

@@ -28,10 +28,10 @@ public sealed class EquipmentCategoryRepository
 
     public Task<bool> ExistsByNameAsync(
         string name,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Guid? agencyId = null)
     {
         return _dbContext.EquipmentCategories.AnyAsync(
-            category => category.Name == name,
+            category => category.Name == name && (!agencyId.HasValue || category.AgencyId == agencyId),
             cancellationToken
         );
     }

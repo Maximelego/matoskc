@@ -21,11 +21,14 @@ public sealed class InspectionMvpPersistenceTests(PostgreSqlFixture fixture)
         var category = new EquipmentCategory("MVP " + Guid.NewGuid(), null);
         var item = new Equipment("Camion", category.Id, Guid.NewGuid().ToString());
         var agency = new Agency("MVP", Random.Shared.Next(100000, int.MaxValue));
+        category.AssignAgency(agency.Id);
+        item.AssignAgency(agency.Id);
         var account = new Account("Inspector", $"mvp-{Guid.NewGuid():N}@example.test", "hash", true, Role.SuperAdmin, null);
         Guid templateId = Guid.NewGuid();
         var template = new InspectionTemplate(templateId,
             [new InspectionTemplatePoint(Guid.NewGuid(), templateId, "Point", "Le point sera à préciser", null)], category.Id);
         var start = new DateTimeOffset(2026, 10, 14, 10, 0, 0, TimeSpan.Zero);
+        template.AssignAgency(agency.Id);
         db.AddRange(category, item, agency, account, template);
 
         for (int index = 0; index < 3; index++)

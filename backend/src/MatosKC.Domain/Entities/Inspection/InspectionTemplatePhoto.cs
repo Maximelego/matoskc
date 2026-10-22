@@ -1,7 +1,17 @@
 namespace MatosKC.Domain.Entities.Inspection;
 
-public sealed class InspectionTemplatePhoto : BaseEntity
+public sealed class InspectionTemplatePhoto : BaseEntity, MatosKC.Domain.Entities.Agencies.IAgencyOwned
 {
+    public Guid AgencyId { get; private set; }
+
+    public void AssignAgency(Guid agencyId)
+    {
+        if (agencyId == Guid.Empty) throw new ArgumentException("Agency is required.", nameof(agencyId));
+        if (AgencyId != Guid.Empty && AgencyId != agencyId)
+            throw new InvalidOperationException("Agency ownership cannot be transferred.");
+        AgencyId = agencyId;
+    }
+
     public string ObjectKey { get; private set; }
     public string FileName { get; private set; }
     public string ContentType { get; private set; }

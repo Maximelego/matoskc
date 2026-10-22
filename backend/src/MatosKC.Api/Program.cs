@@ -69,6 +69,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.Use(async (http, next) =>
 {
+    var agencyScope = http.RequestServices.GetRequiredService<MatosKC.Application.Agencies.AgencyScope>();
+    Guid? agencyFilter = null;
+    if (http.Request.Query.TryGetValue("agencyId", out var requestedAgency))
+    {
+        if (!Guid.TryParse(requestedAgency, out var parsedAgency) || parsedAgency == Guid.Empty)
+            throw new MatosKC.Application.Inspections.InspectionOperationException(400, "Invalid agency identifier.");
+        agencyFilter = parsedAgency;
+    }
+    var actor = http.User.Identity?.IsAuthenticated == true
+        ? await InspectionEndpoints.ActorAsync(http,
+            http.RequestServices.GetRequiredService<MatosKC.Application.Agencies.Ports.IAgencyRepository>(), http.RequestAborted)
+        : null;
+    agencyScope.SetActor(actor, agencyFilter);
+
     var audit = http.RequestServices.GetRequiredService<MatosKC.Application.Persistence.AuditContext>();
     var accountId = http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     audit.AccountId = Guid.TryParse(accountId, out var id) ? id : null;

@@ -19,6 +19,7 @@ public static class DependencyInjection
         this IServiceCollection services
     )
     {
+        services.AddScoped<MatosKC.Application.Agencies.AgencyScope>();
         services.AddScoped<CreateEquipmentCategoryUseCase>();
         services.AddScoped<GetEquipmentCategoryUseCase>();
         services.AddScoped<ListEquipmentCategoryUseCase>();

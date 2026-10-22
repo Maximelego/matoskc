@@ -30,9 +30,12 @@ public sealed class InspectionWorkflowContext(
     IInspectionSignatureValidator signatureValidator,
     IInspectionTemplatePhotoRepository templatePhotos,
     IImageContentValidator imageValidator,
-    MatosKC.Application.Maintenance.IEquipmentCareRepository care
+    MatosKC.Application.Maintenance.IEquipmentCareRepository care,
+    MatosKC.Application.Agencies.AgencyScope? scope = null
 )
 {
+    public MatosKC.Application.Agencies.AgencyScope? Scope { get; } = scope;
+
     public MatosKC.Application.Maintenance.IEquipmentCareRepository Care { get; } = care;
 
     public IClientRepository Clients { get; } = clients;

@@ -27,7 +27,10 @@ public sealed class EquipmentCategoryConfiguration
             .HasColumnName("description")
             .HasColumnType("text");
 
-        builder.HasIndex(category => category.Name)
+        builder.Property(category => category.AgencyId).HasColumnName("agency_id");
+        builder.HasOne<MatosKC.Domain.Entities.Agencies.Agency>().WithMany().HasForeignKey(value => value.AgencyId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasAlternateKey(value => new { value.AgencyId, value.Id });
+        builder.HasIndex(category => new { category.AgencyId, category.Name })
             .IsUnique()
             .HasDatabaseName(
                 "ux_equipment_categories_name"

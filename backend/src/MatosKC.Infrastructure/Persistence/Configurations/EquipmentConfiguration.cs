@@ -40,6 +40,9 @@ public sealed class EquipmentConfiguration
 
         builder.Property<uint>("xmin").IsRowVersion();
 
+        builder.Property(equipment => equipment.AgencyId).HasColumnName("agency_id");
+        builder.HasOne<MatosKC.Domain.Entities.Agencies.Agency>().WithMany().HasForeignKey(value => value.AgencyId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasAlternateKey(value => new { value.AgencyId, value.Id });
         builder.HasIndex(equipment => equipment.SerialNumber)
             .IsUnique()
             .HasDatabaseName(
@@ -53,7 +56,8 @@ public sealed class EquipmentConfiguration
 
         builder.HasOne<EquipmentCategory>()
             .WithMany()
-            .HasForeignKey(equipment => equipment.CategoryId)
+            .HasForeignKey(equipment => new { equipment.AgencyId, equipment.CategoryId })
+            .HasPrincipalKey(category => new { category.AgencyId, category.Id })
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

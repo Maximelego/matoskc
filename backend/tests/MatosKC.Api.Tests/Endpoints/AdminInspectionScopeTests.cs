@@ -17,27 +17,33 @@ public sealed class AdminInspectionScopeTests(MatosKCApiFactory factory)
     public async Task AdminScopeIsEnforcedForSearchDirectAccessAndPrivateMedia_WhileSuperAdminRemainsGlobal()
     {
         var ct = TestContext.Current.CancellationToken;
-        using var admin = await factory.CreateAuthenticatedClientAsync(Role.Admin);
-        using var foreignAdmin = await factory.CreateAuthenticatedClientAsync(Role.Admin);
+        using var admin = await factory.CreateAuthenticatedClientAsync(Role.Admin, Random.Shared.Next(100000, int.MaxValue));
+        using var foreignAdmin = await factory.CreateAuthenticatedClientAsync(Role.Admin, Random.Shared.Next(100000, int.MaxValue));
         using var superAdmin = await factory.CreateAuthenticatedClientAsync(Role.SuperAdmin);
         var ownAgencyId = (await Json(await admin.GetAsync("/auth/me", ct))).GetProperty("agencyId").GetGuid();
         var otherAgencyId = (await Json(await foreignAdmin.GetAsync("/auth/me", ct))).GetProperty("agencyId").GetGuid();
-        Guid ownEquipmentId; Guid otherEquipmentId; Guid categoryId; int ownCode; int otherCode;
+        Guid ownEquipmentId; Guid otherEquipmentId; Guid categoryId; Guid otherCategoryId; int ownCode; int otherCode;
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MatosKCDbContext>();
             var category = new EquipmentCategory("Scoped " + Guid.NewGuid(), null);
+            var otherCategory = new EquipmentCategory("Scoped other " + Guid.NewGuid(), null);
+            category.AssignAgency(ownAgencyId);
+            otherCategory.AssignAgency(otherAgencyId);
             var first = new Equipment("Own", category.Id, Guid.NewGuid().ToString());
-            var second = new Equipment("Other", category.Id, Guid.NewGuid().ToString());
-            db.AddRange(category, first, second);
+            var second = new Equipment("Other", otherCategory.Id, Guid.NewGuid().ToString());
+            first.AssignAgency(ownAgencyId);
+            second.AssignAgency(otherAgencyId);
+            db.AddRange(category, otherCategory, first, second);
             await db.SaveChangesAsync(ct);
-            categoryId = category.Id; ownEquipmentId = first.Id; otherEquipmentId = second.Id;
+            categoryId = category.Id; otherCategoryId = otherCategory.Id; ownEquipmentId = first.Id; otherEquipmentId = second.Id;
             ownCode = (await db.Agencies.SingleAsync(value => value.Id == ownAgencyId, ct)).Code;
             otherCode = (await db.Agencies.SingleAsync(value => value.Id == otherAgencyId, ct)).Code;
         }
+        foreach (var templateCategoryId in new[] { categoryId, otherCategoryId })
         await Json(await superAdmin.PostAsJsonAsync("/inspection-templates", new
         {
-            equipmentCategoryId = categoryId,
+            equipmentCategoryId = templateCategoryId,
             points = new[] { new { description = "Etat", descriptionDetail = "Contrôle", photoId = (Guid?)null } }
         }, ct));
         async Task<JsonElement> Departure(Guid equipmentId, int agencyCode) => await Json(
@@ -61,7 +67,7 @@ public sealed class AdminInspectionScopeTests(MatosKCApiFactory factory)
         Assert.Equal(0, filtered.GetProperty("total").GetInt32());
         Assert.Equal(HttpStatusCode.Forbidden,
             (await admin.GetAsync($"/inspections?agencyId={otherAgencyId}", ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(HttpStatusCode.NotFound,
             (await admin.GetAsync($"/inspections?rentalId={otherRentalId}", ct)).StatusCode);
         foreach (var path in new[]
         {
@@ -72,7 +78,7 @@ public sealed class AdminInspectionScopeTests(MatosKCApiFactory factory)
         })
         {
             using var response = await admin.GetAsync(path, ct);
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"/inspections/{ownId}", ct)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await superAdmin.GetAsync($"/inspections/{otherId}", ct)).StatusCode);

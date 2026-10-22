@@ -10,6 +10,9 @@ public sealed class InspectionTemplatePhotoConfiguration : IEntityTypeConfigurat
     public void Configure(EntityTypeBuilder<InspectionTemplatePhoto> builder)
     {
         builder.ToTable("inspection_template_photos");
+        builder.Property(value => value.AgencyId).HasColumnName("agency_id");
+        builder.HasOne<MatosKC.Domain.Entities.Agencies.Agency>().WithMany().HasForeignKey(value => value.AgencyId).OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(photo => photo.ObjectKey).IsUnique();
         builder.HasOne<Account>().WithMany().HasForeignKey(photo => photo.CreatedByAccountId)
             .OnDelete(DeleteBehavior.Restrict);

@@ -10,5 +10,6 @@ public record GetEquipmentDto(
     EquipmentStatus Status,
     Guid EquipmentCategoryId,
     Guid? PrimaryPhotoId = null,
-    string? ThumbnailUrl = null
+    string? ThumbnailUrl = null,
+    Guid AgencyId = default
 );

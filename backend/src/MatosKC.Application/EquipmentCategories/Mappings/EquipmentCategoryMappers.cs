@@ -25,7 +25,8 @@ public static class EquipmentCategoryMapper
         return new GetEquipmentCategoryResult(
             category.Id,
             category.Name,
-            category.Description
+            category.Description,
+            category.AgencyId
         );
     }
 }

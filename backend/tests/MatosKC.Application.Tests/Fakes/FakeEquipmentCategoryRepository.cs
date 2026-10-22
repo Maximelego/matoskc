@@ -35,7 +35,7 @@ internal sealed class FakeEquipmentCategoryRepository : IEquipmentCategoryReposi
 
     public Task<bool> ExistsByNameAsync(
         string name,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, Guid? agencyId = null)
     {
         LastCheckedName = name;
         ExistsByNameCancellationToken = cancellationToken;

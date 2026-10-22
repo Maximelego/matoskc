@@ -32,7 +32,7 @@ public static class EquipmentManagementEndpoints
             var category = await useCase.UpdateCategoryAsync(id, request,
                 await InspectionEndpoints.ActorAsync(http, agencies, ct), ct);
 
-            return Results.Ok(new { category.Id, category.Name, category.Description });
+            return Results.Ok(new { category.Id, category.Name, category.Description, category.AgencyId });
         })
         .WithMetadata(new RequireCsrfValidation())
         .RequireAuthorization("ManageEquipment");

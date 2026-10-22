@@ -119,7 +119,7 @@ public sealed class CreateEquipmentUseCaseTests
 
         await useCase.ExecuteAsync(dto, cancellationToken);
 
-        Assert.Equal(cancellationToken, categoryRepository.ExistsByIdCancellationToken);
+        Assert.Equal(cancellationToken, categoryRepository.GetByIdCancellationToken);
         Assert.Equal(cancellationToken, equipmentRepository.ExistsCancellationToken);
         Assert.Equal(cancellationToken, equipmentRepository.AddCancellationToken);
     }

@@ -36,6 +36,9 @@ public sealed class CreateDepartureInspectionUseCase(InspectionWorkflowContext c
             var agency = await context.Agencies.GetByCodeAsync(request.Client.AgencyCode, ct)
                 ?? throw new InspectionOperationException(404, "Agency not found.");
 
+            if (equipment.AgencyId != Guid.Empty && equipment.AgencyId != agency.Id)
+                throw new InspectionOperationException(409, "Equipment and rental must belong to the same agency.");
+
             if (actor.Role == MatosKC.Domain.Entities.Accounts.Role.Agency && actor.AgencyId != agency.Id)
             {
                 throw new InspectionOperationException(403, "Cannot create a rental for another agency.");
@@ -48,6 +51,8 @@ public sealed class CreateDepartureInspectionUseCase(InspectionWorkflowContext c
 
             var template = await context.Templates.GetLatestForCategoryAsync(equipment.CategoryId, ct)
                 ?? throw new InspectionOperationException(409, "No inspection template exists for this category.");
+            if (template.AgencyId != equipment.AgencyId)
+                throw new InspectionOperationException(409, "Template and equipment must belong to the same agency.");
             var now = context.Time.GetUtcNow();
             var client = new Client(Guid.NewGuid(), request.Client.DisplayName, request.Client.Email,
                 request.Client.Phone, new CommandNumber(request.Client.AgencyCode, request.Client.CommandValue));
