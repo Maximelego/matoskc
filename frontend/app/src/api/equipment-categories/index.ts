@@ -21,7 +21,8 @@ export const equipmentCategoriesApi = {
   },
   update(id: string, dto: UpdateEquipmentCategoryDto) {
     return api.put<EquipmentCategoryDto, UpdateEquipmentCategoryDto>(
-      `/equipment-categories/${encodeURIComponent(id)}`, dto,
+      `/equipment-categories/${encodeURIComponent(id)}`,
+      dto,
     );
   },
 };

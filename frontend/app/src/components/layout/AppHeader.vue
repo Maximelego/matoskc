@@ -4,7 +4,6 @@ import { RouterLink } from "vue-router";
 defineProps<{
   title: string;
 }>();
-
 </script>
 
 <template>
@@ -65,7 +64,6 @@ defineProps<{
     gap: 0.75rem;
     margin-left: auto;
   }
-
 }
 
 @media (max-width: 48rem) {

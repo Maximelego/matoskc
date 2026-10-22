@@ -12,7 +12,10 @@ defineProps<{
   inspectionId: string | null;
   disabled: boolean;
 }>();
-const emit = defineEmits<{ update: [value: PointValue]; removePhoto: [findingId: string, photoId: string] }>();
+const emit = defineEmits<{
+  update: [value: PointValue];
+  removePhoto: [findingId: string, photoId: string];
+}>();
 </script>
 
 <template>

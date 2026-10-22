@@ -322,8 +322,8 @@ async function submit() {
                     :key="occurrence.id"
                   >
                     {{ occurrence.observation }} ·
-                    {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }} ·
-                    constaté par {{ occurrence.operatorFirstName }}
+                    {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }} · constaté par
+                    {{ occurrence.operatorFirstName }}
                     <div class="care__photos">
                       <DefectPhoto
                         v-for="id in occurrence.photoIds"

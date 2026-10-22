@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { authSession } from "../../api/auth/session";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts";
 import type { EquipmentDto, EquipmentStatus } from "../../api/equipments/dto";
+import BaseIcon from "../common/icon/BaseIcon.vue";
 import BaseModal from "../common/modal/BaseModal.vue";
 import EquipmentStatusBadge from "../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentHistory from "./EquipmentHistory.vue";
@@ -16,22 +17,12 @@ const props = defineProps<{
   busy?: boolean;
   error?: string | null;
 }>();
-
 const emit = defineEmits<{
   close: [];
   closed: [];
   changeStatus: [equipment: EquipmentDto, status: EquipmentStatus, reason: string];
   updateEquipment: [equipment: EquipmentDto, name: string, categoryId: string];
 }>();
-
-const labels: Record<EquipmentStatus, string> = {
-  Available: "Disponible",
-  Borrowed: "Emprunté",
-  ToBeDecided: "À déterminer",
-  Unavailable: "Indisponible",
-  Maintenance: "En maintenance",
-  Decommissioned: "Réformé",
-};
 
 const transitions: Record<EquipmentStatus, EquipmentStatus[]> = {
   Available: ["Decommissioned"],
@@ -41,12 +32,13 @@ const transitions: Record<EquipmentStatus, EquipmentStatus[]> = {
   Maintenance: ["Available", "Unavailable", "Decommissioned"],
   Decommissioned: [],
 };
-
 const selectedStatus = ref<EquipmentStatus | "">("");
 const reason = ref("");
 const editName = ref("");
 const editCategoryId = ref("");
+const editing = ref(false);
 const showHistory = ref(false);
+const historyLoaded = ref(false);
 
 watch(
   () => props.equipment,
@@ -55,32 +47,68 @@ watch(
     reason.value = "";
     editName.value = props.equipment?.name ?? "";
     editCategoryId.value = props.equipment?.equipmentCategoryId ?? "";
+    editing.value = false;
     showHistory.value = false;
+    historyLoaded.value = false;
   },
 );
-
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) {
+      editing.value = false;
+      showHistory.value = false;
+    }
+  },
+);
 const isAdministrator = computed(() =>
   ["Admin", "SuperAdmin"].includes(authSession.account.value?.role ?? ""),
 );
-
 const availableStatuses = computed(() =>
-  props.equipment ? (transitions[props.equipment.status] ?? []) : [],
+  props.equipment ? transitions[props.equipment.status] : [],
 );
-
-function submit(): void {
-  const equipment = props.equipment;
-  const status = selectedStatus.value;
-
-  if (!equipment || !status || props.busy || !availableStatuses.value.includes(status)) {
-    return;
-  }
-
-  if (!reason.value.trim() || reason.value.trim().length > 1000) return;
-  emit("changeStatus", equipment, status, reason.value.trim());
+const categoryName = computed(
+  () =>
+    props.equipmentCategories.find(
+      (category) => category.id === props.equipment?.equipmentCategoryId,
+    )?.name ?? "Non renseignée",
+);
+function cancelEdit(): void {
+  editName.value = props.equipment?.name ?? "";
+  editCategoryId.value = props.equipment?.equipmentCategoryId ?? "";
+  editing.value = false;
 }
 function saveEquipment(): void {
   if (!props.equipment || !editName.value.trim() || !editCategoryId.value || props.busy) return;
+  if (
+    editName.value.trim() === props.equipment.name &&
+    editCategoryId.value === props.equipment.equipmentCategoryId
+  ) {
+    cancelEdit();
+    return;
+  }
   emit("updateEquipment", props.equipment, editName.value.trim(), editCategoryId.value);
+}
+function submitStatus(): void {
+  if (
+    !props.equipment ||
+    !selectedStatus.value ||
+    props.busy ||
+    !availableStatuses.value.includes(selectedStatus.value) ||
+    !reason.value.trim() ||
+    reason.value.trim().length > 1000
+  )
+    return;
+  emit("changeStatus", props.equipment, selectedStatus.value, reason.value.trim());
+}
+async function toggleHistory(): Promise<void> {
+  if (showHistory.value) {
+    showHistory.value = false;
+    return;
+  }
+  historyLoaded.value = true;
+  await nextTick();
+  showHistory.value = true;
 }
 </script>
 
@@ -100,115 +128,187 @@ function saveEquipment(): void {
         :open="open"
       />
 
-      <dl class="equipment-details__fields">
-        <div>
-          <dt>Nom</dt>
-          <dd>{{ equipment.name }}</dd>
-        </div>
-
-        <div>
-          <dt>Numéro de série</dt>
-          <dd>{{ equipment.serialNumber || "Non renseigné" }}</dd>
-        </div>
-
-        <div>
-          <dt>Catégorie</dt>
-          <dd>
-            {{
-              equipmentCategories.find((c) => c.id === equipment?.equipmentCategoryId)?.name ||
-              "Non renseignée"
-            }}
-          </dd>
-        </div>
-
-        <div>
-          <dt>État actuel</dt>
-          <dd><EquipmentStatusBadge :status="equipment.status" /></dd>
-        </div>
-      </dl>
-
-      <form
-        v-if="isAdministrator"
-        class="equipment-details__status"
-        @submit.prevent="saveEquipment"
-      >
-        <h3>Modifier le matériel</h3>
-        <label for="equipment-edit-name">Nom</label>
-        <input
-          id="equipment-edit-name"
-          v-model="editName"
-          required
-          :disabled="busy"
-        />
-        <label for="equipment-edit-category">Catégorie</label>
-        <select
-          id="equipment-edit-category"
-          v-model="editCategoryId"
-          required
-          :disabled="busy"
-        >
-          <option
-            v-for="category in equipmentCategories"
-            :key="category.id"
-            :value="category.id"
+      <section class="equipment-details__section">
+        <div class="equipment-details__heading">
+          <h3>Informations</h3>
+          <button
+            v-if="isAdministrator && !editing"
+            type="button"
+            class="equipment-details__edit"
+            :disabled="busy"
+            @click="editing = true"
           >
-            {{ category.name }}
-          </option>
-        </select>
-        <button
-          type="submit"
-          :disabled="busy || !editName.trim() || !editCategoryId"
-        >
-          Enregistrer les modifications
-        </button>
-      </form>
-      <RouterLink
-        v-if="isAdministrator"
-        :to="{ name: 'ManageMaintenances', query: { equipmentId: equipment.id } }"
+            <BaseIcon
+              name="edit"
+              :size="18"
+            />
+            Modifier
+          </button>
+        </div>
+        <form @submit.prevent="saveEquipment">
+          <dl class="equipment-details__fields">
+            <div>
+              <dt>Nom</dt>
+              <dd v-if="editing">
+                <input
+                  id="equipment-edit-name"
+                  v-model="editName"
+                  aria-label="Nom du matériel"
+                  required
+                  :disabled="busy"
+                  maxlength="200"
+                />
+              </dd>
+              <dd v-else>{{ equipment.name }}</dd>
+            </div>
+            <div>
+              <dt>Numéro de série</dt>
+              <dd>{{ equipment.serialNumber || "Non renseigné" }}</dd>
+            </div>
+            <div>
+              <dt>Catégorie</dt>
+              <dd v-if="editing">
+                <select
+                  id="equipment-edit-category"
+                  v-model="editCategoryId"
+                  aria-label="Catégorie du matériel"
+                  required
+                  :disabled="busy"
+                >
+                  <option
+                    v-for="category in equipmentCategories"
+                    :key="category.id"
+                    :value="category.id"
+                  >
+                    {{ category.name }}
+                  </option>
+                </select>
+              </dd>
+              <dd v-else>{{ categoryName }}</dd>
+            </div>
+            <div>
+              <dt>État actuel</dt>
+              <dd><EquipmentStatusBadge :status="equipment.status" /></dd>
+            </div>
+          </dl>
+          <div
+            v-if="editing"
+            class="equipment-details__edit-actions"
+          >
+            <button
+              type="button"
+              class="equipment-details__secondary"
+              :disabled="busy"
+              @click="cancelEdit"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="equipment-details__primary"
+              :disabled="busy || !editName.trim() || !editCategoryId"
+            >
+              {{ busy ? "Enregistrement…" : "Enregistrer" }}
+            </button>
+          </div>
+        </form>
+      </section>
+      <p
+        v-if="error"
+        class="equipment-details__error"
+        role="alert"
       >
-        Voir les défauts et les maintenances
-      </RouterLink>
-      <div v-if="isAdministrator">
-        <BaseButton
-          type="button"
-          class="equipment-details__history"
-          @click="showHistory = !showHistory"
+        {{ error }}
+      </p>
+
+      <div
+        v-if="isAdministrator"
+        class="equipment-details__navigation"
+      >
+        <RouterLink
+          class="equipment-details__nav-card"
+          :to="{ name: 'ManageMaintenances', query: { equipmentId: equipment.id } }"
         >
-          {{ showHistory ? "Masquer l’historique" : "Afficher l’historique du matériel" }}
-        </BaseButton>
-        <EquipmentHistory
-          v-if="showHistory"
-          :equipment-id="equipment.id"
-        />
+          <BaseIcon
+            name="maintenance"
+            :size="25"
+          />
+          <span
+            ><strong>Défauts et maintenances</strong
+            ><small>Consulter les constats et les interventions</small></span
+          >
+          <BaseIcon
+            name="arrow-right"
+            :size="20"
+          />
+        </RouterLink>
+        <button
+          type="button"
+          class="equipment-details__nav-card"
+          :aria-expanded="showHistory"
+          aria-controls="equipment-history"
+          :disabled="busy"
+          @click="toggleHistory"
+        >
+          <BaseIcon
+            name="clock"
+            :size="25"
+          />
+          <span
+            ><strong>Historique du matériel</strong
+            ><small>{{
+              showHistory ? "Masquer les opérations" : "Voir les opérations enregistrées"
+            }}</small></span
+          >
+          <BaseIcon
+            :name="showHistory ? 'chevron-up' : 'chevron-down'"
+            :size="20"
+          />
+        </button>
+        <div
+          id="equipment-history"
+          class="equipment-details__history-reveal"
+          :class="{ 'equipment-details__history-reveal--open': showHistory }"
+          :aria-hidden="!showHistory"
+          :inert="!showHistory"
+        >
+          <div class="equipment-details__history-content">
+            <EquipmentHistory
+              v-if="historyLoaded"
+              :equipment-id="equipment.id"
+            />
+          </div>
+        </div>
       </div>
 
       <form
-        class="equipment-details__status"
-        @submit.prevent="submit"
+        class="equipment-details__section equipment-details__status"
+        @submit.prevent="submitStatus"
       >
         <h3>Changer l’état</h3>
-
-        <p v-if="availableStatuses.length === 0">
+        <p v-if="!availableStatuses.length">
           Aucun changement d’état n’est autorisé pour cet équipement.
         </p>
-
         <template v-else>
-          <label for="equipment-next-status">Nouvel état</label>
-          <select
-            id="equipment-next-status"
-            v-model="selectedStatus"
+          <fieldset
+            class="equipment-details__choices"
             :disabled="busy"
           >
-            <option value="">Sélectionnez un état</option>
-            <option
+            <legend>Choisissez le nouvel état</legend>
+            <label
               v-for="status in availableStatuses"
               :key="status"
-              :value="status"
+              :class="{ 'equipment-details__choice--selected': selectedStatus === status }"
             >
-              {{ labels[status] }}
-            </option>
-          </select>
-
+              <input
+                v-model="selectedStatus"
+                type="radio"
+                name="equipment-next-status"
+                :value="status"
+              />
+              <EquipmentStatusBadge :status="status" />
+            </label>
+          </fieldset>
           <label for="equipment-status-reason">Motif du changement *</label>
           <textarea
             id="equipment-status-reason"
@@ -219,29 +319,22 @@ function saveEquipment(): void {
             :disabled="busy"
             placeholder="Précisez la raison de cette décision"
           />
-
-          <p
-            v-if="error"
-            class="equipment-details__error"
-            role="alert"
-          >
-            {{ error }}
-          </p>
-
           <button
             type="submit"
+            class="equipment-details__primary"
             :disabled="!selectedStatus || !reason.trim() || busy"
           >
             {{ busy ? "Enregistrement…" : "Enregistrer le nouvel état" }}
           </button>
         </template>
-
+      </form>
+      <section class="equipment-details__section equipment-details__qr">
+        <h3>QR code du matériel</h3>
         <EquipmentQRCode
-          v-if="equipment"
           :equipment-id="equipment.id"
           :equipment-name="equipment.name"
         />
-      </form>
+      </section>
     </div>
   </BaseModal>
 </template>
@@ -250,113 +343,235 @@ function saveEquipment(): void {
 .equipment-details {
   display: grid;
   gap: 1.5rem;
+  min-width: 0;
 
-  &__photo {
+  &__section {
     display: grid;
-    place-items: center;
-    min-height: 12rem;
-    border: 1px dashed var(--color-border-strong);
-    border-radius: 0.75rem;
-    color: var(--color-text-secondary);
-    background: var(--color-surface-secondary);
+    gap: 0.9rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
   }
-
+  &__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  h3,
+  p {
+    margin: 0;
+  }
   &__fields {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
     gap: 1rem;
     margin: 0;
-
     div {
       min-width: 0;
     }
-
     dt {
       margin-bottom: 0.35rem;
       color: var(--color-text-secondary);
       font-size: var(--font-size-sm);
     }
-
     dd {
       margin: 0;
       overflow-wrap: anywhere;
       font-weight: var(--font-weight-semibold);
     }
   }
-
-  a {
-    text-decoration: none;
+  input:not([type="radio"]),
+  select,
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    color: var(--color-text);
+    background: var(--color-input-background);
+    font: inherit;
   }
-
-  &__status {
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  &__edit,
+  &__secondary,
+  &__primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.55rem;
+  }
+  &__edit,
+  &__secondary {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+  &__edit:hover:not(:disabled),
+  &__secondary:hover:not(:disabled) {
+    background: var(--color-secondary-soft-hover);
+  }
+  &__primary {
+    justify-self: start;
+    border: 1px solid var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+  }
+  &__primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  &__edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+  &__navigation {
     display: grid;
-    gap: 0.75rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--color-border);
-
-    h3,
-    x p {
-      margin: 0;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+  &__nav-card {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    min-height: 4rem;
+    padding: 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    color: var(--color-text);
+    background: var(--color-surface-secondary);
+    text-align: left;
+    text-decoration: none;
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      transform 180ms ease;
+    &:hover:not(:disabled) {
+      background: var(--color-secondary-soft);
+      border-color: var(--color-secondary);
+      transform: translateY(-2px);
     }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 0.625rem;
+    > span {
+      display: grid;
+      gap: 0.2rem;
+      min-width: 0;
+      flex: 1;
+    }
+    strong {
+      font-weight: var(--font-weight-semibold);
+    }
+    small {
+      color: var(--color-text-secondary);
+    }
+    > svg:last-child {
+      flex: none;
+    }
+  }
+  &__history-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-rows 320ms ease,
+      opacity 260ms ease;
+    &--open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+    }
+  }
+  &__history-content {
+    min-height: 0;
+    overflow: hidden;
+  }
+  &__status {
+    > label {
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+  &__choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    legend {
+      margin-bottom: 0.55rem;
+      font-weight: var(--font-weight-semibold);
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 3rem;
+      padding: 0.65rem;
       border: 1px solid var(--color-border);
-      border-radius: 0.5rem;
-      color: var(--color-text);
-      background: var(--color-input-background);
-    }
-
-    button {
-      justify-self: start;
-      padding: 0.625rem 1rem;
-      border: 0;
-      border-radius: 0.5rem;
-      color: var(--color-text-on-primary);
-      background: var(--color-primary);
+      border-radius: 0.65rem;
+      background: var(--color-surface-secondary);
       cursor: pointer;
-
-      &:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
+      &:hover {
+        background: var(--color-secondary-soft);
+      }
+      &.equipment-details__choice--selected {
+        border-color: var(--color-secondary);
+        background: var(--color-secondary-soft);
       }
     }
+    input {
+      accent-color: var(--color-secondary);
+      flex: none;
+    }
   }
-
   &__error {
     color: var(--color-danger);
   }
-
-  &__history {
-    justify-self: start;
-    padding: 0.5rem;
-    margin: 0.2rem 0.2rem 0.2rem 0;
-    border: 0;
-    border-radius: 0.5rem;
-    font: inherit;
-    cursor: pointer;
-    color: var(--color-primary);
-    text-decoration: none;
+  &__qr {
+    justify-items: center;
+    h3 {
+      justify-self: start;
+    }
   }
 }
-
 @media (max-width: 42rem) {
   .equipment-details {
     gap: 1rem;
   }
-  .equipment-details__photo {
-    min-height: 9rem;
-  }
   .equipment-details__fields {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.875rem;
   }
-  .equipment-details__status button {
+  .equipment-details__primary {
     justify-self: stretch;
-    min-height: 2.75rem;
+  }
+  .equipment-details__edit-actions > button {
+    flex: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .equipment-details__history-reveal,
+  .equipment-details__nav-card {
+    transition: none;
   }
 }
 </style>

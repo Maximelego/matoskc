@@ -3,12 +3,21 @@ export type InspectionStatusDto = "Draft" | "Validated" | "Cancelled";
 export type InspectionResultDto = "Compliant" | "NonCompliant";
 export type KnownDefectResultDto = "Unchanged" | "Worsened" | "MaintenanceCheckRequired";
 export type KnownDefectDto = {
-  id: string; defectId: string; description: string; historicalObservation: string;
-  observedAt: string; historicalPhotoIds: string[]; result: KnownDefectResultDto | null;
-  observation: string | null; photoIds: string[];
+  id: string;
+  defectId: string;
+  description: string;
+  historicalObservation: string;
+  observedAt: string;
+  historicalPhotoIds: string[];
+  result: KnownDefectResultDto | null;
+  observation: string | null;
+  photoIds: string[];
 };
 export type InspectionFindingDto = {
-  id: string; templatePointId: string; observation: string; photoIds: string[];
+  id: string;
+  templatePointId: string;
+  observation: string;
+  photoIds: string[];
 };
 
 export type ClientInputDto = {
@@ -63,9 +72,20 @@ export type InspectionTemplateDto = {
   id: string;
   equipmentCategoryId: string;
   createdAt: string;
-  points: { id: string; templateId: string; description: string; descriptionDetail: string; position: number; photoId: string | null }[];
+  points: {
+    id: string;
+    templateId: string;
+    description: string;
+    descriptionDetail: string;
+    position: number;
+    photoId: string | null;
+  }[];
 };
-export type CreateDepartureDto = { equipmentId: string; client: ClientInputDto; operatorFirstName: string };
+export type CreateDepartureDto = {
+  equipmentId: string;
+  client: ClientInputDto;
+  operatorFirstName: string;
+};
 export type SaveDraftDto = {
   operatorFirstName: string;
   answers: { templatePointId: string; result: InspectionResultDto; observation: null }[];
@@ -73,22 +93,53 @@ export type SaveDraftDto = {
   findings: { id: string; templatePointId: string; observation: string }[];
   removedFindingIds: string[];
 };
-export type SignInspectionDto = { signerName: string; signaturePngBase64: string; accepted: boolean };
+export type SignInspectionDto = {
+  signerName: string;
+  signaturePngBase64: string;
+  accepted: boolean;
+};
 export type InspectionListItemDto = {
-  id: string; rentalId: string; equipmentId: string; equipmentName: string; serialNumber: string;
-  agencyId: string | null; agencyCode: number; clientName: string; commandNumber: string;
-  templateId: string; type: InspectionTypeDto; status: InspectionStatusDto;
-  operatorFirstName: string; startedAt: string; validatedAt: string | null;
-  cancelledAt: string | null; hasReport: boolean;
+  id: string;
+  rentalId: string;
+  equipmentId: string;
+  equipmentName: string;
+  serialNumber: string;
+  agencyId: string | null;
+  agencyCode: number;
+  clientName: string;
+  commandNumber: string;
+  templateId: string;
+  type: InspectionTypeDto;
+  status: InspectionStatusDto;
+  operatorFirstName: string;
+  startedAt: string;
+  validatedAt: string | null;
+  cancelledAt: string | null;
+  hasReport: boolean;
 };
 export type ListInspectionsDto = {
-  inspections: InspectionListItemDto[]; total: number; offset: number; limit: number;
+  inspections: InspectionListItemDto[];
+  total: number;
+  offset: number;
+  limit: number;
 };
 export type InspectionFiltersDto = {
-  rentalId?: string; equipmentId?: string; agencyId?: string; commandNumber?: string;
-  from?: string; to?: string; type?: InspectionTypeDto; status?: InspectionStatusDto;
-  offset?: number; limit?: number;
+  rentalId?: string;
+  equipmentId?: string;
+  agencyId?: string;
+  commandNumber?: string;
+  from?: string;
+  to?: string;
+  type?: InspectionTypeDto;
+  status?: InspectionStatusDto;
+  offset?: number;
+  limit?: number;
 };
 export type InspectionMediaDto = {
-  id: string; inspectionId: string; targetId?: string; fileName: string; contentType: string; contentLength: number;
+  id: string;
+  inspectionId: string;
+  targetId?: string;
+  fileName: string;
+  contentType: string;
+  contentLength: number;
 };

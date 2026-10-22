@@ -1,7 +1,14 @@
 import { api } from "../client";
 import type {
-  CreateDepartureDto, InspectionDto, InspectionFiltersDto, InspectionMediaDto,
-  InspectionTemplateDto, ListInspectionsDto, RentalDto, SaveDraftDto, SignInspectionDto,
+  CreateDepartureDto,
+  InspectionDto,
+  InspectionFiltersDto,
+  InspectionMediaDto,
+  InspectionTemplateDto,
+  ListInspectionsDto,
+  RentalDto,
+  SaveDraftDto,
+  SignInspectionDto,
 } from "./dto";
 
 export type * from "./dto";
@@ -14,26 +21,40 @@ export const inspectionHttpApi = {
   createDeparture: (dto: CreateDepartureDto) =>
     api.post<InspectionDto, CreateDepartureDto>("/inspections/departure", dto),
   createReturn: (rentalId: string, operatorFirstName: string) =>
-    api.post<InspectionDto>(`/rentals/${encodeURIComponent(rentalId)}/return-inspection`, { operatorFirstName }),
-  saveDraft: (id: string, dto: SaveDraftDto) => api.put<InspectionDto, SaveDraftDto>(`${path(id)}/draft`, dto),
-  sign: (id: string, dto: SignInspectionDto) => api.put<InspectionDto, SignInspectionDto>(`${path(id)}/signature`, dto),
+    api.post<InspectionDto>(`/rentals/${encodeURIComponent(rentalId)}/return-inspection`, {
+      operatorFirstName,
+    }),
+  saveDraft: (id: string, dto: SaveDraftDto) =>
+    api.put<InspectionDto, SaveDraftDto>(`${path(id)}/draft`, dto),
+  sign: (id: string, dto: SignInspectionDto) =>
+    api.put<InspectionDto, SignInspectionDto>(`${path(id)}/signature`, dto),
   validate: (id: string) => api.post<InspectionDto>(`${path(id)}/validation`, {}),
   cancel: (id: string, reason: string) =>
     api.post<InspectionDto>(`${path(id)}/cancellation`, { reason }),
   uploadEvidencePhoto: (id: string, targetId: string, file: File) =>
-    api.postFile<InspectionMediaDto>(`${path(id)}/evidence/${encodeURIComponent(targetId)}/photos`, file),
+    api.postFile<InspectionMediaDto>(
+      `${path(id)}/evidence/${encodeURIComponent(targetId)}/photos`,
+      file,
+    ),
   removePhoto: (id: string, photoId: string) =>
     api.delete(`${path(id)}/photos/${encodeURIComponent(photoId)}`),
-  getPhoto: (id: string, photoId: string) => api.getBlob(`${path(id)}/photos/${encodeURIComponent(photoId)}`),
+  getPhoto: (id: string, photoId: string) =>
+    api.getBlob(`${path(id)}/photos/${encodeURIComponent(photoId)}`),
   getSignature: (id: string) => api.getBlob(`${path(id)}/signature`),
   getReport: (id: string) => api.getBlob(`${path(id)}/report`),
   getRental: (id: string) => api.get<RentalDto>(`/rentals/${encodeURIComponent(id)}`),
   getCurrentRental: (equipmentId: string) =>
-    api.get<{ rental: RentalDto | null }>(`/equipments/${encodeURIComponent(equipmentId)}/current-rental`)
-      .then(response => response.rental),
+    api
+      .get<{ rental: RentalDto | null }>(
+        `/equipments/${encodeURIComponent(equipmentId)}/current-rental`,
+      )
+      .then((response) => response.rental),
   getDeparture: (rentalId: string) =>
     api.get<InspectionDto | null>(`/rentals/${encodeURIComponent(rentalId)}/departure-inspection`),
-  getTemplate: (id: string) => api.get<InspectionTemplateDto>(`/inspection-templates/${encodeURIComponent(id)}`),
+  getTemplate: (id: string) =>
+    api.get<InspectionTemplateDto>(`/inspection-templates/${encodeURIComponent(id)}`),
   getLatestTemplate: (categoryId: string) =>
-    api.get<InspectionTemplateDto>(`/equipment-categories/${encodeURIComponent(categoryId)}/inspection-template`),
+    api.get<InspectionTemplateDto>(
+      `/equipment-categories/${encodeURIComponent(categoryId)}/inspection-template`,
+    ),
 };

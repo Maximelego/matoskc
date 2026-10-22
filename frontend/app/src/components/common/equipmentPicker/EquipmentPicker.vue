@@ -28,7 +28,10 @@ const matches = computed(() =>
       placeholder="Nom ou numéro de série"
     />
     <p v-if="!matches.length">Aucun équipement ne correspond à votre recherche.</p>
-    <div v-else class="equipment-picker__grid">
+    <div
+      v-else
+      class="equipment-picker__grid"
+    >
       <button
         v-for="item in matches"
         :key="item.id"
@@ -93,12 +96,18 @@ const matches = computed(() =>
   outline-offset: 0.125rem;
 }
 @media (max-width: 42rem) {
-  .equipment-picker__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .equipment-picker__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 23rem) {
-  .equipment-picker__grid { grid-template-columns: 1fr; }
+  .equipment-picker__grid {
+    grid-template-columns: 1fr;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .equipment-picker__choice :deep(.equipment-card) { transition: none; }
+  .equipment-picker__choice :deep(.equipment-card) {
+    transition: none;
+  }
 }
 </style>

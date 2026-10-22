@@ -73,27 +73,44 @@ function hydratePoints(current: InspectionDto | null): void {
   points.value = Object.fromEntries(
     (template.value?.points ?? []).map((point) => {
       const answer = current?.answers.find((item) => item.templatePointId === point.id);
-      return [point.id, answer ? {
-        result: answer.result,
-        findings: current?.findings.filter((item) => item.templatePointId === point.id)
-          .map((item) => ({ ...item, files: [] })) ?? [],
-      } : defaultPoint()];
+      return [
+        point.id,
+        answer
+          ? {
+              result: answer.result,
+              findings:
+                current?.findings
+                  .filter((item) => item.templatePointId === point.id)
+                  .map((item) => ({ ...item, files: [] })) ?? [],
+            }
+          : defaultPoint(),
+      ];
     }),
   );
 }
 function completePoint(value: PointValue | undefined): boolean {
-  return Boolean(value?.result && (value.result === "Compliant" ||
-    (value.findings.length > 0 && value.findings.every((finding) =>
-      finding.observation.trim() && (finding.files.length || finding.photoIds.length)))));
+  return Boolean(
+    value?.result &&
+    (value.result === "Compliant" ||
+      (value.findings.length > 0 &&
+        value.findings.every(
+          (finding) =>
+            finding.observation.trim() && (finding.files.length || finding.photoIds.length),
+        ))),
+  );
 }
 function completeKnown(): boolean {
-  return knownDefects.value.every((defect) => defect.result &&
-    (defect.result !== "Worsened" ||
-      (defect.observation?.trim() && (defect.files.length || defect.photoIds.length))));
+  return knownDefects.value.every(
+    (defect) =>
+      defect.result &&
+      (defect.result !== "Worsened" ||
+        (defect.observation?.trim() && (defect.files.length || defect.photoIds.length))),
+  );
 }
 function updateKnown(defectId: string, patch: Partial<KnownDefectValue>): void {
   knownDefects.value = knownDefects.value.map((defect) =>
-    defect.defectId === defectId ? { ...defect, ...patch } : defect);
+    defect.defectId === defectId ? { ...defect, ...patch } : defect,
+  );
 }
 
 function message(cause: unknown): string {
@@ -119,7 +136,10 @@ async function load(): Promise<void> {
 
     equipment.value = item;
     knownOperatorNames.value = Object.fromEntries(
-      (await defectsApi.listAll(item.id, "Open")).map((defect) => [defect.id, defect.operatorFirstName]),
+      (await defectsApi.listAll(item.id, "Open")).map((defect) => [
+        defect.id,
+        defect.operatorFirstName,
+      ]),
     );
     const current = await inspectionHttpApi.getCurrentRental(item.id);
 
@@ -233,16 +253,25 @@ async function persist(): Promise<void> {
     operatorFirstName: operatorFirstName.value.trim(),
     answers: Object.entries(points.value)
       .filter(([, value]) => value.result)
-      .map(([templatePointId, value]) => ({ templatePointId, result: value.result!, observation: null })),
-    knownDefects: knownDefects.value.filter((defect) => defect.result).map((defect) => ({
-      defectId: defect.defectId,
-      result: defect.result!,
-      observation: defect.result === "Worsened" ? defect.observation?.trim() || null : null,
-    })),
+      .map(([templatePointId, value]) => ({
+        templatePointId,
+        result: value.result!,
+        observation: null,
+      })),
+    knownDefects: knownDefects.value
+      .filter((defect) => defect.result)
+      .map((defect) => ({
+        defectId: defect.defectId,
+        result: defect.result!,
+        observation: defect.result === "Worsened" ? defect.observation?.trim() || null : null,
+      })),
     findings: activeFindings.map(({ id, templatePointId, observation }) => ({
-      id, templatePointId, observation: observation.trim(),
+      id,
+      templatePointId,
+      observation: observation.trim(),
     })),
-    removedFindingIds: current.findings.filter((finding) => !activeIds.has(finding.id))
+    removedFindingIds: current.findings
+      .filter((finding) => !activeIds.has(finding.id))
       .map((finding) => finding.id),
   });
 
@@ -257,7 +286,9 @@ async function persist(): Promise<void> {
     }
   }
   for (const finding of activeFindings) {
-    const local = points.value[finding.templatePointId]?.findings.find((item) => item.id === finding.id);
+    const local = points.value[finding.templatePointId]?.findings.find(
+      (item) => item.id === finding.id,
+    );
     if (!local) continue;
     for (const file of [...local.files]) {
       const photo = await inspectionHttpApi.uploadEvidencePhoto(current.id, finding.id, file);
@@ -289,9 +320,12 @@ async function save(keepSignature = false): Promise<boolean> {
         accepted.value = false;
         signatureFile.value = null;
         step.value = 1;
-        error.value = "Les défauts du matériel ont changé. Vérifiez à nouveau leurs confirmations et les points avant de signer.";
+        error.value =
+          "Les défauts du matériel ont changé. Vérifiez à nouveau leurs confirmations et les points avant de signer.";
         return false;
-      } catch { /* Le message initial reste disponible. */ }
+      } catch {
+        /* Le message initial reste disponible. */
+      }
     }
     error.value = message(cause);
     return false;
@@ -302,11 +336,13 @@ async function save(keepSignature = false): Promise<boolean> {
 
 async function next(): Promise<void> {
   if (step.value === 1 && !completeKnown()) {
-    error.value = "Confirmez chaque défaut connu. Une aggravation nécessite une observation et une nouvelle photo.";
+    error.value =
+      "Confirmez chaque défaut connu. Une aggravation nécessite une observation et une nouvelle photo.";
     return;
   }
   if (currentPoint.value && !completePoint(points.value[currentPoint.value.id])) {
-    error.value = "Indiquez le résultat et, pour chaque nouveau défaut, une observation et une photographie.";
+    error.value =
+      "Indiquez le résultat et, pour chaque nouveau défaut, une observation et une photographie.";
     return;
   }
   if (await save()) {
@@ -366,7 +402,10 @@ async function validate(): Promise<void> {
     error.value = "Le nom du signataire, son accord et sa signature sont obligatoires.";
     return;
   }
-  if (!completeKnown() || orderedPoints.value.some((point) => !completePoint(points.value[point.id]))) {
+  if (
+    !completeKnown() ||
+    orderedPoints.value.some((point) => !completePoint(points.value[point.id]))
+  ) {
     error.value = "Complétez les confirmations et tous les points avant la validation.";
     return;
   }
@@ -391,7 +430,8 @@ async function validate(): Promise<void> {
       }
       accepted.value = false;
       signatureFile.value = null;
-      error.value = "Le dossier a changé. Vérifiez à nouveau les défauts connus et les points, puis signez de nouveau.";
+      error.value =
+        "Le dossier a changé. Vérifiez à nouveau les défauts connus et les points, puis signez de nouveau.";
     } else error.value = message(cause);
   } finally {
     busy.value = false;

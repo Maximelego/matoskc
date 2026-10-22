@@ -7,7 +7,7 @@ const props = defineProps<{
   equipmentName: string;
 }>();
 
-type PrintFormat = "small" | "large";
+type PrintFormat = "quarter" | "small" | "large";
 
 const dialog = ref<HTMLDialogElement | null>(null);
 const preview = ref<HTMLElement | null>(null);
@@ -83,7 +83,9 @@ async function printQRCode() {
       throw new Error("Impossible de préparer l’impression.");
     }
 
+    const quarter = format.value === "quarter";
     const small = format.value === "small";
+    const compact = quarter || small;
 
     doc.open();
     doc.write(`<!DOCTYPE html>
@@ -110,31 +112,31 @@ async function printQRCode() {
             }
 
             .poster {
-              width: 210mm;
-              height: ${small ? "148.5mm" : "296mm"};
-              padding: ${small ? "10mm" : "18mm"};
+              width: ${quarter ? "105mm" : "210mm"};
+              height: ${compact ? "148.5mm" : "297mm"};
+              padding: ${quarter ? "6mm" : small ? "10mm" : "18mm"};
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              gap: ${small ? "5mm" : "10mm"};
+              gap: ${quarter ? "3mm" : small ? "5mm" : "10mm"};
               text-align: center;
               break-inside: avoid;
-              ${small ? "border-bottom: 0.25mm dashed #aaa;" : ""}
+              ${quarter ? "border-right: 0.25mm dashed #aaa; border-bottom: 0.25mm dashed #aaa;" : small ? "border-bottom: 0.25mm dashed #aaa;" : ""}
             }
 
             h1 {
               margin: 0;
               width: 100%;
-              font-size: ${small ? "22pt" : "32pt"};
+              font-size: ${quarter ? "15pt" : small ? "22pt" : "32pt"};
               line-height: 1.15;
               overflow-wrap: anywhere;
               flex-shrink: 0;
             }
 
             .qr {
-              width: ${small ? "75mm" : "140mm"};
-              height: ${small ? "75mm" : "140mm"};
+              width: ${quarter ? "58mm" : small ? "75mm" : "140mm"};
+              height: ${quarter ? "58mm" : small ? "75mm" : "140mm"};
               flex-shrink: 0;
             }
 
@@ -146,7 +148,7 @@ async function printQRCode() {
 
             .instruction {
               margin: 0;
-              font-size: ${small ? "15pt" : "22pt"};
+              font-size: ${quarter ? "10pt" : small ? "15pt" : "22pt"};
               font-weight: 700;
               line-height: 1.3;
               flex-shrink: 0;
@@ -154,7 +156,7 @@ async function printQRCode() {
 
             .brand {
               margin: 0;
-              font-size: ${small ? "10pt" : "12pt"};
+              font-size: ${quarter ? "8pt" : small ? "10pt" : "12pt"};
               color: #555;
               flex-shrink: 0;
             }
@@ -187,9 +189,9 @@ async function printQRCode() {
     await doc.fonts.ready;
 
     // Réduit la taille du titre si le nom est particulièrement long.
-    const minFontSize = small ? 14 : 18;
-    let titleSize = small ? 22 : 32;
-    const maxTitleHeight = (small ? 22 : 45) * (96 / 25.4);
+    const minFontSize = quarter ? 10 : small ? 14 : 18;
+    let titleSize = quarter ? 15 : small ? 22 : 32;
+    const maxTitleHeight = (quarter ? 33 : small ? 22 : 45) * (96 / 25.4);
 
     while (heading.getBoundingClientRect().height > maxTitleHeight && titleSize > minFontSize) {
       titleSize -= 1;
@@ -257,6 +259,18 @@ onBeforeUnmount(cleanupPrintFrame);
         <fieldset class="format-options">
           <legend>Format de l’affiche</legend>
 
+          <label :class="{ selected: format === 'quarter' }">
+            <input
+              v-model="format"
+              type="radio"
+              value="quarter"
+            />
+            <span>
+              <strong>Format A6</strong>
+              <small>¼ feuille A4 — 105 × 148,5 mm</small>
+            </span>
+          </label>
+
           <label :class="{ selected: format === 'small' }">
             <input
               v-model="format"
@@ -309,8 +323,9 @@ onBeforeUnmount(cleanupPrintFrame);
         </div>
 
         <p class="print-help">
-          Papier A4, taille réelle (100 %), en-têtes et pieds de page désactivés. Le petit format
-          occupe la moitié supérieure de la feuille, avec un repère de découpe.
+          Papier A4, taille réelle (100 %), en-têtes et pieds de page désactivés. Le format A6
+          occupe le quart supérieur gauche de la feuille ; le petit format occupe la moitié
+          supérieure.
         </p>
 
         <p
@@ -491,6 +506,24 @@ onBeforeUnmount(cleanupPrintFrame);
   font-family: Arial, sans-serif;
   box-sizing: border-box;
   box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+
+  &.quarter {
+    aspect-ratio: 105 / 148.5;
+    max-width: 10.625rem;
+    gap: 0.35rem;
+    border-right: 1px dashed #aaa;
+    border-bottom: 1px dashed #aaa;
+
+    .preview-qr {
+      width: 55%;
+    }
+    h3 {
+      font-size: var(--font-size-sm);
+    }
+    .preview-instruction {
+      font-size: var(--font-size-xs);
+    }
+  }
 
   &.small {
     aspect-ratio: 210 / 148.5;

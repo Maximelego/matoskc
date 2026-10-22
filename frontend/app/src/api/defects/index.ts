@@ -14,6 +14,8 @@ export const defectsApi = {
     }
   },
   getPhoto(equipmentId: string, defectId: string, photoId: string) {
-    return api.getBlob(`${path(equipmentId)}/${encodeURIComponent(defectId)}/photos/${encodeURIComponent(photoId)}`);
+    return api.getBlob(
+      `${path(equipmentId)}/${encodeURIComponent(defectId)}/photos/${encodeURIComponent(photoId)}`,
+    );
   },
 };

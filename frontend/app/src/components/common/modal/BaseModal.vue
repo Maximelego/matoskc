@@ -59,8 +59,16 @@ function onAnimationEnd(event: AnimationEvent): void {
   if (event.target === dialog.value && closing.value) finishClose();
 }
 
-watch(() => props.open, (open) => { if (open) show(); else hide(); });
-onMounted(() => { if (props.open) show(); });
+watch(
+  () => props.open,
+  (open) => {
+    if (open) show();
+    else hide();
+  },
+);
+onMounted(() => {
+  if (props.open) show();
+});
 onUnmounted(() => {
   if (closeTimer) clearTimeout(closeTimer);
   dialog.value?.close();
@@ -87,7 +95,9 @@ onUnmounted(() => {
             aria-label="Fermer la fenêtre"
             :disabled="busy"
             @click="requestClose"
-          >×</button>
+          >
+            ×
+          </button>
         </header>
         <slot />
       </div>
@@ -107,16 +117,33 @@ onUnmounted(() => {
   border-radius: 0.75rem;
   box-shadow: 0 1rem 3rem var(--color-shadow);
 
-  &[open] { animation: modal-popup-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  &[open] {
+    animation: modal-popup-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
   &[open]::backdrop {
     background: var(--color-overlay);
     animation: modal-backdrop-in 220ms ease both;
   }
-  &--closing[open] { animation: modal-popup-out 170ms ease-in both; }
-  &--closing[open]::backdrop { animation: modal-backdrop-out 170ms ease-in both; }
-  &__content { padding: 1.5rem; }
-  &__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-  &__header h2 { min-width: 0; margin: 0 0 1.25rem; overflow-wrap: anywhere; }
+  &--closing[open] {
+    animation: modal-popup-out 170ms ease-in both;
+  }
+  &--closing[open]::backdrop {
+    animation: modal-backdrop-out 170ms ease-in both;
+  }
+  &__content {
+    padding: 1.5rem;
+  }
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  &__header h2 {
+    min-width: 0;
+    margin: 0 0 1.25rem;
+    overflow-wrap: anywhere;
+  }
   &__close {
     flex: none;
     display: grid;
@@ -130,31 +157,63 @@ onUnmounted(() => {
     background: transparent;
     font-size: 1.75rem;
     cursor: pointer;
-    &:focus-visible { outline: 0.1875rem solid var(--color-focus); }
+    &:focus-visible {
+      outline: 0.1875rem solid var(--color-focus);
+    }
   }
 }
 @keyframes modal-popup-in {
-  from { opacity: 0; transform: translateY(1rem) scale(0.94); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 @keyframes modal-popup-out {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to { opacity: 0; transform: translateY(0.5rem) scale(0.97); }
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.97);
+  }
 }
-@keyframes modal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes modal-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modal-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 @media (max-width: 42rem) {
   .base-modal {
     box-sizing: border-box;
     width: calc(100% - 1rem);
     max-width: none;
     max-height: calc(100dvh - 1rem);
-    &__content { padding: 1rem; }
+    &__content {
+      padding: 1rem;
+    }
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .base-modal[open], .base-modal[open]::backdrop,
-  .base-modal--closing[open], .base-modal--closing[open]::backdrop {
+  .base-modal[open],
+  .base-modal[open]::backdrop,
+  .base-modal--closing[open],
+  .base-modal--closing[open]::backdrop {
     animation-duration: 1ms;
   }
 }

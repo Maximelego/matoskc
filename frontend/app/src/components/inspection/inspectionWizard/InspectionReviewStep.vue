@@ -39,6 +39,7 @@ const emit = defineEmits<{
       >
       <CopyButton
         :value="client.commandValue"
+        variant="full"
         label="Copier le numéro de commande"
       />
     </div>

@@ -2,7 +2,13 @@
 import { onUnmounted, ref } from "vue";
 import BaseIcon from "../icon/BaseIcon.vue";
 
-const props = defineProps<{ value: string | null | undefined; label: string }>();
+export type VariantType = "full" | "icon-only";
+
+const props = defineProps<{
+  value: string | null | undefined;
+  label: string;
+  variant: VariantType;
+}>();
 const feedback = ref("");
 
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -36,7 +42,7 @@ onUnmounted(() => clearTimeout(timer));
         name="clipboard"
         :size="16"
       />
-      Copier
+      <p v-if="variant === 'full'">Copier</p>
     </button>
     <span
       :class="{

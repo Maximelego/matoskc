@@ -1,4 +1,8 @@
-export type EquipmentAuditChangeDto = { field: string; before: string | null; after: string | null };
+export type EquipmentAuditChangeDto = {
+  field: string;
+  before: string | null;
+  after: string | null;
+};
 export type EquipmentAuditEntryDto = {
   id: string;
   entityType: string;

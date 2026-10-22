@@ -19,4 +19,10 @@ export interface CreateInspectionTemplateDto {
   points: Array<{ description: string; descriptionDetail: string; photoId: string | null }>;
 }
 
-export interface InspectionTemplatePhotoDto { id: string; fileName: string; contentType: string; contentLength: number; createdAt: string }
+export interface InspectionTemplatePhotoDto {
+  id: string;
+  fileName: string;
+  contentType: string;
+  contentLength: number;
+  createdAt: string;
+}

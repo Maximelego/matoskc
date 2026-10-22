@@ -19,6 +19,14 @@ export type CreateRentalDto = {
   customerEmail?: string | null;
 };
 
-export type UpdateRentalDto = Pick<CreateRentalDto, "contractReference" | "customerName" | "customerEmail">;
+export type UpdateRentalDto = Pick<
+  CreateRentalDto,
+  "contractReference" | "customerName" | "customerEmail"
+>;
 export type ListRentalsDto = { rentals: RentalDto[] };
-export type RentalFilters = { equipmentId?: string; agencyId?: string; status?: RentalStatus; search?: string };
+export type RentalFilters = {
+  equipmentId?: string;
+  agencyId?: string;
+  status?: RentalStatus;
+  search?: string;
+};

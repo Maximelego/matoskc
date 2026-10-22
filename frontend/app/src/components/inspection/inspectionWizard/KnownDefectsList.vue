@@ -18,7 +18,10 @@ defineProps<{ defects: DefectDto[]; equipmentId: string }>();
         :key="defect.id"
       >
         <strong>{{ defect.description }}</strong> : {{ defect.observation }}
-        <small>Constaté par {{ defect.operatorFirstName }} le {{ new Date(defect.reportedAt).toLocaleDateString("fr-FR") }}</small>
+        <small
+          >Constaté par {{ defect.operatorFirstName }} le
+          {{ new Date(defect.reportedAt).toLocaleDateString("fr-FR") }}</small
+        >
         <details v-if="defect.occurrences.length">
           <summary>Constats et photographies</summary>
           <ul>
@@ -27,8 +30,8 @@ defineProps<{ defects: DefectDto[]; equipmentId: string }>();
               :key="occurrence.id"
             >
               {{ occurrence.observation }} ·
-              {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }} ·
-              constaté par {{ occurrence.operatorFirstName }}
+              {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }} · constaté par
+              {{ occurrence.operatorFirstName }}
               <div class="known-defects__photos">
                 <DefectPhoto
                   v-for="photoId in occurrence.photoIds"
