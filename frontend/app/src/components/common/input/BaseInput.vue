@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 defineOptions({
   inheritAttrs: false,
@@ -51,6 +51,18 @@ const emit = defineEmits<{
 
 const helpTextId = computed<string>(() => `${props.id}-help`);
 const errorId = computed<string>(() => `${props.id}-error`);
+const shaking = ref(false);
+
+watch(
+  () => props.error,
+  async (value) => {
+    shaking.value = false;
+    if (!value) return;
+    await nextTick();
+    if (props.error === value) shaking.value = true;
+  },
+  { immediate: true },
+);
 
 const describedBy = computed<string | undefined>(() => {
   if (props.error) {
@@ -84,6 +96,7 @@ function handleBlur(event: FocusEvent): void {
     class="base-input"
     :class="{
       'base-input--error': error,
+      'base-input--shaking': shaking,
       'base-input--disabled': disabled,
       'base-input--readonly': readonly,
     }"
@@ -257,6 +270,10 @@ function handleBlur(event: FocusEvent): void {
     }
   }
 
+  &--shaking .base-input__control {
+    animation: base-input-shake 350ms ease-in-out;
+  }
+
   &--disabled {
     opacity: 0.6;
   }
@@ -267,6 +284,12 @@ function handleBlur(event: FocusEvent): void {
       background-color: var(--color-surface-secondary);
     }
   }
+}
+
+@keyframes base-input-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-0.35rem); }
+  40%, 80% { transform: translateX(0.35rem); }
 }
 
 @media (max-width: 48rem) {
@@ -284,6 +307,9 @@ function handleBlur(event: FocusEvent): void {
 @media (prefers-reduced-motion: reduce) {
   .base-input__control {
     transition: none;
+  }
+  .base-input--shaking .base-input__control {
+    animation: none;
   }
 }
 </style>

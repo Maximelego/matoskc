@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
+import ThemeSwitch from "./header/ThemeSwitch.vue";
 
 defineProps<{
   title: string;
@@ -16,10 +17,8 @@ defineProps<{
         {{ title }}
       </RouterLink>
 
-      <div
-        v-if="$slots.actions"
-        class="app-header__actions"
-      >
+      <div class="app-header__actions">
+        <ThemeSwitch />
         <slot name="actions" />
       </div>
     </div>
