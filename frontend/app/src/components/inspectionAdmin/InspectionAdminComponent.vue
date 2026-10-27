@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -306,7 +307,7 @@ onMounted(() => {
       class="inspection-admin__message"
       role="status"
     >
-      Chargement des états des lieux…
+      <BaseSpinner size="medium" label="Chargement des états des lieux" />
     </p>
     <section
       v-else-if="!error"
@@ -443,7 +444,7 @@ onMounted(() => {
         v-if="detailLoading"
         role="status"
       >
-        Chargement du détail…
+        <BaseSpinner size="medium" label="Chargement du détail" />
       </p>
       <p
         v-else-if="detailError"

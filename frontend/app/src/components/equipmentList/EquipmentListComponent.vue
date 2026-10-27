@@ -374,8 +374,7 @@ onUnmounted(() => {
         class="equipment-list__state"
         role="status"
       >
-        <BaseSpinner size="medium" />
-        <span>Chargement des équipements…</span>
+        <BaseSpinner size="medium" label="Chargement des équipements" />
       </div>
       <p
         v-else-if="!error && equipments.length === 0"

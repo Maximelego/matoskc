@@ -83,8 +83,7 @@ onMounted(() => {
       role="status"
       aria-live="polite"
     >
-      <BaseSpinner size="medium" />
-      <p>Chargement des équipements…</p>
+      <BaseSpinner size="medium" label="Chargement des équipements" />
     </div>
 
     <section

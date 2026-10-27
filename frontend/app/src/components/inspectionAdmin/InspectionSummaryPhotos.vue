@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 defineProps<{
   photoIds: string[];
   photos: Record<string, string>;
@@ -30,11 +31,14 @@ defineProps<{
           loading="lazy"
         />
       </a>
-      <span
-        v-else
-        class="evidence-photos__missing"
-        >{{ loading ? "Chargement…" : "Photo indisponible" }}</span
-      >
+      <span v-else class="evidence-photos__missing">
+        <BaseSpinner
+          v-if="loading"
+          size="small"
+          :label="`Chargement de ${label.toLowerCase()}, photo ${index + 1}`"
+        />
+        <template v-else>Photo indisponible</template>
+      </span>
     </template>
   </div>
 </template>

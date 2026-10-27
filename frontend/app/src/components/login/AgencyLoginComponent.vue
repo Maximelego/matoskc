@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import BaseInput from "../common/input/BaseInput.vue";
 import { onMounted, ref } from "vue";
 import { agenciesApi } from "../../api/agencies";
@@ -95,7 +96,7 @@ onMounted(() => {
         class="agency-login__hint"
         role="status"
       >
-        Chargement des agences…
+        <BaseSpinner size="small" label="Chargement des agences" />
       </p>
       <div
         v-else-if="agenciesError"

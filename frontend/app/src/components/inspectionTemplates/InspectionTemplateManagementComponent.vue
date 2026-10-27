@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { ApiError } from "../../api/client.ts";
@@ -148,7 +149,7 @@ async function submit() {
         class="template-page__empty"
         role="status"
       >
-        Chargement du modèle courant…
+        <BaseSpinner size="medium" variant="secondary" label="Chargement du modèle courant" />
       </p>
       <CurrentTemplateCard
         v-else-if="current"

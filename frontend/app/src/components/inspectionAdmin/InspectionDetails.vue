@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { defectsApi } from "../../api/defects";
 import type { InspectionDto, InspectionTemplateDto, RentalDto } from "../../api/inspections";
@@ -167,11 +168,9 @@ async function downloadReport(): Promise<void> {
         :disabled="downloading"
         @click="downloadReport"
       >
-        <BaseIcon
-          name="download"
-          :size="19"
-        />
-        {{ downloading ? "Préparation du PDF…" : "Télécharger le PDF" }}
+        <BaseSpinner v-if="downloading" size="small" variant="inherit" label="Préparation du PDF" />
+        <BaseIcon v-else name="download" :size="19" />
+        Télécharger le PDF
       </button>
     </header>
 
@@ -180,7 +179,7 @@ async function downloadReport(): Promise<void> {
       role="status"
       class="summary__notice"
     >
-      Chargement des informations complémentaires…
+      <BaseSpinner size="medium" label="Chargement des informations complémentaires" />
     </p>
     <p
       v-if="error"

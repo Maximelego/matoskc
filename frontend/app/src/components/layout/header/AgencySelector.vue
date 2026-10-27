@@ -61,7 +61,7 @@ watch(
         :key="agency.id"
         :value="agency.id"
       >
-        {{ agency.code }} — {{ agency.name }}
+        {{ agency.code }} | {{ agency.name }}
       </option>
     </select>
     <button

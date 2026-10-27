@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import { ref, watch } from "vue";
 import { equipmentHistoryApi } from "../../api/equipment-history";
 import type {
@@ -69,7 +70,7 @@ watch(
       v-if="loading"
       role="status"
     >
-      Chargement de l’historique…
+      <BaseSpinner size="medium" label="Chargement de l’historique" />
     </p>
     <p
       v-if="error"

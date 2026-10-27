@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -194,7 +195,7 @@ async function submit(fields: Omit<RecordMaintenanceDto, "id">): Promise<void> {
           v-if="equipmentLoading"
           role="status"
         >
-          Chargement des équipements…
+          <BaseSpinner size="medium" label="Chargement des équipements" />
         </p>
         <p
           v-if="error"
@@ -254,7 +255,7 @@ async function submit(fields: Omit<RecordMaintenanceDto, "id">): Promise<void> {
           v-if="loading"
           role="status"
         >
-          Chargement…
+          <BaseSpinner size="medium" label="Chargement de la maintenance" />
         </p>
         <div class="care__content">
           <MaintenanceDefects

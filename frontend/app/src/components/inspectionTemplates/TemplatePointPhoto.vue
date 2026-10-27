@@ -2,6 +2,7 @@
 import { onUnmounted, ref, watch } from "vue";
 import { inspectionTemplatesApi } from "../../api/inspection-templates";
 import BaseIcon from "../common/icon/BaseIcon.vue";
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 
 const props = defineProps<{ photoId: string | null; disabled: boolean; agencyId: string }>();
 const emit = defineEmits<{ change: [id: string | null]; busy: [value: boolean] }>();
@@ -84,11 +85,7 @@ async function upload(event: Event) {
     >
       Retirer du point
     </button>
-    <span
-      v-if="busy"
-      role="status"
-      >Envoi en cours…</span
-    >
+    <BaseSpinner v-if="busy" size="small" label="Envoi de l’illustration en cours" />
     <span
       v-if="error"
       role="alert"

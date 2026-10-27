@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import { onUnmounted, ref, watch } from "vue";
 import { ApiError } from "../../api/client";
 import { equipmentPhotosApi } from "../../api/equipments/photos";
@@ -106,7 +107,7 @@ onUnmounted(() => {
         v-if="loading"
         role="status"
       >
-        Chargement de la photographie…
+        <BaseSpinner size="medium" label="Chargement de la photographie" />
       </p>
       <img
         v-else-if="url"

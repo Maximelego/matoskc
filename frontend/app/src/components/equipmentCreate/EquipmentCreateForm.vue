@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import { onMounted, ref, watch } from "vue";
 import { agencyScope } from "../../api/agencies/scope";
 import { ApiError } from "../../api/client";
@@ -182,7 +183,7 @@ watch(agencyScope.key, () => {
         v-else-if="categoriesLoading"
         role="status"
       >
-        Chargement des catégories…
+        <BaseSpinner size="small" label="Chargement des catégories" />
       </p>
 
       <p v-else-if="categories.length === 0 && !error">Aucune catégorie disponible.</p>

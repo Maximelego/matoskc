@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSpinner from "../common/spinner/BaseSpinner.vue";
 import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -482,14 +483,14 @@ onMounted(() => {
   <main class="wizard">
     <PageHero
       :title="`État des lieux de ${isDeparture ? 'départ' : 'retour'}`"
-      :description="equipment?.name ?? 'Chargement du matériel…'"
+      :description="equipment?.name ?? ''"
       eyebrow="Inspection"
     />
     <p
       v-if="loading"
       role="status"
     >
-      Chargement…
+      <BaseSpinner size="medium" label="Chargement de l’état des lieux" />
     </p>
     <div v-else-if="!template">
       <p role="alert">{{ error }}</p>

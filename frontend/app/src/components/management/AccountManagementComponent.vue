@@ -301,7 +301,7 @@ onMounted(() => {
         class="management__state"
         role="status"
       >
-        <BaseSpinner size="medium" /> Chargement des comptes…
+        <BaseSpinner size="medium" label="Chargement des comptes" />
       </div>
       <p
         v-else-if="!error && filtered.length === 0"
