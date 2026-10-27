@@ -10,6 +10,7 @@ export interface InspectionTemplatePointDto {
 export interface InspectionTemplateDto {
   id: string;
   equipmentCategoryId: string;
+  agencyId: string;
   createdAt: string;
   points: InspectionTemplatePointDto[];
 }
@@ -21,6 +22,7 @@ export interface CreateInspectionTemplateDto {
 
 export interface InspectionTemplatePhotoDto {
   id: string;
+  agencyId: string;
   fileName: string;
   contentType: string;
   contentLength: number;

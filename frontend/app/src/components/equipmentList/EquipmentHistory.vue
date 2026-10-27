@@ -15,12 +15,14 @@ const error = ref("");
 const offset = ref(0);
 const limit = 50;
 let sequence = 0;
+
 const labels: Record<string, string> = {
   Name: "Nom",
   CategoryId: "Catégorie",
   Status: "État",
   SerialNumber: "Numéro de série",
 };
+
 function changes(entry: EquipmentAuditEntryDto): EquipmentAuditChangeDto[] {
   try {
     const value: unknown = JSON.parse(entry.changesJson);

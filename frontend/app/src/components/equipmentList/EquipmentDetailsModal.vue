@@ -188,7 +188,9 @@ async function toggleHistory(): Promise<void> {
                   :disabled="busy"
                 >
                   <option
-                    v-for="category in equipmentCategories"
+                    v-for="category in equipmentCategories.filter(
+                      (item) => item.agencyId === equipment?.agencyId,
+                    )"
                     :key="category.id"
                     :value="category.id"
                   >

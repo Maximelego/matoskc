@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
+import { agencyScope } from "../../api/agencies/scope";
 import { ApiError } from "../../api/client";
 import { equipmentCategoriesApi } from "../../api/equipment-categories";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
@@ -54,7 +55,10 @@ async function loadCategories(): Promise<void> {
 
   try {
     const result = await equipmentCategoriesApi.list();
-    categories.value = result.equipmentCategories;
+    categories.value = result.equipmentCategories.filter(
+      (category) =>
+        !agencyScope.activeAgencyId.value || category.agencyId === agencyScope.activeAgencyId.value,
+    );
   } catch (cause: unknown) {
     error.value = errorMessage(cause, "charger les catégories");
   } finally {
@@ -97,6 +101,11 @@ async function submit(): Promise<void> {
 }
 
 onMounted(loadCategories);
+watch(agencyScope.key, () => {
+  categoryId.value = "";
+  categories.value = [];
+  void loadCategories();
+});
 </script>
 
 <template>
@@ -152,7 +161,12 @@ onMounted(loadCategories);
           :key="category.id"
           :value="category.id"
         >
-          {{ category.name }}
+          {{ category.name
+          }}{{
+            agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value
+              ? ` (${agencyScope.label(category.agencyId)})`
+              : ""
+          }}
         </option>
       </select>
 

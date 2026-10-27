@@ -1,4 +1,5 @@
 import { api } from "../client";
+import { agencyScope } from "../agencies/scope";
 import type {
   CreateInspectionTemplateDto,
   InspectionTemplateDto,
@@ -20,8 +21,10 @@ export const inspectionTemplatesApi = {
       dto,
     );
   },
-  uploadPhoto(file: File) {
-    return api.postFile<InspectionTemplatePhotoDto>("/inspection-templates/photos", file);
+  uploadPhoto(file: File, agencyId: string) {
+    return api.postFile<InspectionTemplatePhotoDto>("/inspection-templates/photos", file, {
+      query: { agencyId: agencyScope.isSuperAdmin.value ? agencyId : undefined },
+    });
   },
   getPhoto(photoId: string) {
     return api.getBlob(`/inspection-templates/photos/${encodeURIComponent(photoId)}`);

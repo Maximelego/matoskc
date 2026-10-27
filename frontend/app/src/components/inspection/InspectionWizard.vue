@@ -2,7 +2,6 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { agenciesApi } from "../../api/agencies";
-import { authSession } from "../../api/auth/session";
 import { ApiError } from "../../api/client";
 import { defectsApi } from "../../api/defects";
 import { equipmentsApi } from "../../api/equipments";
@@ -46,6 +45,7 @@ const client = ref<ClientInputDto>({
   commandValue: "",
 });
 const operatorFirstName = ref("");
+const equipmentAgencyCode = ref<number | null>(null);
 const identityValidationRequested = ref(false);
 const signatureValidationRequested = ref(false);
 const points = ref<Record<string, PointValue>>({});
@@ -119,8 +119,9 @@ function message(cause: unknown): string {
   if (cause instanceof ApiError) {
     if (cause.status === 401) return "Veuillez vous reconnecter.";
     if (cause.status === 403) return "Vous ne disposez pas des droits nécessaires.";
-    if (cause.status === 404) return "L’équipement, la location ou le modèle est introuvable.";
-    if (cause.status === 409) return "Le dossier a changé. Actualisez la page avant de continuer.";
+    if (cause.status === 404) return "Ressource introuvable ou inaccessible.";
+    if (cause.status === 409)
+      return "Le dossier a changé ou l’agence du client ne correspond pas à celle de l’équipement. Actualisez la page avant de continuer.";
     return cause.message;
   }
   return cause instanceof Error ? cause.message : "Une erreur est survenue.";
@@ -129,6 +130,7 @@ function message(cause: unknown): string {
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
+  equipmentAgencyCode.value = null;
 
   try {
     const item = await equipmentsApi.getById(props.equipmentId);
@@ -152,11 +154,12 @@ async function load(): Promise<void> {
 
     if (current) client.value = current.client;
 
-    if (item.status === "Available" && !current) {
+    if (item.status === "Available") {
       const agencies = await agenciesApi.list();
-      const own = agencies.agencies.find((a) => a.id === authSession.account.value?.agencyId);
-      client.value.agencyCode =
-        own?.code ?? agencies.agencies.find((a) => a.code === 83)?.code ?? 83;
+      const owner = agencies.agencies.find((a) => a.id === item.agencyId);
+      if (!owner) throw new Error("L’agence de cet équipement est introuvable ou inaccessible.");
+      equipmentAgencyCode.value = owner.code;
+      if (!current) client.value.agencyCode = owner.code;
     }
 
     let draft: InspectionDto | null = null;
@@ -207,6 +210,10 @@ function checkIdentity(): boolean {
     validatePhoneNumber(client.value.phone) ??
     validateAgencyCode(client.value.agencyCode) ??
     validateCommandNumber(number ?? client.value.commandValue);
+  if (equipmentAgencyCode.value && client.value.agencyCode !== equipmentAgencyCode.value) {
+    error.value = "Le code agence de la commande doit correspondre à l’agence de l’équipement.";
+    return false;
+  }
   if (validationError) {
     error.value = validationError;
     return false;
@@ -480,6 +487,7 @@ onMounted(() => {
           v-model:client="client"
           :departure="isDeparture"
           :locked="Boolean(inspection)"
+          :expected-agency-code="equipmentAgencyCode"
           :validation-requested="identityValidationRequested"
         />
         <InspectionKnownDefectsStep

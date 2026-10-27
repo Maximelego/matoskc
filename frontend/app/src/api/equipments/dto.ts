@@ -5,6 +5,7 @@ export type EquipmentDto = {
   status: EquipmentStatus;
   serialNumber: string;
   equipmentCategoryId: string;
+  agencyId: string;
   primaryPhotoId: string | null;
   thumbnailUrl: string | null;
 };
@@ -28,4 +29,5 @@ export type EquipmentFilters = {
   categoryId?: string;
   status?: EquipmentStatus;
   search?: string;
+  agencyId?: string;
 };

@@ -3,7 +3,7 @@ import { onUnmounted, ref, watch } from "vue";
 import { inspectionTemplatesApi } from "../../api/inspection-templates";
 import BaseIcon from "../common/icon/BaseIcon.vue";
 
-const props = defineProps<{ photoId: string | null; disabled: boolean }>();
+const props = defineProps<{ photoId: string | null; disabled: boolean; agencyId: string }>();
 const emit = defineEmits<{ change: [id: string | null]; busy: [value: boolean] }>();
 const url = ref("");
 const busy = ref(false);
@@ -46,7 +46,7 @@ async function upload(event: Event) {
   emit("busy", true);
   error.value = "";
   try {
-    emit("change", (await inspectionTemplatesApi.uploadPhoto(file)).id);
+    emit("change", (await inspectionTemplatesApi.uploadPhoto(file, props.agencyId)).id);
   } catch {
     error.value = "Impossible d’envoyer l’illustration.";
   } finally {

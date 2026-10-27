@@ -77,7 +77,7 @@ app.Use(async (http, next) =>
             throw new MatosKC.Application.Inspections.InspectionOperationException(400, "Invalid agency identifier.");
         agencyFilter = parsedAgency;
     }
-    var actor = http.User.Identity?.IsAuthenticated == true
+    var actor = http.User.Identity?.IsAuthenticated is true
         ? await InspectionEndpoints.ActorAsync(http,
             http.RequestServices.GetRequiredService<MatosKC.Application.Agencies.Ports.IAgencyRepository>(), http.RequestAborted)
         : null;
@@ -99,6 +99,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
     app.MapScalarApiReference("/docs").AllowAnonymous();
 }
+
+app.MapHealthEndpoints();
 
 app.MapInspectionEndpoints();
 app.MapAuthenticationEndpoints();

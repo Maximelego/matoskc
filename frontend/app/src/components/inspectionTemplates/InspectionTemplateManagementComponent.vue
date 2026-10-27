@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { ApiError } from "../../api/client.ts";
+import { agencyScope } from "../../api/agencies/scope";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto.ts";
 import { equipmentCategoriesApi } from "../../api/equipment-categories/index.ts";
 import type { InspectionTemplateDto } from "../../api/inspection-templates/dto.ts";
@@ -9,6 +10,9 @@ import TemplatePointsEditor, { type EditablePoint } from "./TemplatePointsEditor
 
 const categories = ref<EquipmentCategoryDto[]>([]);
 const categoryId = ref("");
+const selectedCategory = computed(() =>
+  categories.value.find((item) => item.id === categoryId.value),
+);
 const current = ref<InspectionTemplateDto | null>(null);
 const points = ref<EditablePoint[]>([
   { key: 1, description: "", descriptionDetail: "", photoId: null },
@@ -71,7 +75,10 @@ watch(categoryId, (id) => {
 
 onMounted(async () => {
   try {
-    categories.value = (await equipmentCategoriesApi.list()).equipmentCategories;
+    categories.value = (await equipmentCategoriesApi.list()).equipmentCategories.filter(
+      (category) =>
+        !agencyScope.activeAgencyId.value || category.agencyId === agencyScope.activeAgencyId.value,
+    );
   } catch (cause) {
     error.value = describeError(cause);
   } finally {
@@ -143,7 +150,12 @@ async function submit() {
           :key="category.id"
           :value="category.id"
         >
-          {{ category.name }}
+          {{ category.name
+          }}{{
+            agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value
+              ? ` (${agencyScope.label(category.agencyId)})`
+              : ""
+          }}
         </option>
       </select>
       <p v-if="!loading && !categories.length">Aucune catégorie disponible.</p>
@@ -194,6 +206,7 @@ async function submit() {
       </p>
       <TemplatePointsEditor
         :points="points"
+        :agency-id="selectedCategory?.agencyId ?? ''"
         :validation-requested="validationRequested"
         :disabled="saving || uploading || !categoryId || loadingTemplate"
         @change="points = $event"

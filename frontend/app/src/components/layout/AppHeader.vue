@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import ThemeSwitch from "./header/ThemeSwitch.vue";
+import AgencySelector from "./header/AgencySelector.vue";
 
 defineProps<{
   title: string;
@@ -18,6 +19,7 @@ defineProps<{
       </RouterLink>
 
       <div class="app-header__actions">
+        <AgencySelector />
         <ThemeSwitch />
         <slot name="actions" />
       </div>
@@ -60,6 +62,9 @@ defineProps<{
   &__actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
     gap: 0.75rem;
     margin-left: auto;
   }

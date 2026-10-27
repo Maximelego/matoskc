@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ApiError } from "../../api/client";
+import { agencyScope } from "../../api/agencies/scope";
 import { equipmentCategoriesApi } from "../../api/equipment-categories";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
 import { equipmentsApi } from "../../api/equipments";
@@ -97,6 +98,9 @@ const categoryNames = computed(
 function categoryName(equipment: EquipmentDto): string {
   return categoryNames.value.get(equipment.equipmentCategoryId) ?? equipment.equipmentCategoryId;
 }
+const showAgency = computed(
+  () => agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value,
+);
 function statusLabel(equipment: EquipmentDto): string {
   return statusLabels[equipment.status] ?? equipment.status;
 }
@@ -137,6 +141,7 @@ function openDetails(equipment: EquipmentDto): void {
 }
 function equipmentErrorMessage(cause: unknown): string {
   if (cause instanceof ApiError) {
+    if (cause.status === 404) return "Ressource introuvable ou inaccessible.";
     if (cause.status === 401) {
       return "Veuillez vous connecter pour consulter les équipements.";
     }
@@ -181,7 +186,10 @@ async function loadCategories(): Promise<void> {
   categoriesError.value = false;
   try {
     const result = await equipmentCategoriesApi.list();
-    categories.value = result.equipmentCategories;
+    categories.value = result.equipmentCategories.filter(
+      (category) =>
+        !agencyScope.activeAgencyId.value || category.agencyId === agencyScope.activeAgencyId.value,
+    );
   } catch {
     categoriesError.value = true;
   } finally {
@@ -466,6 +474,12 @@ onUnmounted(() => {
                   </span>
                 </button>
               </th>
+              <th
+                v-if="showAgency"
+                scope="col"
+              >
+                Agence
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -506,6 +520,12 @@ onUnmounted(() => {
               </td>
               <td data-label="État">
                 <EquipmentStatusBadge :status="equipment.status" />
+              </td>
+              <td
+                v-if="showAgency"
+                data-label="Agence"
+              >
+                {{ agencyScope.label(equipment.agencyId) }}
               </td>
             </tr>
           </tbody>

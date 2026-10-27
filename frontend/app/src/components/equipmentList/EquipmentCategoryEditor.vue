@@ -2,6 +2,7 @@
 import BaseInput from "../common/input/BaseInput.vue";
 import { ref, watch } from "vue";
 import { equipmentCategoriesApi } from "../../api/equipment-categories";
+import { agencyScope } from "../../api/agencies/scope";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
 const props = defineProps<{ categories: EquipmentCategoryDto[] }>();
 const emit = defineEmits<{ updated: [] }>();
@@ -53,7 +54,12 @@ async function save() {
         :key="category.id"
         :value="category.id"
       >
-        {{ category.name }}
+        {{ category.name
+        }}{{
+          agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value
+            ? ` (${agencyScope.label(category.agencyId)})`
+            : ""
+        }}
       </option>
     </select>
     <template v-if="selected">

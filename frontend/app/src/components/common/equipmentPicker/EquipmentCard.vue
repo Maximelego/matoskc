@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { EquipmentDto } from "../../../api/equipments/dto";
+import { agencyScope } from "../../../api/agencies/scope";
 import EquipmentStatusBadge from "../../equipmentStatusBadge/EquipmentStatusBadge.vue";
 import EquipmentThumbnail from "./EquipmentThumbnail.vue";
 
@@ -16,6 +17,12 @@ defineProps<{
   >
     <EquipmentThumbnail :equipment-id="equipment.id" />
     <strong>{{ equipment.name }}</strong>
+    <span
+      v-if="agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value"
+      class="equipment-card__reference"
+    >
+      {{ agencyScope.label(equipment.agencyId) }}
+    </span>
     <span class="equipment-card__details">
       <span class="equipment-card__details-content">
         <EquipmentStatusBadge :status="equipment.status" />

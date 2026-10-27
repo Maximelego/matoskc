@@ -14,6 +14,7 @@ const props = defineProps<{
   points: EditablePoint[];
   disabled: boolean;
   validationRequested: boolean;
+  agencyId: string;
 }>();
 const emit = defineEmits<{ change: [points: EditablePoint[]]; busy: [value: boolean] }>();
 let nextKey = 1;
@@ -96,6 +97,7 @@ function insertTab(event: KeyboardEvent, point: EditablePoint) {
           ></textarea>
           <TemplatePointPhoto
             :photo-id="point.photoId"
+            :agency-id="agencyId"
             :disabled="disabled"
             @change="point.photoId = $event"
             @busy="emit('busy', $event)"

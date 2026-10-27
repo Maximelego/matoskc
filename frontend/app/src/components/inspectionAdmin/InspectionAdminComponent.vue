@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { agenciesApi } from "../../api/agencies";
 import { authSession } from "../../api/auth/session";
+import { agencyScope } from "../../api/agencies/scope";
+import { ApiError } from "../../api/client";
 import type { AgencyDto } from "../../api/agencies/dto";
 import type { InspectionDto, InspectionListItemDto } from "../../api/inspections";
 import { inspectionHttpApi } from "../../api/inspections";
@@ -23,7 +25,6 @@ const ownAgencyId = computed(() => authSession.account.value?.agencyId ?? "");
 const ownAgency = computed(() => agencies.value.find((item) => item.id === ownAgencyId.value));
 let requestId = 0;
 const commandNumber = ref("");
-const agencyId = ref("");
 const rentalId = ref("");
 const from = ref("");
 const to = ref("");
@@ -56,7 +57,6 @@ const filtered = computed(() =>
 const invalidDates = computed(() => Boolean(from.value && to.value && from.value > to.value));
 function resetFilters(): void {
   commandNumber.value = "";
-  agencyId.value = "";
   rentalId.value = "";
   from.value = "";
   to.value = "";
@@ -93,7 +93,7 @@ async function load(): Promise<void> {
             : (status.value as "Draft" | "Validated" | "Cancelled"),
         type: type.value === "all" ? undefined : (type.value as "Departure" | "Return"),
         equipmentId: equipmentId.value || undefined,
-        agencyId: isSuperAdmin.value ? agencyId.value || undefined : ownAgencyId.value,
+        agencyId: agencyScope.activeAgencyId.value || undefined,
         rentalId: rentalId.value.trim() || undefined,
         commandNumber: commandNumber.value.trim() || undefined,
         from: from.value ? new Date(`${from.value}T00:00:00`).toISOString() : undefined,
@@ -143,8 +143,12 @@ watch(
     try {
       const detail = await inspectionHttpApi.getById(id);
       if (!cancelled) selected.value = detail;
-    } catch {
-      if (!cancelled) detailError.value = "Impossible de charger le détail de l’état des lieux.";
+    } catch (cause) {
+      if (!cancelled)
+        detailError.value =
+          cause instanceof ApiError && cause.status === 404
+            ? "Ressource introuvable ou inaccessible."
+            : "Impossible de charger le détail de l’état des lieux.";
     } finally {
       if (!cancelled) detailLoading.value = false;
     }
@@ -228,19 +232,6 @@ onMounted(() => {
               : undefined
           "
         />
-        <label v-if="isSuperAdmin"
-          >Agence
-          <select v-model="agencyId">
-            <option value="">Toutes les agences</option>
-            <option
-              v-for="agency in agencies"
-              :key="agency.id"
-              :value="agency.id"
-            >
-              {{ agency.code }} — {{ agency.name }}
-            </option>
-          </select>
-        </label>
         <BaseInput
           id="inspection-rental-filter"
           v-model="rentalId"
@@ -352,7 +343,7 @@ onMounted(() => {
               <th scope="col">Type</th>
               <th scope="col">Client et commande</th>
               <th
-                v-if="isSuperAdmin"
+                v-if="isSuperAdmin && !agencyScope.activeAgencyId.value"
                 scope="col"
               >
                 Agence
@@ -391,7 +382,7 @@ onMounted(() => {
                 >
               </td>
               <td
-                v-if="isSuperAdmin"
+                v-if="isSuperAdmin && !agencyScope.activeAgencyId.value"
                 data-label="Agence"
               >
                 {{

@@ -2,6 +2,7 @@
 import BaseInput from "../common/input/BaseInput.vue";
 import type { EquipmentCategoryDto } from "../../api/equipment-categories/dto";
 import type { EquipmentFilters, EquipmentStatus } from "../../api/equipments/dto";
+import { agencyScope } from "../../api/agencies/scope";
 
 const props = defineProps<{
   modelValue: EquipmentFilters;
@@ -69,7 +70,12 @@ function update(patch: Partial<EquipmentFilters>): void {
           :key="category.id"
           :value="category.id"
         >
-          {{ category.name }}
+          {{ category.name
+          }}{{
+            agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value
+              ? ` (${agencyScope.label(category.agencyId)})`
+              : ""
+          }}
         </option>
       </select>
     </div>

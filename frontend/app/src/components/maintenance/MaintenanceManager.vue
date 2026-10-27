@@ -79,6 +79,7 @@ function chooseAnotherEquipment(): void {
 }
 function message(cause: unknown) {
   if (cause instanceof ApiError) {
+    if (cause.status === 404) return "Ressource introuvable ou inaccessible.";
     if (cause.status === 409)
       return "Le dossier a changé. Actualisez les défauts avant de réessayer.";
     return cause.message;

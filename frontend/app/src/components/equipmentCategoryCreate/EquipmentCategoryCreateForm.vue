@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { agencyScope } from "../../api/agencies/scope";
 import { equipmentCategoriesApi } from "../../api/equipment-categories";
 import BaseButton from "../common/button/BaseButton.vue";
 import BaseInput from "../common/input/BaseInput.vue";
@@ -39,6 +40,10 @@ function errorMessage(cause: unknown, action: string): string {
 
 async function submit() {
   if (submitting.value || !validate()) return;
+  if (agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value) {
+    error.value = "Sélectionnez une agence dans l’en-tête avant de créer une catégorie.";
+    return;
+  }
 
   submitting.value = true;
   emit("busy", true);
@@ -48,6 +53,7 @@ async function submit() {
     const result = await equipmentCategoriesApi.create({
       name: name.value.trim(),
       description: description.value.trim(),
+      agencyId: agencyScope.isSuperAdmin.value ? agencyScope.activeAgencyId.value! : undefined,
     });
     emit("created", result.id);
   } catch (cause: unknown) {

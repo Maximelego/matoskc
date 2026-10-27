@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { RouterView, useRoute } from "vue-router";
 import { authSession } from "./api/auth/session";
+import { agencyScope } from "./api/agencies/scope";
 import BaseIcon from "./components/common/icon/BaseIcon.vue";
 import SlideAndFade from "./components/common/transition/SlideAndFade.vue";
 import AppLayout from "./components/layout/AppLayout.vue";
@@ -11,6 +12,7 @@ import { router } from "./router";
 const loggingOut = ref(false);
 const logoutError = ref("");
 const route = useRoute();
+const scopeKey = agencyScope.key;
 const showBack = computed(() => route.name !== "Home" && route.name !== "Login");
 
 function goBack(): void {
@@ -62,7 +64,10 @@ async function logout(): Promise<void> {
       >
         {{ logoutError }}
       </p>
-      <RouterView v-slot="{ Component, route }">
+      <RouterView
+        v-slot="{ Component, route }"
+        :key="scopeKey"
+      >
         <SlideAndFade>
           <component
             :is="Component"

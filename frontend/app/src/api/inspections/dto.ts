@@ -71,6 +71,7 @@ export type InspectionDto = {
 export type InspectionTemplateDto = {
   id: string;
   equipmentCategoryId: string;
+  agencyId: string;
   createdAt: string;
   points: {
     id: string;

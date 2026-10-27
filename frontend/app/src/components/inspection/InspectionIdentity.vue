@@ -16,6 +16,7 @@ const props = defineProps<{
   client: ClientInputDto;
   departure: boolean;
   locked: boolean;
+  expectedAgencyCode?: number | null;
   error?: string;
   validationRequested?: boolean;
 }>();
@@ -59,10 +60,12 @@ const phoneError = computed(() =>
 );
 const commandError = computed(() =>
   touched.command || props.validationRequested
-    ? (validateAgencyCode(props.client.agencyCode) ??
-      validateCommandNumber(
-        normalizeCommandNumber(props.client.commandValue) ?? props.client.commandValue,
-      ))
+    ? props.expectedAgencyCode && props.client.agencyCode !== props.expectedAgencyCode
+      ? "Le code agence doit correspondre à l’agence de l’équipement."
+      : (validateAgencyCode(props.client.agencyCode) ??
+        validateCommandNumber(
+          normalizeCommandNumber(props.client.commandValue) ?? props.client.commandValue,
+        ))
     : undefined,
 );
 </script>

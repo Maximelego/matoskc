@@ -27,6 +27,11 @@ class ApiClient {
   private readonly baseUrl: string;
   private csrfToken: string | null = null;
   private csrfPromise: Promise<string> | null = null;
+  private agencyResolver: (() => string | null) | null = null;
+
+  setAgencyResolver(resolver: () => string | null): void {
+    this.agencyResolver = resolver;
+  }
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -111,6 +116,14 @@ class ApiClient {
 
     for (const [key, value] of Object.entries(query ?? {})) {
       if (value !== null && value !== undefined) url.searchParams.set(key, String(value));
+    }
+    if (
+      /^\/(?:equipments|equipment-categories|inspection-templates|inspections|rentals)(?:\/|$)/.test(
+        path,
+      )
+    ) {
+      const agencyId = this.agencyResolver?.();
+      if (agencyId) url.searchParams.set("agencyId", agencyId);
     }
 
     const headers = new Headers(customHeaders);
