@@ -259,6 +259,15 @@ async function persist(): Promise<void> {
       : [],
   );
   const activeIds = new Set(activeFindings.map((finding) => finding.id));
+  // Earlier drafts may still contain photos directly attached to an answer.
+  // The current questionnaire records new evidence on findings instead.
+  for (const answer of current.answers) {
+    const value = points.value[answer.templatePointId];
+    if (!value || (value.result !== "Compliant" && !value.findings.length)) continue;
+    for (const photoId of answer.photoIds) {
+      await inspectionHttpApi.removePhoto(current.id, photoId);
+    }
+  }
   inspection.value = await inspectionHttpApi.saveDraft(current.id, {
     operatorFirstName: operatorFirstName.value.trim(),
     answers: Object.entries(points.value)
@@ -309,6 +318,25 @@ async function persist(): Promise<void> {
   inspection.value = await inspectionHttpApi.getById(current.id);
 }
 
+async function refreshAfterConflict(): Promise<void> {
+  if (!inspection.value) return;
+  // A GET keeps the stale snapshot. An empty partial save captures the current
+  // open defects and updates their historical evidence without changing answers.
+  const fresh = await inspectionHttpApi.saveDraft(inspection.value.id, {
+    operatorFirstName: operatorFirstName.value.trim(),
+    answers: [],
+    knownDefects: [],
+    findings: [],
+    removedFindingIds: [],
+  });
+  inspection.value = fresh;
+  hydrateKnown(fresh.knownDefects);
+  hydratePoints(fresh);
+  accepted.value = false;
+  signatureFile.value = null;
+  step.value = 1;
+}
+
 async function save(keepSignature = false): Promise<boolean> {
   if (busy.value || !checkIdentity()) return false;
   busy.value = true;
@@ -323,13 +351,7 @@ async function save(keepSignature = false): Promise<boolean> {
   } catch (cause) {
     if (cause instanceof ApiError && cause.status === 409 && inspection.value) {
       try {
-        const fresh = await inspectionHttpApi.getById(inspection.value.id);
-        inspection.value = fresh;
-        hydrateKnown(fresh.knownDefects);
-        hydratePoints(fresh);
-        accepted.value = false;
-        signatureFile.value = null;
-        step.value = 1;
+        await refreshAfterConflict();
         error.value =
           "Les défauts du matériel ont changé. Vérifiez à nouveau leurs confirmations et les points avant de signer.";
         return false;
@@ -432,12 +454,13 @@ async function validate(): Promise<void> {
     await router.push({ name: "Inspections" });
   } catch (cause) {
     if (cause instanceof ApiError && cause.status === 409) {
-      const fresh = await inspectionHttpApi.getById(inspection.value.id).catch(() => null);
-      if (fresh) {
-        inspection.value = fresh;
-        hydrateKnown(fresh.knownDefects);
-        hydratePoints(fresh);
-        step.value = 1;
+      try {
+        await refreshAfterConflict();
+      } catch (refreshError) {
+        error.value = message(refreshError);
+        accepted.value = false;
+        signatureFile.value = null;
+        return;
       }
       accepted.value = false;
       signatureFile.value = null;
