@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import BaseInput from "../common/input/BaseInput.vue";
 import { validateEmail } from "../../utils/validators";
 import { computed, onMounted, ref } from "vue";
@@ -191,26 +192,29 @@ onMounted(() => {
     class="management"
     aria-labelledby="accounts-title"
   >
-    <header class="management__header">
-      <div>
-        <h1 id="accounts-title">Gestion des utilisateurs</h1>
-        <p class="management__subtitle">Consultez les comptes et gérez leurs accès.</p>
-      </div>
-      <div class="management__actions">
-        <BaseButton
-          variant="outline"
-          size="small"
-          :loading="loading"
-          @click="load"
-          >Actualiser</BaseButton
-        >
-        <BaseButton
-          size="small"
-          @click="openForm()"
-          >Créer un compte</BaseButton
-        >
-      </div>
-    </header>
+    <PageHero
+      title="Gestion des utilisateurs"
+      description="Consultez les comptes et gérez leurs accès."
+      eyebrow="Administration"
+      title-id="accounts-title"
+    >
+      <template #actions>
+        <div class="management__actions">
+          <BaseButton
+            variant="outline"
+            size="small"
+            :loading="loading"
+            @click="load"
+            >Actualiser</BaseButton
+          >
+          <BaseButton
+            size="small"
+            @click="openForm()"
+            >Créer un compte</BaseButton
+          >
+        </div>
+      </template>
+    </PageHero>
 
     <p
       v-if="notice"

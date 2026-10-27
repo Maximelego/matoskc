@@ -1,15 +1,16 @@
 <script setup lang="ts">
+import PageHero from "../../common/page/PageHero.vue";
 import HomeTilingGrid from "../HomeTilingGrid.vue";
 import { AdminMenus, AgencyMenus, SuperAdminMenus } from "../menus.ts";
 </script>
 
 <template>
   <main class="super-admin-home">
-    <header class="super-admin-home__header">
-      <p class="super-admin-home__eyebrow">Super administration</p>
-      <h1>Tableau de bord</h1>
-      <p>Accédez aux opérations de l’agence et aux outils d’administration.</p>
-    </header>
+    <PageHero
+      title="Tableau de bord"
+      description="Accédez aux opérations de l’agence et aux outils d’administration."
+      eyebrow="Super administration"
+    />
 
     <section
       class="super-admin-home__section"

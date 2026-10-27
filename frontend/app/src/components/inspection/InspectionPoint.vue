@@ -57,7 +57,7 @@ function addFiles(id: string, event: Event): void {
         :checked="value.result === 'Compliant'"
         @change="emit('update', { result: 'Compliant', findings: [] })"
       />
-      Aucun nouveau défaut
+      Conforme
     </label>
     <label>
       <input
@@ -66,7 +66,7 @@ function addFiles(id: string, event: Event): void {
         :checked="value.result === 'NonCompliant'"
         @change="emit('update', { ...value, result: 'NonCompliant' })"
       />
-      Nouveau défaut constaté
+      Non conforme
     </label>
     <div
       v-if="value.result === 'NonCompliant'"

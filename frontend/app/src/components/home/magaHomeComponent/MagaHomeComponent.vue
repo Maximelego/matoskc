@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../../common/page/PageHero.vue";
 import HomeTilingGrid from "../HomeTilingGrid.vue";
 import { AgencyMenus } from "../menus.ts";
 </script>
@@ -8,10 +9,12 @@ import { AgencyMenus } from "../menus.ts";
     class="home"
     aria-labelledby="maga-home-title"
   >
-    <header class="home__header">
-      <h1 id="maga-home-title">Accueil agence</h1>
-      <p>Choisissez l’opération à réaliser sur le matériel.</p>
-    </header>
+    <PageHero
+      title="Accueil agence"
+      description="Choisissez l’opération à réaliser sur le matériel."
+      eyebrow="Espace agence"
+      title-id="maga-home-title"
+    />
 
     <HomeTilingGrid :tiles="AgencyMenus" />
   </section>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../../common/page/PageHero.vue";
 import HomeTilingGrid from "../HomeTilingGrid.vue";
 import { AdminMenus } from "../menus.ts";
 </script>
@@ -8,10 +9,12 @@ import { AdminMenus } from "../menus.ts";
     class="home"
     aria-labelledby="admin-home-title"
   >
-    <header class="home__header">
-      <h1 id="admin-home-title">Tableau de bord</h1>
-      <p>Accédez au suivi du matériel et aux fonctions de gestion.</p>
-    </header>
+    <PageHero
+      title="Tableau de bord"
+      description="Accédez au suivi du matériel et aux fonctions de gestion."
+      eyebrow="Administration"
+      title-id="admin-home-title"
+    />
 
     <HomeTilingGrid :tiles="AdminMenus" />
   </section>

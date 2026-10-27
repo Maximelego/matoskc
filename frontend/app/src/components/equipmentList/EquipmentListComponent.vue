@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ApiError } from "../../api/client";
 import { agencyScope } from "../../api/agencies/scope";
@@ -280,51 +281,54 @@ onUnmounted(() => {
     class="equipment-list"
     aria-labelledby="equipment-list-title"
   >
-    <div class="equipment-list__header">
-      <div>
-        <h1 id="equipment-list-title">Équipements</h1>
-        <p class="equipment-list__subtitle">Consultez et gérez les équipements enregistrés.</p>
-      </div>
-      <div class="equipment-list__header-actions">
-        <BaseButton
-          variant="outline"
-          size="small"
-          :loading="loading"
-          @click="loadEquipments"
-        >
-          <template #leading>
-            <BaseIcon name="refresh" />
-          </template>
-          Actualiser
-        </BaseButton>
-        <BaseButton
-          variant="primary"
-          size="small"
-          @click="openCreate"
-        >
-          <template #leading>
-            <BaseIcon name="add" />
-          </template>
-          Créer un équipement
-        </BaseButton>
-        <BaseButton
-          variant="primary"
-          size="small"
-          @click="openCreateCategory"
-        >
-          <template #leading>
-            <BaseIcon name="add" />
-          </template>
-          Créer une catégorie d’équipement
-        </BaseButton>
-        <BaseButton
-          variant="outline"
-          size="small"
-          @click="editCategoryOpen = true"
-          >Modifier une catégorie</BaseButton
-        >
-      </div>
-    </div>
+    <PageHero
+      title="Équipements"
+      description="Consultez et gérez les équipements enregistrés."
+      eyebrow="Parc matériel"
+      title-id="equipment-list-title"
+    >
+      <template #actions>
+        <div class="equipment-list__header-actions">
+          <BaseButton
+            variant="outline"
+            size="small"
+            :loading="loading"
+            @click="loadEquipments"
+          >
+            <template #leading>
+              <BaseIcon name="refresh" />
+            </template>
+            Actualiser
+          </BaseButton>
+          <BaseButton
+            variant="primary"
+            size="small"
+            @click="openCreate"
+          >
+            <template #leading>
+              <BaseIcon name="add" />
+            </template>
+            Créer un équipement
+          </BaseButton>
+          <BaseButton
+            variant="primary"
+            size="small"
+            @click="openCreateCategory"
+          >
+            <template #leading>
+              <BaseIcon name="add" />
+            </template>
+            Créer une catégorie d’équipement
+          </BaseButton>
+          <BaseButton
+            variant="outline"
+            size="small"
+            @click="editCategoryOpen = true"
+            >Modifier une catégorie</BaseButton
+          >
+        </div>
+      </template>
+    </PageHero>
     <p
       v-if="notice"
       class="equipment-list__notice"

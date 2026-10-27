@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import BaseInput from "../common/input/BaseInput.vue";
 import { computed, onMounted, ref } from "vue";
 import { agenciesApi } from "../../api/agencies";
@@ -130,26 +131,29 @@ onMounted(() => {
     class="management"
     aria-labelledby="agencies-title"
   >
-    <header class="management__header">
-      <div>
-        <h1 id="agencies-title">Gestion des agences</h1>
-        <p class="management__subtitle">Consultez et modifiez les agences enregistrées.</p>
-      </div>
-      <div class="management__actions">
-        <BaseButton
-          variant="outline"
-          size="small"
-          :loading="loading"
-          @click="load"
-          >Actualiser</BaseButton
-        >
-        <BaseButton
-          size="small"
-          @click="openForm()"
-          >Créer une agence</BaseButton
-        >
-      </div>
-    </header>
+    <PageHero
+      title="Gestion des agences"
+      description="Consultez et modifiez les agences enregistrées."
+      eyebrow="Administration"
+      title-id="agencies-title"
+    >
+      <template #actions>
+        <div class="management__actions">
+          <BaseButton
+            variant="outline"
+            size="small"
+            :loading="loading"
+            @click="load"
+            >Actualiser</BaseButton
+          >
+          <BaseButton
+            size="small"
+            @click="openForm()"
+            >Créer une agence</BaseButton
+          >
+        </div>
+      </template>
+    </PageHero>
 
     <p
       v-if="notice"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { agenciesApi } from "../../api/agencies";
@@ -171,28 +172,30 @@ onMounted(() => {
 
 <template>
   <main class="inspection-admin">
-    <header class="inspection-admin__header">
-      <div>
-        <h1>{{ equipmentId ? "Chronologie des états des lieux" : "États des lieux" }}</h1>
-        <p>Consultez les contrôles réalisés et les documents signés.</p>
-      </div>
-      <div class="inspection-admin__header-actions">
-        <BaseButton
-          variant="outline"
-          :disabled="loading"
-          @click="load"
-        >
-          <template #leading><BaseIcon name="refresh" /></template>
-          Actualiser
-        </BaseButton>
-        <router-link
-          to="/admin/inspection-templates"
-          class="inspection-admin__template-link"
-        >
-          <BaseIcon name="add" /> Modèles d’états des lieux
-        </router-link>
-      </div>
-    </header>
+    <PageHero
+      :title="equipmentId ? 'Chronologie des états des lieux' : 'États des lieux'"
+      description="Consultez les contrôles réalisés et les documents signés."
+      eyebrow="Administration"
+    >
+      <template #actions>
+        <div class="inspection-admin__header-actions">
+          <BaseButton
+            variant="outline"
+            :disabled="loading"
+            @click="load"
+          >
+            <template #leading><BaseIcon name="refresh" /></template>
+            Actualiser
+          </BaseButton>
+          <router-link
+            to="/admin/inspection-templates"
+            class="inspection-admin__template-link"
+          >
+            <BaseIcon name="add" /> Modèles d’états des lieux
+          </router-link>
+        </div>
+      </template>
+    </PageHero>
 
     <div
       v-if="equipmentId"

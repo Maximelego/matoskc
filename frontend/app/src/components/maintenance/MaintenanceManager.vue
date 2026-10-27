@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ApiError } from "../../api/client";
@@ -9,9 +10,10 @@ import type { EquipmentDto } from "../../api/equipments/dto";
 import { maintenanceApi } from "../../api/maintenance";
 import type { MaintenanceDto, RecordMaintenanceDto } from "../../api/maintenance/dto";
 import EquipmentPicker from "../common/equipmentPicker/EquipmentPicker.vue";
-import BaseInput from "../common/input/BaseInput.vue";
 import SlideAndFadeLateral from "../common/transition/SlideAndFadeLateral.vue";
-import DefectPhoto from "./DefectPhoto.vue";
+import MaintenanceDefects from "./MaintenanceDefects.vue";
+import MaintenanceForm from "./MaintenanceForm.vue";
+import MaintenanceHistory from "./MaintenanceHistory.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -26,37 +28,16 @@ const defectTotal = ref(0);
 const maintenanceOffset = ref(0);
 const maintenanceTotal = ref(0);
 const selected = ref<string[]>([]);
-const performedBy = ref("");
-const performedAt = ref("");
-const workDescription = ref("");
 const loading = ref(false);
 const saving = ref(false);
-const formAttempted = ref(false);
-
-const dateError = computed(() => {
-  if (!formAttempted.value) return undefined;
-  const value = new Date(performedAt.value).getTime();
-  if (!performedAt.value || !Number.isFinite(value))
-    return "La date d’intervention est obligatoire.";
-  if (
-    selected.value.some((id) => {
-      const defect = openDefects.value.find((item) => item.id === id);
-      return defect && value < new Date(defect.reportedAt).getTime();
-    })
-  )
-    return "La date doit suivre le constat des défauts sélectionnés.";
-  return undefined;
-});
-const personError = computed(() =>
-  formAttempted.value && !performedBy.value.trim() ? "L’intervenant est obligatoire." : undefined,
-);
+const maintenanceForm = ref<InstanceType<typeof MaintenanceForm> | null>(null);
 
 const error = ref("");
 const notice = ref("");
 const limit = 50;
 let requestVersion = 0;
+let maintenanceRequestVersion = 0;
 let pending: { fingerprint: string; payload: RecordMaintenanceDto } | null = null;
-const openDefects = computed(() => defects.value.filter((item) => item.status === "Open"));
 const currentEquipment = computed(() =>
   equipments.value.find((item) => item.id === equipmentId.value),
 );
@@ -65,11 +46,6 @@ function selectEquipment(equipment: EquipmentDto): void {
   void router.replace({ query: { ...route.query, equipmentId: equipment.id } });
 }
 function chooseAnotherEquipment(): void {
-  formAttempted.value = false;
-  if (saving.value) return;
-  performedAt.value = "";
-  performedBy.value = "";
-  workDescription.value = "";
   defectStatus.value = "Open";
   pending = null;
   equipmentId.value = "";
@@ -93,7 +69,10 @@ async function load() {
   maintenanceOffset.value = 0;
   error.value = "";
   notice.value = "";
-  if (!equipmentId.value) return;
+  if (!equipmentId.value) {
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   try {
     const [defectPage, maintenancePage] = await Promise.all([
@@ -130,20 +109,26 @@ async function pageDefects(offset: number) {
   }
 }
 async function pageMaintenances(offset: number) {
+  const token = ++maintenanceRequestVersion;
+  const requestedEquipmentId = equipmentId.value;
   loading.value = true;
   error.value = "";
   try {
-    const page = await maintenanceApi.list(equipmentId.value, offset, limit);
+    const page = await maintenanceApi.list(requestedEquipmentId, offset, limit);
+    if (token !== maintenanceRequestVersion || requestedEquipmentId !== equipmentId.value) return;
     maintenances.value = page.items;
     maintenanceTotal.value = page.total;
     maintenanceOffset.value = offset;
   } catch (cause) {
-    error.value = message(cause);
+    if (token === maintenanceRequestVersion && requestedEquipmentId === equipmentId.value)
+      error.value = message(cause);
   } finally {
-    loading.value = false;
+    if (token === maintenanceRequestVersion && requestedEquipmentId === equipmentId.value)
+      loading.value = false;
   }
 }
 watch([equipmentId, defectStatus], () => {
+  ++maintenanceRequestVersion;
   pending = null;
   void load();
 });
@@ -163,40 +148,13 @@ onMounted(async () => {
   }
   if (equipmentId.value) void load();
 });
-async function submit() {
+function updateSelected(ids: string[]): void {
+  selected.value = ids;
+}
+async function submit(fields: Omit<RecordMaintenanceDto, "id">): Promise<void> {
   if (!equipmentId.value || saving.value) return;
-  formAttempted.value = true;
   error.value = "";
   notice.value = "";
-  const timestamp = new Date(performedAt.value);
-  if (
-    !performedBy.value.trim() ||
-    !workDescription.value.trim() ||
-    !Number.isFinite(timestamp.getTime())
-  ) {
-    error.value = "Renseignez la date, l’intervenant et la description des travaux.";
-    return;
-  }
-  if (performedBy.value.trim().length > 200 || workDescription.value.trim().length > 10_000) {
-    error.value = "Vérifiez la date et la longueur des champs (200 et 10 000 caractères maximum).";
-    return;
-  }
-  if (
-    selected.value.some((id) => {
-      const defect = openDefects.value.find((item) => item.id === id);
-      return !defect || timestamp.getTime() < new Date(defect.reportedAt).getTime();
-    })
-  ) {
-    error.value =
-      "La date d’intervention doit être postérieure au constat de chaque défaut sélectionné.";
-    return;
-  }
-  const fields = {
-    performedAt: timestamp.toISOString(),
-    performedBy: performedBy.value.trim(),
-    workDescription: workDescription.value.trim(),
-    resolvedDefectIds: [...selected.value].sort(),
-  };
   const fingerprint = JSON.stringify({ equipmentId: equipmentId.value, ...fields });
   if (pending?.fingerprint !== fingerprint)
     pending = { fingerprint, payload: { id: crypto.randomUUID(), ...fields } };
@@ -204,10 +162,11 @@ async function submit() {
   try {
     await maintenanceApi.create(equipmentId.value, pending.payload);
     pending = null;
-    selected.value = [];
-    workDescription.value = "";
+    maintenanceForm.value?.reset();
     await load();
-    notice.value = "La maintenance a été enregistrée et les défauts sélectionnés ont été résolus.";
+    notice.value = fields.resolvedDefectIds.length
+      ? "La maintenance a été enregistrée et les défauts sélectionnés ont été résolus."
+      : "La maintenance a été enregistrée.";
   } catch (cause) {
     error.value = message(cause);
   } finally {
@@ -225,10 +184,12 @@ async function submit() {
         class="care__stage"
         aria-labelledby="care-title"
       >
-        <header>
-          <h1 id="care-title">Sélectionner un équipement</h1>
-          <p>Choisissez le matériel dont vous souhaitez consulter la maintenance.</p>
-        </header>
+        <PageHero
+          title="Sélectionner un équipement"
+          description="Choisissez le matériel dont vous souhaitez consulter la maintenance."
+          eyebrow="Maintenance"
+          title-id="care-title"
+        />
         <p
           v-if="equipmentLoading"
           role="status"
@@ -254,19 +215,21 @@ async function submit() {
         :key="equipmentId"
         class="care__stage"
       >
-        <header class="care__detail-header">
-          <div>
-            <h1>Maintenance de cet équipement</h1>
-            <p>{{ currentEquipment?.name ?? "Équipement sélectionné" }}</p>
-          </div>
-          <button
-            type="button"
-            :disabled="saving"
-            @click="chooseAnotherEquipment"
-          >
-            Choisir un autre équipement
-          </button>
-        </header>
+        <PageHero
+          title="Maintenance de cet équipement"
+          :description="currentEquipment?.name ?? 'Équipement sélectionné'"
+          eyebrow="Maintenance"
+        >
+          <template #actions>
+            <button
+              type="button"
+              :disabled="saving"
+              @click="chooseAnotherEquipment"
+            >
+              Choisir un autre équipement
+            </button>
+          </template>
+        </PageHero>
         <p
           v-if="error"
           role="alert"
@@ -293,312 +256,81 @@ async function submit() {
         >
           Chargement…
         </p>
-        <section class="care__panel">
-          <h2>Défauts constatés</h2>
-          <label for="defect-status">Statut</label>
-          <select
-            id="defect-status"
-            v-model="defectStatus"
+        <div class="care__content">
+          <MaintenanceDefects
+            v-model:status="defectStatus"
+            :selected="selected"
+            :defects="defects"
+            :equipment-id="equipmentId"
+            :total="defectTotal"
+            :offset="defectOffset"
+            :limit="limit"
+            :loading="loading"
             :disabled="saving"
-          >
-            <option value="Open">Ouverts</option>
-            <option value="Resolved">Résolus</option>
-          </select>
-          <p v-if="!loading && !defects.length">
-            Aucun défaut {{ defectStatus === "Open" ? "ouvert" : "résolu" }}.
-          </p>
-          <ul class="care__defects">
-            <li
-              v-for="defect in defects"
-              :key="defect.id"
-            >
-              <label
-                v-if="defect.status === 'Open'"
-                class="care__checkbox"
-              >
-                <input
-                  v-model="selected"
-                  type="checkbox"
-                  :value="defect.id"
-                  :disabled="saving"
-                />
-                Résoudre pendant cette maintenance
-              </label>
-              <strong>{{ defect.description }}</strong>
-              <p>{{ defect.observation }}</p>
-              <p>Constaté par {{ defect.operatorFirstName }}</p>
-              <small
-                >Signalé le {{ new Date(defect.reportedAt).toLocaleString("fr-FR") }} ·
-                {{ defect.occurrences.length }} constat(s)</small
-              >
-              <details v-if="defect.occurrences.length">
-                <summary>Voir les constats</summary>
-                <ul>
-                  <li
-                    v-for="occurrence in defect.occurrences"
-                    :key="occurrence.id"
-                  >
-                    {{ occurrence.observation }} ·
-                    {{ new Date(occurrence.observedAt).toLocaleDateString("fr-FR") }} · constaté par
-                    {{ occurrence.operatorFirstName }}
-                    <div class="care__photos">
-                      <DefectPhoto
-                        v-for="id in occurrence.photoIds"
-                        :key="id"
-                        :equipment-id="equipmentId"
-                        :defect-id="defect.id"
-                        :photo-id="id"
-                      />
-                    </div>
-                  </li>
-                </ul>
-              </details>
-              <small v-if="defect.resolvedAt"
-                >Résolu le {{ new Date(defect.resolvedAt).toLocaleString("fr-FR") }}</small
-              >
-            </li>
-          </ul>
-          <nav
-            v-if="defectTotal > limit || defectOffset"
-            aria-label="Pages des défauts"
-          >
-            <button
-              type="button"
-              :disabled="loading || !defectOffset"
-              @click="pageDefects(defectOffset - limit)"
-            >
-              Précédent
-            </button>
-            <span
-              >{{ defectOffset + 1 }}–{{ Math.min(defectOffset + limit, defectTotal) }} /
-              {{ defectTotal }}</span
-            >
-            <button
-              type="button"
-              :disabled="loading || defectOffset + limit >= defectTotal"
-              @click="pageDefects(defectOffset + limit)"
-            >
-              Suivant
-            </button>
-          </nav>
-        </section>
-        <form
-          class="care__panel"
-          novalidate
-          @submit.prevent="submit"
-        >
-          <h2>Enregistrer une maintenance</h2>
-          <p>
-            Une maintenance peut être enregistrée sans résoudre de défaut. Résoudre un défaut ne
-            modifie pas automatiquement la disponibilité du matériel.
-          </p>
-          <BaseInput
-            id="care-date"
-            v-model="performedAt"
-            label="Date et heure de l’intervention"
-            :error="dateError"
-            type="datetime-local"
-            required
-            :disabled="saving"
+            @update:selected="updateSelected"
+            @page="pageDefects"
           />
-          <BaseInput
-            id="care-person"
-            v-model="performedBy"
-            label="Intervenant"
-            :error="personError"
-            maxlength="200"
-            required
-            :disabled="saving"
-          />
-          <label for="care-work">Travaux effectués</label>
-          <textarea
-            id="care-work"
-            v-model="workDescription"
-            rows="5"
-            maxlength="10000"
-            required
-            :disabled="saving"
-          />
-          <p>{{ selected.length }} défaut(s) sélectionné(s) pour résolution</p>
-          <button
-            type="submit"
+          <MaintenanceForm
+            ref="maintenanceForm"
+            :key="equipmentId"
+            :selected="selected"
+            :defects="defects"
             :disabled="saving || loading"
-          >
-            {{ saving ? "Enregistrement…" : "Enregistrer la maintenance" }}
-          </button>
-        </form>
-        <section class="care__panel">
-          <h2>Maintenances enregistrées</h2>
-          <p v-if="!loading && !maintenances.length">Aucune maintenance enregistrée.</p>
-          <ol>
-            <li
-              v-for="entry in maintenances"
-              :key="entry.id"
-            >
-              <strong
-                >{{ new Date(entry.performedAt).toLocaleString("fr-FR") }} ·
-                {{ entry.performedBy }}</strong
-              >
-              <p class="care__work">{{ entry.workDescription }}</p>
-              <small>{{ entry.resolvedDefectIds.length }} défaut(s) résolu(s)</small>
-            </li>
-          </ol>
-          <nav
-            v-if="maintenanceTotal > limit || maintenanceOffset"
-            aria-label="Pages des maintenances"
-          >
-            <button
-              type="button"
-              :disabled="loading || !maintenanceOffset"
-              @click="pageMaintenances(maintenanceOffset - limit)"
-            >
-              Précédent
-            </button>
-            <span
-              >{{ maintenanceOffset + 1 }}–{{
-                Math.min(maintenanceOffset + limit, maintenanceTotal)
-              }}
-              / {{ maintenanceTotal }}</span
-            >
-            <button
-              type="button"
-              :disabled="loading || maintenanceOffset + limit >= maintenanceTotal"
-              @click="pageMaintenances(maintenanceOffset + limit)"
-            >
-              Suivant
-            </button>
-          </nav>
-        </section>
+            @submit="submit"
+          />
+          <MaintenanceHistory
+            :entries="maintenances"
+            :total="maintenanceTotal"
+            :offset="maintenanceOffset"
+            :limit="limit"
+            :loading="loading"
+            @page="pageMaintenances"
+          />
+        </div>
       </div>
     </SlideAndFadeLateral>
   </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .care {
   display: grid;
-  gap: 1.4rem;
-  max-width: 65rem;
+  max-width: 70rem;
   min-width: 0;
   margin: auto;
 }
 .care__stage {
   display: grid;
-  gap: 1.4rem;
+  gap: 1.5rem;
   min-width: 0;
-}
-.care__detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.care__detail-header h1 {
-  margin-bottom: 0.35rem;
-}
-.care__detail-header p {
-  margin: 0;
-}
-.care header p,
-.care small {
-  color: var(--color-text-secondary);
-}
-
-.care__panel {
-  display: grid;
-  gap: 0.7rem;
-  min-width: 0;
-  padding: 1.4rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.7rem;
-  background: var(--color-surface);
-  overflow-wrap: anywhere;
-}
-.care__panel h2 {
-  margin: 0;
-}
-.care__defects,
-.care__panel ol {
-  padding-left: 1.4rem;
-}
-.care__defects > li,
-.care__panel ol > li {
-  padding: 0.8rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.care__defects p {
-  margin: 0.35rem 0;
-}
-.care__photos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
-}
-.care__checkbox {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 0.4rem;
-}
-.care select,
-.care input:not([type="checkbox"]),
-.care textarea {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  min-height: 2.75rem;
-  padding: 0.65rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.4rem;
-  color: var(--color-text);
-  background: var(--color-input-background);
 }
 .care button {
-  box-sizing: border-box;
-  justify-self: start;
   min-height: 2.75rem;
-  padding: 0.65rem 0.9rem;
+  padding: 0.6rem 0.9rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
+  background: var(--color-surface-secondary);
   color: var(--color-text);
-  background: var(--color-surface);
+  font: inherit;
   cursor: pointer;
-}
-.care form button {
-  color: var(--color-text-on-primary);
-  background: var(--color-primary);
-  border: 0;
-  font-weight: 600;
 }
 .care button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.care nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-}
-.care__work {
-  white-space: pre-wrap;
+.care__content {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
 }
 .care__error {
   color: var(--color-danger);
 }
 .care__success {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 0.6rem;
   color: var(--color-success);
-}
-@media (max-width: 42rem) {
-  .care__panel {
-    padding: 1rem;
-  }
-  .care select,
-  .care input:not([type="checkbox"]),
-  .care button {
-    min-height: 3rem;
-  }
+  background: var(--color-success-soft);
 }
 </style>

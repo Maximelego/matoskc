@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ApiError } from "../../api/client";
@@ -69,13 +70,12 @@ onMounted(() => {
     class="inspection-list"
     aria-labelledby="inspection-list-title"
   >
-    <header class="inspection-list__header">
-      <h1 id="inspection-list-title">Choisir un équipement</h1>
-      <p>
-        Sélectionnez un équipement pour commencer son état des lieux. Un code QR peut également
-        ouvrir directement sa fiche.
-      </p>
-    </header>
+    <PageHero
+      title="Choisir un équipement"
+      description="Sélectionnez un équipement pour commencer son état des lieux. Un code QR peut également ouvrir directement sa fiche."
+      eyebrow="États des lieux"
+      title-id="inspection-list-title"
+    />
 
     <div
       v-if="loading"

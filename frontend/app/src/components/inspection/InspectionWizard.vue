@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { agenciesApi } from "../../api/agencies";
@@ -479,7 +480,11 @@ onMounted(() => {
 
 <template>
   <main class="wizard">
-    <h1>État des lieux de {{ isDeparture ? "départ" : "retour" }}</h1>
+    <PageHero
+      :title="`État des lieux de ${isDeparture ? 'départ' : 'retour'}`"
+      :description="equipment?.name ?? 'Chargement du matériel…'"
+      eyebrow="Inspection"
+    />
     <p
       v-if="loading"
       role="status"

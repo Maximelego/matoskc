@@ -91,16 +91,19 @@ watch(
         v-for="entry in entries"
         :key="entry.id"
       >
-        <strong>{{
-          entry.operation === "Added"
-            ? "Création"
-            : entry.operation === "Modified"
-              ? "Modification"
-              : entry.operation
-        }}</strong>
-        <time :datetime="entry.occurredAt">{{
-          new Date(entry.occurredAt).toLocaleString("fr-FR")
-        }}</time>
+        <strong>
+          <time :datetime="entry.occurredAt">{{
+            new Date(entry.occurredAt).toLocaleString("fr-FR")
+          }}</time>
+          {{
+            entry.operation === "Added"
+              ? "Création"
+              : entry.operation === "Modified"
+                ? "Modification"
+                : entry.operation
+          }}
+        </strong>
+
         <p v-if="entry.reason">Motif : {{ entry.reason }}</p>
         <ul>
           <li
@@ -157,12 +160,12 @@ watch(
 }
 .history ol {
   padding-left: 1.5rem;
+  list-style-type: none;
 }
 .history ol > li {
   padding: 0.65rem 0;
 }
 .history time {
-  display: block;
   color: var(--color-text-secondary);
 }
 .history p {

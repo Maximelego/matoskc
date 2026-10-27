@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHero from "../common/page/PageHero.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { ApiError } from "../../api/client.ts";
 import { agencyScope } from "../../api/agencies/scope";
@@ -7,6 +8,8 @@ import { equipmentCategoriesApi } from "../../api/equipment-categories/index.ts"
 import type { InspectionTemplateDto } from "../../api/inspection-templates/dto.ts";
 import { inspectionTemplatesApi } from "../../api/inspection-templates/index.ts";
 import TemplatePointsEditor, { type EditablePoint } from "./TemplatePointsEditor.vue";
+import TemplateCategorySelector from "./TemplateCategorySelector.vue";
+import CurrentTemplateCard from "./CurrentTemplateCard.vue";
 
 const categories = ref<EquipmentCategoryDto[]>([]);
 const categoryId = ref("");
@@ -128,78 +131,54 @@ async function submit() {
 
 <template>
   <main class="template-page">
-    <header>
-      <h1>Modèles d’état des lieux</h1>
-      <p>Créez les points de contrôle pour une catégorie d’équipement.</p>
-    </header>
-    <section
-      class="panel"
-      aria-labelledby="category-heading"
-    >
-      <h2 id="category-heading">Catégorie</h2>
-      <label for="template-category">Catégorie d’équipement</label>
-      <select
-        id="template-category"
+    <PageHero
+      title="Modèles d’état des lieux"
+      description="Composez un parcours de contrôle clair pour chaque catégorie de matériel."
+      eyebrow="Configuration · États des lieux"
+    />
+    <div class="template-page__overview">
+      <TemplateCategorySelector
         v-model="categoryId"
-        :disabled="loading || saving"
-        required
-      >
-        <option value="">Sélectionnez une catégorie</option>
-        <option
-          v-for="category in categories"
-          :key="category.id"
-          :value="category.id"
-        >
-          {{ category.name
-          }}{{
-            agencyScope.isSuperAdmin.value && !agencyScope.activeAgencyId.value
-              ? ` (${agencyScope.label(category.agencyId)})`
-              : ""
-          }}
-        </option>
-      </select>
-      <p v-if="!loading && !categories.length">Aucune catégorie disponible.</p>
+        :categories="categories"
+        :loading="loading"
+        :disabled="saving || uploading"
+      />
       <p
         v-if="loadingTemplate"
+        class="template-page__empty"
         role="status"
       >
         Chargement du modèle courant…
       </p>
-      <div
+      <CurrentTemplateCard
         v-else-if="current"
-        class="current"
+        :template="current"
+        :disabled="saving || uploading"
+        @copy="copyCurrent"
+      />
+      <p
+        v-else-if="categoryId"
+        class="template-page__empty"
       >
-        <h3>Modèle courant</h3>
-        <p>
-          {{ current.points.length }} point{{ current.points.length > 1 ? "s" : "" }} · Créé le
-          {{ new Date(current.createdAt).toLocaleDateString("fr-FR") }}
-        </p>
-        <ol>
-          <li
-            v-for="point in [...current.points].sort((a, b) => a.position - b.position)"
-            :key="point.id"
-          >
-            {{ point.description }}
-            <span class="current__detail">{{ point.descriptionDetail }}</span>
-          </li>
-        </ol>
-        <button
-          type="button"
-          :disabled="saving"
-          @click="copyCurrent"
-        >
-          Reprendre ces points
-        </button>
-      </div>
-      <p v-else-if="categoryId">Aucun modèle pour cette catégorie.</p>
-    </section>
+        Aucun modèle pour cette catégorie. Créez le premier ci-dessous.
+      </p>
+      <p
+        v-else
+        class="template-page__empty"
+      >
+        Choisissez une catégorie pour consulter sa version active et créer un nouveau modèle.
+      </p>
+    </div>
     <form
       v-if="categoryId"
-      class="panel"
+      class="template-page__form"
       novalidate
       @submit.prevent="submit"
     >
-      <h2>Nouveau modèle</h2>
+      <div class="template-page__form-heading">
+        <span>02 · Composition</span>
+        <h2>Nouveau modèle</h2>
+      </div>
       <p>
         La création rend ce modèle courant pour la catégorie sélectionnée. Les états des lieux déjà
         créés conservent leur modèle.
@@ -226,86 +205,107 @@ async function submit() {
       >
         {{ success }}
       </p>
-      <button
-        class="submit"
-        type="submit"
-        :disabled="!categoryId || saving || uploading || loadingTemplate"
-      >
-        {{ saving ? "Création…" : "Créer le modèle" }}
-      </button>
+      <footer class="template-page__footer">
+        <span
+          ><strong>{{ points.length }} point{{ points.length > 1 ? "s" : "" }}</strong> de contrôle
+          · Ce modèle deviendra la version courante.</span
+        >
+        <button
+          class="submit"
+          type="submit"
+          :disabled="!categoryId || saving || uploading || loadingTemplate"
+        >
+          {{ saving ? "Création…" : "Créer le modèle" }}
+        </button>
+      </footer>
     </form>
   </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .template-page {
-  max-width: 62rem;
-  margin: 0 auto;
   display: grid;
   gap: 1.5rem;
+  max-width: 72rem;
+  min-width: 0;
+  margin: 0 auto;
+  padding-bottom: 2rem;
 }
-header h1 {
-  margin: 0;
-}
-header p,
-.panel > p {
-  color: var(--color-text-secondary);
-}
-.panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
+.template-page__overview {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 1rem;
   min-width: 0;
 }
-.panel h2,
-.current h3 {
+.template-page__empty {
+  display: grid;
+  align-items: center;
   margin: 0;
-}
-.panel > label {
-  font-weight: 600;
-}
-select {
-  width: 100%;
-  padding: 0.7rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.4rem;
-  background: var(--color-input-background);
-  color: inherit;
-}
-.current {
-  border-top: 1px solid var(--color-border);
-  padding-top: 1rem;
-}
-.current__detail {
-  display: block;
-  white-space: pre-wrap;
-  tab-size: 4;
+  padding: 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.85rem;
+  background: var(--color-surface-secondary);
   color: var(--color-text-secondary);
 }
-.current ol {
-  padding-left: 1.4rem;
+.template-page__form {
+  display: grid;
+  gap: 1.4rem;
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.8rem);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
 }
-.current button,
-.submit {
-  border: 0;
-  border-radius: 0.4rem;
-  padding: 0.7rem 1rem;
-  cursor: pointer;
+.template-page__form-heading span {
+  color: var(--color-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
 }
-.current button {
+.template-page__form-heading h2 {
+  margin: 0.2rem 0 0;
+}
+.template-page__form > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.template-page__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.15rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
   background: var(--color-surface-secondary);
-  color: inherit;
+}
+.template-page__footer span {
+  color: var(--color-text-secondary);
+}
+.template-page__footer strong {
+  color: var(--color-text);
 }
 .submit {
-  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.15rem;
+  border: 0;
+  border-radius: 0.5rem;
   background: var(--color-primary);
   color: var(--color-text-on-primary);
+  font: inherit;
   font-weight: 600;
+  cursor: pointer;
+  transition:
+    filter 0.2s,
+    transform 0.2s;
 }
-button:disabled {
+.submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+.submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -315,9 +315,19 @@ button:disabled {
 .success {
   color: var(--color-success) !important;
 }
+@media (max-width: 48rem) {
+  .template-page__overview {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 42rem) {
-  .panel {
-    padding: 1rem;
+  .template-page__footer .submit {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .submit {
+    transition: none;
   }
 }
 </style>
