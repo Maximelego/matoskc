@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import BaseInput from "../common/input/BaseInput.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ApiError } from "../../api/client";
@@ -10,6 +9,7 @@ import type { EquipmentDto } from "../../api/equipments/dto";
 import { maintenanceApi } from "../../api/maintenance";
 import type { MaintenanceDto, RecordMaintenanceDto } from "../../api/maintenance/dto";
 import EquipmentPicker from "../common/equipmentPicker/EquipmentPicker.vue";
+import BaseInput from "../common/input/BaseInput.vue";
 import SlideAndFadeLateral from "../common/transition/SlideAndFadeLateral.vue";
 import DefectPhoto from "./DefectPhoto.vue";
 
@@ -32,12 +32,12 @@ const workDescription = ref("");
 const loading = ref(false);
 const saving = ref(false);
 const formAttempted = ref(false);
+
 const dateError = computed(() => {
   if (!formAttempted.value) return undefined;
   const value = new Date(performedAt.value).getTime();
   if (!performedAt.value || !Number.isFinite(value))
     return "La date d’intervention est obligatoire.";
-  if (value > Date.now()) return "La date d’intervention ne peut pas être future.";
   if (
     selected.value.some((id) => {
       const defect = openDefects.value.find((item) => item.id === id);
@@ -50,12 +50,10 @@ const dateError = computed(() => {
 const personError = computed(() =>
   formAttempted.value && !performedBy.value.trim() ? "L’intervenant est obligatoire." : undefined,
 );
+
 const error = ref("");
 const notice = ref("");
 const limit = 50;
-const maxDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
-  .toISOString()
-  .slice(0, 16);
 let requestVersion = 0;
 let pending: { fingerprint: string; payload: RecordMaintenanceDto } | null = null;
 const openDefects = computed(() => defects.value.filter((item) => item.status === "Open"));
@@ -179,11 +177,7 @@ async function submit() {
     error.value = "Renseignez la date, l’intervenant et la description des travaux.";
     return;
   }
-  if (
-    timestamp.getTime() > Date.now() ||
-    performedBy.value.trim().length > 200 ||
-    workDescription.value.trim().length > 10_000
-  ) {
+  if (performedBy.value.trim().length > 200 || workDescription.value.trim().length > 10_000) {
     error.value = "Vérifiez la date et la longueur des champs (200 et 10 000 caractères maximum).";
     return;
   }
@@ -399,19 +393,18 @@ async function submit() {
             modifie pas automatiquement la disponibilité du matériel.
           </p>
           <BaseInput
-            label="Date et heure de l’intervention"
             id="care-date"
             v-model="performedAt"
+            label="Date et heure de l’intervention"
             :error="dateError"
             type="datetime-local"
-            :max="maxDate"
             required
             :disabled="saving"
           />
           <BaseInput
-            label="Intervenant"
             id="care-person"
             v-model="performedBy"
+            label="Intervenant"
             :error="personError"
             maxlength="200"
             required

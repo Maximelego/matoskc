@@ -27,7 +27,7 @@ public sealed class EquipmentMaintenance : BaseEntity
             throw new ArgumentException("Maintenance, equipment and account identifiers are required.");
         }
 
-        if (performedAt == default || recordedAt == default || performedAt > recordedAt
+        if (performedAt == default || recordedAt == default
             || performedBy.Trim().Length > 200 || workDescription.Trim().Length > 10000)
         {
             throw new ArgumentException("Invalid intervention dates or text lengths.");
