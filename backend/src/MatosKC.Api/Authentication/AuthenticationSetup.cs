@@ -41,7 +41,7 @@ public static class AuthenticationSetup
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options => ConfigureSessionCookie(options, sessionDuration));
 
-        services.AddAuthorization(options =>
+        _ = services.AddAuthorization(options =>
         {
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()

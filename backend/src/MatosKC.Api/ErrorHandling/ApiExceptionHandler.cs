@@ -95,9 +95,9 @@ public sealed class ApiExceptionHandler : IExceptionHandler
         }
 
         await Results.Problem(
+            detail: detail,
             statusCode: statusCode,
-            title: title,
-            detail: detail
+            title: title
         ).ExecuteAsync(httpContext);
 
         return true;

@@ -5,9 +5,7 @@ namespace MatosKC.Api.Authentication;
 /// <summary>
 /// Marks endpoints that accept changes authenticated by browser cookies.
 /// </summary>
-public sealed class RequireCsrfValidation
-{
-}
+public sealed class RequireCsrfValidation;
 
 public sealed class CsrfMiddleware(RequestDelegate next)
 {
@@ -30,9 +28,9 @@ public sealed class CsrfMiddleware(RequestDelegate next)
             catch (AntiforgeryValidationException)
             {
                 await Results.Problem(
+                    detail: "Fetch /auth/csrf and send the token in X-CSRF-TOKEN.",
                     statusCode: StatusCodes.Status400BadRequest,
-                    title: "Invalid CSRF token",
-                    detail: "Fetch /auth/csrf and send the token in X-CSRF-TOKEN."
+                    title: "Invalid CSRF token"
                 ).ExecuteAsync(context);
 
                 return;
