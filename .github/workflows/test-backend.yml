@@ -19,12 +19,10 @@ jobs:
               uses: actions/setup-dotnet@v3
               with:
                   dotnet-version: 10.0.113
-            - name: Moving to the correct folder
-              run: cd backend && ls -la
             - name: Restore dependencies
-              run: ls && dotnet restore
+              run: dotnet restore ./backend/MatosKC.slnx
             - name: Build
-              run: dotnet build --no-restore
+              run: dotnet build --no-restore ./backend/MatosKC.slnx
             - name: Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
@@ -44,5 +42,5 @@ jobs:
               with:
                   name: build-artifacts
             - name: Test
-              run: dotnet test --no-build --verbosity normal --logger "console;verbosity=detailed"
+              run: dotnet test  ./backend/MatosKC.slnx --no-build --verbosity normal --logger "console;verbosity=detailed" 
     
