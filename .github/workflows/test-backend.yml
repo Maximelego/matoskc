@@ -22,7 +22,7 @@ jobs:
             - name: Moving to the correct folder
               run: cd backend && ls -la
             - name: Restore dependencies
-              run: dotnet restore
+              run: ls && dotnet restore
             - name: Build
               run: dotnet build --no-restore
             - name: Upload build artifacts
