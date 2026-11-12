@@ -36,7 +36,7 @@ jobs:
             - name: Set up .NET
               uses: actions/setup-dotnet@v3
               with:
-                  dotnet-version: 10.0.12
+                  dotnet-version: 10.0.113
             - name: Download build artifacts
               uses: actions/download-artifact@v4
               with:
